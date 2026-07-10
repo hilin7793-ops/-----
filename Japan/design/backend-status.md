@@ -291,20 +291,19 @@
 
 ### 4.1 後端功能缺口
 
-- 更完整的查詢排序、分頁、進階篩選
+- 更完整的進階篩選
 - 更多以 PocketBase 實庫執行的端對端驗證
 - 前端需要補齊完整互動頁面與角色導覽
 
 ### 4.2 權限系統缺口
 
-- 正式身份驗證
-- 角色來源與登入態
 - host/player/admin 權限矩陣一致化
 - 非自有但可授權的觀察/裁判模式
-- production 環境停用 `operatorPlayerId` fallback
 
 ### 4.3 測試缺口
 
+- 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
+- 已有 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 單元測試
 - service 層規則測試
 - 權限拒絕案例覆蓋擴充
@@ -312,7 +311,7 @@
 
 ### 4.4 前端
 
-- 尚未開始正式前端開發
+- 目前尚未開始正式前端開發
 - 現有 `Japan/frontend` 內容不是本輪可靠進度基準
 - `index.html` 目前仍偏靜態示意頁，尚未形成完整產品流程
 
