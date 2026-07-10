@@ -48,6 +48,7 @@ import {
   updateGameSettings,
   canViewPlayerExactLocation,
 } from "../../index.js";
+import { buildQueryOptions } from "../queryOptions.js";
 
 export function createGameRoutes({ dataAccessLayer }) {
   return [
@@ -289,12 +290,7 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               currentTime: query.currentTime ?? new Date().toISOString(),
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             }),
           },
         };
@@ -319,12 +315,7 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               currentTime: query.currentTime ?? new Date().toISOString(),
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             }),
           },
         };
@@ -403,12 +394,7 @@ export function createGameRoutes({ dataAccessLayer }) {
                 ...(query.status ? { status: query.status } : {}),
                 ...(query.transportType ? { transportType: query.transportType } : {}),
               },
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             })),
           },
         };
@@ -567,12 +553,7 @@ export function createGameRoutes({ dataAccessLayer }) {
             dataAccessLayer,
             gameId: params.gameId,
             visibilityMode: query.visibilityMode ?? "post_game_review",
-            queryOptions: {
-              sortBy: query.sortBy ?? null,
-              sortDirection: query.sortDirection ?? "asc",
-              limit: query.limit ?? null,
-              offset: query.offset ?? 0,
-            },
+            queryOptions: buildQueryOptions(query),
           }),
         },
       }),
@@ -588,12 +569,7 @@ export function createGameRoutes({ dataAccessLayer }) {
             dataAccessLayer,
             gameId: params.gameId,
             requestingPlayerId: authContext?.playerId ?? query.requestingPlayerId ?? null,
-            queryOptions: {
-              sortBy: query.sortBy ?? null,
-              sortDirection: query.sortDirection ?? "asc",
-              limit: query.limit ?? null,
-              offset: query.offset ?? 0,
-            },
+            queryOptions: buildQueryOptions(query),
           }),
         },
       }),
@@ -656,12 +632,7 @@ export function createGameRoutes({ dataAccessLayer }) {
               gameId: params.gameId,
               playerId: params.playerId,
               visibilityMode: query.visibilityMode ?? "during_game",
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             }),
           },
         };
@@ -731,12 +702,7 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               playerId: params.playerId,
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             })),
           },
         };
@@ -761,12 +727,7 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               playerId: params.playerId,
-              queryOptions: {
-                sortBy: query.sortBy ?? null,
-                sortDirection: query.sortDirection ?? "asc",
-                limit: query.limit ?? null,
-                offset: query.offset ?? 0,
-              },
+              queryOptions: buildQueryOptions(query),
             })),
           },
         };

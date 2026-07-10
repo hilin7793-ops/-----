@@ -1,0 +1,31 @@
+# PocketBase generated data and logs
+Japan/backend/pocketbase/pb_data/
+Japan/backend/pocketbase/pb-*.log
+Japan/backend/pocketbase/pocketbase.exe
+Japan/backend/pocketbase/pb_data/*.db
+Japan/backend/pocketbase/pb_data/*.db-shm
+Japan/backend/pocketbase/pb_data/*.db-wal
+
+# Node modules
+node_modules/
+Japan/backend/system/node_modules/
+
+# Logs and environment files
+*.log
+.env
+.env.local
+
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build / coverage
+dist/
+build/
+coverage/
+
+# Misc
+*.exe
+*.dll

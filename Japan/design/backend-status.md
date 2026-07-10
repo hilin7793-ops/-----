@@ -39,7 +39,7 @@
 ## 1. 完成度總覽
 
 - 後端核心流程完成度：約 `85% ~ 90%`
-- 後端 API 可供前端串接程度：約 `87% ~ 90%`
+- 後端 API 可供前端串接程度：約 `90% ~ 92%`
 - 權限與身份邊界完成度：約 `60% ~ 70%`
 - 整體產品完成度（含前端）：約 `40% ~ 50%`
 
@@ -259,7 +259,7 @@
 
 - `maps`、`game records`、`public game records`、`traffic incidents`、`player records`、`player tickets`、`player special states`、`player journeys`、`blind boxes`、`public blind boxes` 已開始支援 `sortBy / sortDirection / limit / offset`
 - `blind-box review` 已支援共用 query options，以及三組列表各自獨立的排序/分頁 query options
-- 其他列表 API 仍可逐步接入同一套 query options
+- 其他列表 API 已逐步接入同一套 query options，route 層查詢參數已大致統一
 
 ### 3.4 PocketBase 真實環境驗證
 
