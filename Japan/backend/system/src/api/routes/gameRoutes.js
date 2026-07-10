@@ -52,8 +52,8 @@ import {
 import { buildQueryOptions } from "../queryOptions.js";
 
 // Authorization in this module is centered on `authContext`.
-// Handler inputs may still accept compatibility fields, but they are not the
-// formal source of authority.
+// Handlers may still accept `operatorPlayerId` for compatibility, but
+// `authContext` is the formal source of authority.
 export function createGameRoutes({ dataAccessLayer }) {
   return [
     {

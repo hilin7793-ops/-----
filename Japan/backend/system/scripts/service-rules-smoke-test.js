@@ -6,6 +6,8 @@ import {
   getJourney,
   getPlayerCurrentJourney,
   getPlayerReservedJourney,
+  listGameJourneys,
+  canViewPublicJourney,
   validateCreateJourney,
   validateJourneyTime,
   validateTaxiJourney,
@@ -19,7 +21,11 @@ import {
 import { addPlayerMoney, addTicketToPlayer, canAfford, deductPlayerMoney, getPlayerTickets, initializePlayerForGame } from "../src/services/players/playerService.js";
 import { resolveAuction } from "../src/services/shops/auctionShopService.js";
 import { canRefreshGeneralShop, initializeGeneralShop, purchaseGeneralShopTicket } from "../src/services/shops/generalShopService.js";
-import { canViewPlayerExactLocation, filterRecordDataByVisibility } from "../src/services/visibility/visibilityService.js";
+import { getGameChecklist } from "../src/services/overview/checklistService.js";
+import { canViewPlayerExactLocation, filterPlayerDataByVisibility, filterRecordDataByVisibility } from "../src/services/visibility/visibilityService.js";
+import { filterBlindBoxDataByVisibility } from "../src/services/visibility/visibilityService.js";
+import { getPlayerRecords, getGameRecords } from "../src/services/records/recordService.js";
+import { listTrafficIncidentRequests } from "../src/services/trafficIncidents/trafficIncidentService.js";
 
 async function main() {
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
@@ -99,6 +105,101 @@ async function main() {
     startLocationId: startLocation.id,
     initialMoney: 1000,
   });
+
+  const canAffordEnough = await canAfford({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    amount: 500,
+  });
+  const canAffordTooMuch = await canAfford({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    amount: 1500,
+  });
+  assert.equal(canAffordEnough, true);
+  assert.equal(canAffordTooMuch, false);
+
+  const deductedMoney = await deductPlayerMoney({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    amount: 120,
+  });
+  assert.equal(deductedMoney, 880);
+
+  const journeyListByFilters = await listGameJourneys({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      departureAfter: "2026-07-10T10:30:00+08:00",
+      arrivalBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "departureTime",
+      sortDirection: "desc",
+      limit: 1,
+    },
+  });
+  assert.equal(Array.isArray(journeyListByFilters.journeyList), true);
+  assert.equal(journeyListByFilters.journeyList.length, 1);
+  assert.equal(journeyListByFilters.journeyList[0]?.status, "reserved");
+
+  const incidentRequest = await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.TRAFFIC_INCIDENT_REQUESTS,
+    data: {
+      gameId: gameData.id,
+      playerId: memberPlayer.id,
+      journeyId: reservedJourneyData.id,
+      status: "pending",
+      evidenceList: ["service smoke evidence"],
+      actualEndLocationId: goalLocation.id,
+      actualEndedAt: "2026-07-10T11:20:00+08:00",
+      description: "service smoke",
+    },
+  });
+  const trafficIncidentListByFilters = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      status: "pending",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T23:59:59+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+    },
+  });
+  assert.equal(Array.isArray(trafficIncidentListByFilters.requestList), true);
+  assert.equal(trafficIncidentListByFilters.requestList.length, 1);
+  assert.equal(trafficIncidentListByFilters.requestList[0]?.id, incidentRequest.id);
+
+  const journeySummary = await getGameJourneySummary({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(journeySummary.totalJourneyCount, 2);
+  assert.equal(journeySummary.statusCounts.started, 1);
+  assert.equal(journeySummary.statusCounts.reserved, 1);
+  assert.equal(journeySummary.dueToStartCount, 0);
+  assert.equal(journeySummary.dueToCompleteCount, 1);
+
+  const checklist = await getGameChecklist({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(checklist.checklist.pendingTrafficIncidentRequestList.length, 0);
+  assert.equal(checklist.checklist.dueReservedJourneyList.length, 0);
+  assert.equal(checklist.checklist.dueStartedJourneyList.length, 1);
+  assert.equal(checklist.checklist.summary.pendingTrafficIncidentCount, 0);
+  assert.equal(checklist.checklist.summary.dueJourneyStartCount, 0);
+  assert.equal(checklist.checklist.summary.dueJourneyCompleteCount, 1);
+  assert.equal(checklist.checklist.summary.resolvableAuctionCount, 0);
 
   await initializeGeneralShop({
     dataAccessLayer,
@@ -265,6 +366,42 @@ async function main() {
   assert.equal(exactLocationSelf.canView, true);
   assert.equal(exactLocationOther.canView, false);
 
+  const publicJourneySelf = await canViewPublicJourney({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: memberPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  const publicJourneyOther = await canViewPublicJourney({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  assert.equal(publicJourneySelf.canView, true);
+  assert.equal(publicJourneyOther.canView, false);
+
+  await dataAccessLayer.updateRecordById({
+    collectionName: CollectionName.GAMES,
+    recordId: gameData.id,
+    data: { status: GameStatus[2] },
+  });
+
+  const exactLocationReview = await canViewPlayerExactLocation({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  const publicJourneyReview = await canViewPublicJourney({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  assert.equal(exactLocationReview.canView, true);
+  assert.equal(publicJourneyReview.canView, true);
+
   const recordData = await createRecord({
     dataAccessLayer,
     gameId: gameData.id,
@@ -291,6 +428,156 @@ async function main() {
   assert.equal(filteredRecord.payload?.currentLocationId, undefined);
   assert.equal(filteredRecord.payload?.fullRoute, undefined);
   assert.equal(filteredRecord.payload?.privateState, undefined);
+
+  const playerRecordsDuringGame = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "during_game",
+  });
+  const playerRecordsReview = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(playerRecordsDuringGame.recordList), true);
+  assert.equal(Array.isArray(playerRecordsReview.recordList), true);
+  assert.equal(playerRecordsDuringGame.recordList.length >= 1, true);
+  assert.equal(playerRecordsReview.recordList.length >= 1, true);
+  assert.equal(playerRecordsDuringGame.recordList[0]?.payload?.currentLocationId, undefined);
+  assert.equal(playerRecordsReview.recordList[0]?.payload?.currentLocationId, "secret-location");
+
+  const gameRecordsDuringGame = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    visibilityMode: "during_game",
+  });
+  const gameRecordsReview = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(gameRecordsDuringGame.recordList), true);
+  assert.equal(Array.isArray(gameRecordsReview.recordList), true);
+  assert.equal(gameRecordsDuringGame.recordList.length >= 1, true);
+  assert.equal(gameRecordsReview.recordList.length >= 1, true);
+  assert.equal(gameRecordsDuringGame.recordList[0]?.payload?.currentLocationId, undefined);
+  assert.equal(gameRecordsReview.recordList[0]?.payload?.currentLocationId, "secret-location");
+
+  await dataAccessLayer.updateRecordById({
+    collectionName: CollectionName.GAMES,
+    recordId: gameData.id,
+    data: { status: GameStatus[2] },
+  });
+
+  const reviewRecord = await filterRecordDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    recordData,
+    visibilityMode: "post_game_review",
+  });
+  const adminRecord = await filterRecordDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    recordData,
+    visibilityMode: "admin",
+  });
+  assert.equal(reviewRecord.payload?.currentLocationId, "secret-location");
+  assert.equal(reviewRecord.payload?.fullRoute?.length, 2);
+  assert.equal(reviewRecord.payload?.privateState?.hidden, true);
+  assert.equal(adminRecord.payload?.visibleNote, "ok");
+  assert.equal(adminRecord.payload?.currentLocationId, "secret-location");
+
+  const targetPlayerData = {
+    playerId: memberPlayer.id,
+    currentLocationId: "secret-location",
+    privateState: { hidden: true },
+    displayName: "Member",
+  };
+  const filteredPlayerData = await filterPlayerDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    targetPlayerData,
+    visibilityMode: "during_game",
+  });
+  const reviewPlayerData = await filterPlayerDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    targetPlayerData,
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(filteredPlayerData.currentLocationId, undefined);
+  assert.equal(filteredPlayerData.privateState, undefined);
+  assert.equal(reviewPlayerData.currentLocationId, "secret-location");
+  assert.equal(reviewPlayerData.privateState?.hidden, true);
+
+  const hiddenBlindBoxData = await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.BLIND_BOXES,
+    data: {
+      gameId: gameData.id,
+      mapId: mapData.id,
+      locationId: startLocation.id,
+      status: "hidden_effect",
+      openedStatus: false,
+      openedBy: null,
+      openedAt: null,
+      effectData: {
+        effectType: "money",
+        operator: "+=",
+        value: 50,
+      },
+      metadata: {},
+    },
+  });
+
+  const filteredBlindBox = await filterBlindBoxDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requesterId: hostPlayer.id,
+    blindBoxData: hiddenBlindBoxData,
+    visibilityMode: "during_game",
+  });
+  const openedBlindBoxData = await dataAccessLayer.updateRecordById({
+    collectionName: CollectionName.BLIND_BOXES,
+    recordId: hiddenBlindBoxData.id,
+    data: {
+      status: "opened",
+      openedStatus: true,
+      openedBy: memberPlayer.id,
+      openedAt: "2026-07-10T10:20:00+08:00",
+    },
+  });
+  const openedFilteredBlindBox = await filterBlindBoxDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requesterId: hostPlayer.id,
+    blindBoxData: openedBlindBoxData,
+    visibilityMode: "during_game",
+  });
+  assert.equal(filteredBlindBox.effectData, undefined);
+  assert.equal(openedFilteredBlindBox.effectData?.effectType, "money");
+
+  const reviewBlindBox = await filterBlindBoxDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requesterId: hostPlayer.id,
+    blindBoxData: hiddenBlindBoxData,
+    visibilityMode: "post_game_review",
+  });
+  const adminBlindBox = await filterBlindBoxDataByVisibility({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requesterId: hostPlayer.id,
+    blindBoxData: hiddenBlindBoxData,
+    visibilityMode: "admin",
+  });
+  assert.equal(reviewBlindBox.effectData?.value, 50);
+  assert.equal(adminBlindBox.effectData?.value, 50);
 
   const ownedTicket = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.TICKETS,
@@ -532,6 +819,19 @@ async function main() {
     currentTime: "2026-07-10T11:00:00+08:00",
   });
   assert.equal(createJourneyCheck.isValid, true);
+  const invalidCreateJourneyCheck = await validateCreateJourney({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    fromLocationId: startLocation.id,
+    toLocationId: goalLocation.id,
+    transportType: "local_train",
+    ticketIdList: [journeyTicketData.id],
+    departureTime: "2026-07-10T12:10:00+08:00",
+    arrivalTime: "2026-07-10T12:00:00+08:00",
+    currentTime: "2026-07-10T11:00:00+08:00",
+  });
+  assert.equal(invalidCreateJourneyCheck.isValid, false);
 
   const createdJourney = await createJourney({
     dataAccessLayer,
@@ -563,13 +863,51 @@ async function main() {
   console.log("exactLocationSelf", exactLocationSelf.canView);
   console.log("exactLocationOther", exactLocationOther.canView);
   console.log("recordVisibilityFiltered", filteredRecord.payload?.visibleNote === "ok");
+  console.log("recordVisibilityReview", reviewRecord.payload?.currentLocationId === "secret-location");
+  console.log("recordVisibilityAdmin", adminRecord.payload?.currentLocationId === "secret-location");
+  console.log("playerRecordsVisibilityReview", playerRecordsReview.recordList[0]?.payload?.currentLocationId === "secret-location");
+  console.log("gameRecordsVisibilityReview", gameRecordsReview.recordList[0]?.payload?.currentLocationId === "secret-location");
+  console.log("playerVisibilityFiltered", filteredPlayerData.currentLocationId === undefined);
+  console.log("playerVisibilityReview", reviewPlayerData.currentLocationId === "secret-location");
+  console.log("blindBoxVisibilityFiltered", filteredBlindBox.effectData === undefined);
+  console.log("blindBoxVisibilityOpened", openedFilteredBlindBox.effectData?.effectType === "money");
+  console.log("blindBoxVisibilityReview", reviewBlindBox.effectData?.value === 50);
+  console.log("blindBoxVisibilityAdmin", adminBlindBox.effectData?.value === 50);
   console.log("playerTicketsFiltered", playerTickets.ticketList.length === 1);
   console.log("specialStatesFiltered", specialStates.specialStateList.length === 1);
   console.log("freeRefreshEffectResult", Boolean(freeRefreshEffectResult.specialStateData.id));
   console.log("consumedSpecialState", consumedSpecialState.isConsumed);
   console.log("createJourneyCheck", createJourneyCheck.isValid);
+  console.log("invalidCreateJourneyCheck", invalidCreateJourneyCheck.isValid);
   console.log("createdJourney", Boolean(createdJourney.id));
   console.log("fetchedJourney", fetchedJourney.id === createdJourney.id);
+  assert.equal(timeCheck.isValid, true);
+  assert.equal(invalidTimeCheck.isValid, false);
+  assert.equal(walkingCheck.isValid, true);
+  assert.equal(taxiCheck.isValid, true);
+  assert.equal(shopCooldownCheck.canRefresh, false);
+  assert.equal(priorityPurchaseBlocked, true);
+  assert.equal(exactLocationSelf.canView, true);
+  assert.equal(exactLocationOther.canView, false);
+  assert.equal(recordVisibilityFiltered.payload?.visibleNote, "ok");
+  assert.equal(recordVisibilityReview.payload?.currentLocationId, "secret-location");
+  assert.equal(recordVisibilityAdmin.payload?.currentLocationId, "secret-location");
+  assert.equal(playerRecordsVisibilityReview, true);
+  assert.equal(gameRecordsVisibilityReview, true);
+  assert.equal(filteredPlayerData.currentLocationId, undefined);
+  assert.equal(reviewPlayerData.currentLocationId, "secret-location");
+  assert.equal(filteredBlindBox.effectData, undefined);
+  assert.equal(openedFilteredBlindBox.effectData?.effectType, "money");
+  assert.equal(reviewBlindBox.effectData?.value, 50);
+  assert.equal(adminBlindBox.effectData?.value, 50);
+  assert.equal(playerTickets.ticketList.length, 1);
+  assert.equal(specialStates.specialStateList.length, 1);
+  assert.equal(Boolean(freeRefreshEffectResult.specialStateData.id), true);
+  assert.equal(consumedSpecialState.isConsumed, true);
+  assert.equal(createJourneyCheck.isValid, true);
+  assert.equal(invalidCreateJourneyCheck.isValid, false);
+  assert.equal(Boolean(createdJourney.id), true);
+  assert.equal(fetchedJourney.id, createdJourney.id);
 }
 
 main().catch((error) => {

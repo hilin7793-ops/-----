@@ -14,7 +14,8 @@ import {
 import { buildQueryOptions } from "../queryOptions.js";
 
 // Authorization in this module is centered on `authContext`.
-// Legacy compatibility inputs are still accepted where needed by handlers.
+// Handler inputs may still accept `operatorPlayerId` for compatibility, but
+// `authContext` is the formal source of authority.
 export function createJourneyRoutes({ dataAccessLayer }) {
   return [
     {

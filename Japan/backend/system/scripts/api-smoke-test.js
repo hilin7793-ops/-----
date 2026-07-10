@@ -66,6 +66,8 @@ async function main() {
     const sortedMapsResponse = await fetch("http://127.0.0.1:8788/maps?sortBy=name&sortDirection=desc&limit=1");
     const sortedMapsPayload = await sortedMapsResponse.json();
     console.log("listMapsQueryOptions", Array.isArray(sortedMapsPayload.mapList) && sortedMapsPayload.mapList.length === 1);
+    assert.equal(Array.isArray(sortedMapsPayload.mapList), true);
+    assert.equal(sortedMapsPayload.mapList.length, 1);
 
     const playerId = createPlayerPayload.data.id;
 
@@ -123,6 +125,7 @@ async function main() {
     const filteredLocationsPayload = await filteredLocationsResponse.json();
     console.log("locationFilters", Array.isArray(filteredLocationsPayload.locationList ?? filteredLocationsPayload.data?.locationList));
     assert.equal(Array.isArray(filteredLocationsPayload.locationList ?? filteredLocationsPayload.data?.locationList), true);
+    assert.equal((filteredLocationsPayload.locationList ?? filteredLocationsPayload.data?.locationList).length >= 1, true);
 
     const tempLocationResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations`, {
       method: "POST",
@@ -157,6 +160,7 @@ async function main() {
     console.log("mapFilters", Array.isArray(filteredMapsPayload.data?.mapList) && filteredMapsPayload.data.mapList.some((item) => item.id === mapId));
     assert.equal(Array.isArray(filteredMapsPayload.data?.mapList), true);
     assert.equal(filteredMapsPayload.data.mapList.some((item) => item.id === mapId), true);
+    assert.equal(filteredMapsPayload.data.mapList.length >= 1, true);
 
     const createGameResponse = await fetch("http://127.0.0.1:8788/games", {
       method: "POST",
@@ -183,6 +187,11 @@ async function main() {
     const anonymousGameAccessResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/access`);
     const anonymousGameAccessPayload = await anonymousGameAccessResponse.json();
     console.log("gameAccessAnonymous", anonymousGameAccessPayload.data?.isAuthenticated === false && anonymousGameAccessPayload.data?.isHost === false);
+    assert.equal(anonymousGameAccessPayload.data?.isAuthenticated, false);
+    assert.equal(anonymousGameAccessPayload.data?.isHost, false);
+    assert.equal(anonymousGameAccessPayload.data?.canObserveGame, false);
+    assert.equal(anonymousGameAccessPayload.data?.canReviewGame, false);
+    assert.equal(anonymousGameAccessPayload.data?.canManageGame, false);
 
     const joinGameResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/join`, {
       method: "POST",
@@ -209,6 +218,8 @@ async function main() {
     const fallbackGameAccessResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/access?operatorPlayerId=${playerId}&targetPlayerId=${playerId}`);
     const fallbackGameAccessPayload = await fallbackGameAccessResponse.json();
     console.log("gameAccessFallback", fallbackGameAccessPayload.data?.usedOperatorFallback === true && fallbackGameAccessPayload.data?.isJoinedGame === true);
+    assert.equal(fallbackGameAccessPayload.data?.usedOperatorFallback, true);
+    assert.equal(fallbackGameAccessPayload.data?.isJoinedGame, true);
     assert.equal(fallbackGameAccessPayload.data?.canObserveGame, true);
     assert.equal(fallbackGameAccessPayload.data?.canReviewGame, true);
 
@@ -314,6 +325,8 @@ async function main() {
     assert.equal(Boolean(overviewPayload.data?.overview?.game?.id), true);
     assert.equal(Array.isArray(overviewPayload.data?.overview?.playerList), true);
     assert.equal(Array.isArray(overviewPayload.data?.overview?.generalShopItemList), true);
+    assert.equal(typeof overviewPayload.data?.overview?.generalShopItemList?.[0]?.ticket?.ratingType === "string", true);
+    assert.equal(typeof overviewPayload.data?.overview?.generalShopItemList?.[0]?.priorityAccess?.prioritySource === "string", true);
     assert.equal(typeof overviewPayload.data?.overview?.journeyDashboard?.summary?.totalJourneyCount === "number", true);
 
     const checklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
@@ -322,14 +335,20 @@ async function main() {
     console.log("checklistIncidents", Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList));
     assert.equal(Boolean(checklistPayload.data?.checklist?.summary), true);
     assert.equal(Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList), true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.totalJourneyCount === "number", true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.pendingTrafficIncidentCount === "number", true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.dueToStartCount === "number", true);
 
     const forbiddenChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=not-host`);
     const forbiddenChecklistPayload = await forbiddenChecklistResponse.json();
     console.log("hostAccessGuard", forbiddenChecklistPayload.success === false && forbiddenChecklistPayload.errorCode === "FORBIDDEN");
+    assert.equal(forbiddenChecklistPayload.success, false);
+    assert.equal(forbiddenChecklistPayload.errorCode, "FORBIDDEN");
 
     const trafficIncidentListResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents?operatorPlayerId=${playerId}`);
     const trafficIncidentListPayload = await trafficIncidentListResponse.json();
     console.log("trafficIncidentList", Array.isArray(trafficIncidentListPayload.requestList ?? trafficIncidentListPayload.data?.requestList));
+    assert.equal(Array.isArray(trafficIncidentListPayload.requestList ?? trafficIncidentListPayload.data?.requestList), true);
 
     const processChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist/process`, {
       method: "POST",
@@ -343,14 +362,20 @@ async function main() {
     console.log("processChecklist", Boolean(processChecklistPayload.data?.checklistBefore) && Boolean(processChecklistPayload.data?.checklistAfter));
     assert.equal(Boolean(processChecklistPayload.data?.checklistBefore), true);
     assert.equal(Boolean(processChecklistPayload.data?.checklistAfter), true);
+    assert.equal(typeof processChecklistPayload.data?.checklistBefore?.summary?.totalJourneyCount === "number", true);
+    assert.equal(typeof processChecklistPayload.data?.checklistAfter?.summary?.totalJourneyCount === "number", true);
 
     const playerRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/records?operatorPlayerId=${playerId}`);
     const playerRecordsPayload = await playerRecordsResponse.json();
     console.log("playerRecords", Array.isArray(playerRecordsPayload.data?.recordList));
+    assert.equal(Array.isArray(playerRecordsPayload.data?.recordList), true);
+    assert.equal(playerRecordsPayload.data?.recordList.length >= 1, true);
 
     const playerRecordsQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/records?operatorPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=1`);
     const playerRecordsQueryPayload = await playerRecordsQueryResponse.json();
     console.log("playerRecordsQueryOptions", Array.isArray(playerRecordsQueryPayload.data?.recordList) && playerRecordsQueryPayload.data.recordList.length <= 1);
+    assert.equal(Array.isArray(playerRecordsQueryPayload.data?.recordList), true);
+    assert.equal(playerRecordsQueryPayload.data?.recordList.length <= 1, true);
 
     const forbiddenPlayerRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/records?operatorPlayerId=not-player`);
     const forbiddenPlayerRecordsPayload = await forbiddenPlayerRecordsResponse.json();
@@ -370,6 +395,7 @@ async function main() {
     const specialStatesResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}`);
     const specialStatesPayload = await specialStatesResponse.json();
     console.log("specialStates", Array.isArray(specialStatesPayload.specialStateList ?? specialStatesPayload.data?.specialStateList));
+    assert.equal(Array.isArray(specialStatesPayload.specialStateList ?? specialStatesPayload.data?.specialStateList), true);
 
     const specialStatesQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=1`);
     const specialStatesQueryPayload = await specialStatesQueryResponse.json();
@@ -381,7 +407,11 @@ async function main() {
         && (specialStatesQueryPayload.specialStateList ?? specialStatesQueryPayload.data?.specialStateList).length <= 1,
     );
     console.log("specialStatesFilters", Array.isArray(specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList));
+    assert.equal(Array.isArray(specialStatesQueryPayload.specialStateList ?? specialStatesQueryPayload.data?.specialStateList), true);
+    assert.equal((specialStatesQueryPayload.specialStateList ?? specialStatesQueryPayload.data?.specialStateList).length <= 1, true);
     assert.equal(Array.isArray(specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList), true);
+    assert.equal((specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList).length >= 1, true);
+    assert.equal((specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList).every((entry) => entry.stateType === "free_shop_refresh_count"), true);
 
     const createFreeJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
       method: "POST",
@@ -440,12 +470,19 @@ async function main() {
     const journeyDateFilterPayload = await journeyDateFilterResponse.json();
     console.log("journeyDateFilters", Array.isArray(journeyDateFilterPayload.journeyList));
     assert.equal(Array.isArray(journeyDateFilterPayload.journeyList), true);
+    assert.equal(journeyDateFilterPayload.journeyList.length >= 1, true);
 
     const hostJourneySummaryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys/summary?operatorPlayerId=${playerId}&currentTime=2026-07-09T07:20:00%2B08:00`);
     const hostJourneySummaryPayload = await hostJourneySummaryResponse.json();
     console.log("hostJourneySummary", hostJourneySummaryPayload.success === true && typeof hostJourneySummaryPayload.data?.totalJourneyCount === "number");
     console.log("hostJourneySummaryCancelled", (hostJourneySummaryPayload.data?.statusCounts?.cancelled ?? 0) >= 1);
     console.log("hostJourneySummaryDueToStart", (hostJourneySummaryPayload.data?.dueToStartCount ?? 0) >= 0);
+    assert.equal(hostJourneySummaryResponse.ok, true);
+    assert.equal(typeof hostJourneySummaryPayload.data?.totalJourneyCount === "number", true);
+    assert.equal(typeof hostJourneySummaryPayload.data?.statusCounts?.cancelled === "number", true);
+    assert.equal(typeof hostJourneySummaryPayload.data?.dueToStartCount === "number", true);
+    assert.equal((hostJourneySummaryPayload.data?.statusCounts?.cancelled ?? 0) >= 1, true);
+    assert.equal((hostJourneySummaryPayload.data?.dueToStartCount ?? 0) >= 0, true);
 
     const createExceptionJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
       method: "POST",
@@ -474,17 +511,28 @@ async function main() {
     const hostJourneyExceptionsPayload = await hostJourneyExceptionsResponse.json();
     console.log("hostJourneyExceptions", Array.isArray(hostJourneyExceptionsPayload.data?.exceptionJourneyList));
     console.log("hostJourneyExceptionsFilter", hostJourneyExceptionsPayload.data?.exceptionJourneyList?.some((item) => item.id === exceptionJourneyId && item.exceptionReasonList?.includes("due_to_start")) === true);
+    assert.equal(hostJourneyExceptionsResponse.ok, true);
+    assert.equal(Array.isArray(hostJourneyExceptionsPayload.data?.exceptionJourneyList), true);
+    assert.equal(hostJourneyExceptionsPayload.data?.exceptionJourneyList?.some((item) => item.id === exceptionJourneyId && item.exceptionReasonList?.includes("due_to_start")) === true, true);
 
     const hostJourneyActionQueueResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys/action-queue?operatorPlayerId=${playerId}&currentTime=2026-07-09T07:20:00%2B08:00&sortBy=departureTime&sortDirection=asc&limit=10`);
     const hostJourneyActionQueuePayload = await hostJourneyActionQueueResponse.json();
     console.log("hostJourneyActionQueue", Array.isArray(hostJourneyActionQueuePayload.data?.actionQueue));
     console.log("hostJourneyActionQueueAction", hostJourneyActionQueuePayload.data?.actionQueue?.some((item) => item.journeyId === exceptionJourneyId && item.suggestedActionList?.includes("start_journey")) === true);
+    assert.equal(hostJourneyActionQueueResponse.ok, true);
+    assert.equal(Array.isArray(hostJourneyActionQueuePayload.data?.actionQueue), true);
+    assert.equal(hostJourneyActionQueuePayload.data?.actionQueue?.some((item) => item.journeyId === exceptionJourneyId && item.suggestedActionList?.includes("start_journey")) === true, true);
 
     const hostJourneyDashboardResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys/dashboard?operatorPlayerId=${playerId}&currentTime=2026-07-09T07:20:00%2B08:00`);
     const hostJourneyDashboardPayload = await hostJourneyDashboardResponse.json();
     console.log("hostJourneyDashboard", hostJourneyDashboardPayload.success === true && typeof hostJourneyDashboardPayload.data?.dashboard?.summary?.totalJourneyCount === "number");
     console.log("hostJourneyDashboardExceptions", Array.isArray(hostJourneyDashboardPayload.data?.dashboard?.exceptionJourneyList));
     console.log("hostJourneyDashboardActionQueue", Array.isArray(hostJourneyDashboardPayload.data?.dashboard?.actionQueue));
+    assert.equal(hostJourneyDashboardResponse.ok, true);
+    assert.equal(typeof hostJourneyDashboardPayload.data?.dashboard?.summary?.totalJourneyCount === "number", true);
+    assert.equal(Array.isArray(hostJourneyDashboardPayload.data?.dashboard?.exceptionJourneyList), true);
+    assert.equal(Array.isArray(hostJourneyDashboardPayload.data?.dashboard?.actionQueue), true);
+    assert.equal(hostJourneyDashboardPayload.data?.dashboard?.summary?.totalJourneyCount >= 1, true);
 
     const cleanupExceptionJourneyResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys/cancel-batch`, {
       method: "POST",
@@ -498,6 +546,9 @@ async function main() {
     });
     const cleanupExceptionJourneyPayload = await cleanupExceptionJourneyResponse.json();
     console.log("cleanupExceptionJourney", cleanupExceptionJourneyPayload.data?.cancelledCount === 1);
+    assert.equal(cleanupExceptionJourneyResponse.ok, true);
+    assert.equal(cleanupExceptionJourneyPayload.data?.cancelledCount === 1, true);
+    assert.equal(Array.isArray(cleanupExceptionJourneyPayload.data?.resultList), true);
 
     const createLockedJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
       method: "POST",
@@ -534,6 +585,9 @@ async function main() {
     });
     const lockJourneyBatchPayload = await lockJourneyBatchResponse.json();
     console.log("lockJourneyBatch", lockJourneyBatchPayload.data?.lockedCount === 1);
+    assert.equal(lockJourneyBatchResponse.ok, true);
+    assert.equal(lockJourneyBatchPayload.data?.lockedCount === 1, true);
+    assert.equal(Array.isArray(lockJourneyBatchPayload.data?.resultList), true);
 
     const lockedJourneyResponse = await fetch(`http://127.0.0.1:8788/journeys/${lockedJourneyId}`);
     const lockedJourneyPayload = await lockedJourneyResponse.json();
@@ -573,6 +627,9 @@ async function main() {
     });
     const unlockJourneyBatchPayload = await unlockJourneyBatchResponse.json();
     console.log("unlockJourneyBatch", unlockJourneyBatchPayload.data?.unlockedCount === 1);
+    assert.equal(unlockJourneyBatchResponse.ok, true);
+    assert.equal(unlockJourneyBatchPayload.data?.unlockedCount === 1, true);
+    assert.equal(Array.isArray(unlockJourneyBatchPayload.data?.resultList), true);
 
     const unlockedJourneyResponse = await fetch(`http://127.0.0.1:8788/journeys/${lockedJourneyId}`);
     const unlockedJourneyPayload = await unlockedJourneyResponse.json();
@@ -612,6 +669,9 @@ async function main() {
     });
     const cleanupLockedJourneyPayload = await cleanupLockedJourneyResponse.json();
     console.log("cleanupLockedJourney", cleanupLockedJourneyPayload.data?.cancelledCount === 1);
+    assert.equal(cleanupLockedJourneyResponse.ok, true);
+    assert.equal(cleanupLockedJourneyPayload.data?.cancelledCount === 1, true);
+    assert.equal(Array.isArray(cleanupLockedJourneyPayload.data?.resultList), true);
 
     const batchBlindBoxesValidateResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/validate`, {
       method: "POST",
@@ -721,6 +781,8 @@ async function main() {
     const publicRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public?requestingPlayerId=${playerId}`);
     const publicRecordsPayload = await publicRecordsResponse.json();
     console.log("publicRecords", Array.isArray(publicRecordsPayload.data?.publicRecordList));
+    assert.equal(Array.isArray(publicRecordsPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsPayload.data?.publicRecordList.length >= 1, true);
 
     const publicRecordsAuthResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public`, {
       headers: {
@@ -729,6 +791,8 @@ async function main() {
     });
     const publicRecordsAuthPayload = await publicRecordsAuthResponse.json();
     console.log("publicRecordsAuthContext", Array.isArray(publicRecordsAuthPayload.data?.publicRecordList));
+    assert.equal(Array.isArray(publicRecordsAuthPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsAuthPayload.data?.publicRecordList.length >= 1, true);
 
     const publicRecordsQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public?requestingPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=2`);
     const publicRecordsQueryPayload = await publicRecordsQueryResponse.json();
@@ -737,14 +801,21 @@ async function main() {
       Array.isArray(publicRecordsQueryPayload.data?.publicRecordList)
         && publicRecordsQueryPayload.data.publicRecordList.length <= 2,
     );
+    assert.equal(Array.isArray(publicRecordsQueryPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsQueryPayload.data.publicRecordList.length <= 2, true);
+    assert.equal(publicRecordsQueryPayload.data.publicRecordList.length >= 1, true);
     const createdAtFilteredRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records?createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
     const createdAtFilteredRecordsPayload = await createdAtFilteredRecordsResponse.json();
     console.log("recordDateFilters", Array.isArray(createdAtFilteredRecordsPayload.data?.recordList));
     assert.equal(Array.isArray(createdAtFilteredRecordsPayload.data?.recordList), true);
+    assert.equal(createdAtFilteredRecordsPayload.data?.recordList.length >= 1, true);
 
     const blindBoxesQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes?sortBy=openedAt&sortDirection=desc&limit=2`);
     const blindBoxesQueryPayload = await blindBoxesQueryResponse.json();
     console.log("blindBoxesQueryOptions", Array.isArray(blindBoxesQueryPayload.blindBoxList ?? blindBoxesQueryPayload.data?.blindBoxList) && (blindBoxesQueryPayload.blindBoxList ?? blindBoxesQueryPayload.data?.blindBoxList).length <= 2);
+    assert.equal(Array.isArray(blindBoxesQueryPayload.blindBoxList ?? blindBoxesQueryPayload.data?.blindBoxList), true);
+    assert.equal((blindBoxesQueryPayload.blindBoxList ?? blindBoxesQueryPayload.data?.blindBoxList).length <= 2, true);
+    assert.equal((blindBoxesQueryPayload.blindBoxList ?? blindBoxesQueryPayload.data?.blindBoxList).length >= 1, true);
 
     const publicBlindBoxesQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/public?sortBy=openedAt&sortDirection=desc&limit=2`);
     const publicBlindBoxesQueryPayload = await publicBlindBoxesQueryResponse.json();
@@ -753,6 +824,9 @@ async function main() {
       Array.isArray(publicBlindBoxesQueryPayload.data?.publicBlindBoxList)
         && publicBlindBoxesQueryPayload.data.publicBlindBoxList.length <= 2,
     );
+    assert.equal(Array.isArray(publicBlindBoxesQueryPayload.data?.publicBlindBoxList), true);
+    assert.equal(publicBlindBoxesQueryPayload.data?.publicBlindBoxList.length <= 2, true);
+    assert.equal(publicBlindBoxesQueryPayload.data?.publicBlindBoxList.every((entry) => typeof entry.openedStatus === "boolean"), true);
 
     const blindBoxesAuthQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes?sortBy=openedAt&sortDirection=desc&limit=2`, {
       headers: {
@@ -761,6 +835,9 @@ async function main() {
     });
     const blindBoxesAuthQueryPayload = await blindBoxesAuthQueryResponse.json();
     console.log("blindBoxesAuthContext", Array.isArray(blindBoxesAuthQueryPayload.blindBoxList ?? blindBoxesAuthQueryPayload.data?.blindBoxList));
+    assert.equal(Array.isArray(blindBoxesAuthQueryPayload.blindBoxList ?? blindBoxesAuthQueryPayload.data?.blindBoxList), true);
+    assert.equal((blindBoxesAuthQueryPayload.blindBoxList ?? blindBoxesAuthQueryPayload.data?.blindBoxList).length <= 2, true);
+    assert.equal((blindBoxesAuthQueryPayload.blindBoxList ?? blindBoxesAuthQueryPayload.data?.blindBoxList).length >= 1, true);
 
     const blindBoxReviewQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/review?operatorPlayerId=${playerId}&blindBoxLimit=2&effectLogLimit=2&recordLimit=2`);
     const blindBoxReviewQueryPayload = await blindBoxReviewQueryResponse.json();
@@ -770,9 +847,21 @@ async function main() {
         && blindBoxReviewQueryPayload.data.blindBoxReviewData.blindBoxList.length <= 2
         && Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList)
         && blindBoxReviewQueryPayload.data.blindBoxReviewData.blindBoxEffectLogList.length <= 2
-        && Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList)
-        && blindBoxReviewQueryPayload.data.blindBoxReviewData.recordList.length <= 2,
+      && Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList)
+      && blindBoxReviewQueryPayload.data.blindBoxReviewData.recordList.length <= 2,
     );
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList), true);
+    assert.equal(blindBoxReviewQueryPayload.data.blindBoxReviewData.blindBoxList.length <= 2, true);
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList), true);
+    assert.equal(blindBoxReviewQueryPayload.data.blindBoxReviewData.blindBoxEffectLogList.length <= 2, true);
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList), true);
+    assert.equal(blindBoxReviewQueryPayload.data.blindBoxReviewData.recordList.length <= 2, true);
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList), true);
+    assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList.length <= 2, true);
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList), true);
+    assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList.length <= 2, true);
+    assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList), true);
+    assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList.length <= 2, true);
 
     const initializeAuctionResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/initialize`, {
       method: "POST",
@@ -781,6 +870,7 @@ async function main() {
     });
     const initializeAuctionPayload = await initializeAuctionResponse.json();
     console.log("initializeAuction", Boolean(initializeAuctionPayload.data?.id));
+    assert.equal(Boolean(initializeAuctionPayload.data?.id), true);
 
     const createAuctionRoundResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/rounds`, {
       method: "POST",
@@ -797,6 +887,7 @@ async function main() {
     });
     const createAuctionRoundPayload = await createAuctionRoundResponse.json();
     console.log("createAuctionRound", Boolean(createAuctionRoundPayload.data?.id));
+    assert.equal(Boolean(createAuctionRoundPayload.data?.id), true);
 
     const auctionId = createAuctionRoundPayload.data.id;
 
@@ -805,6 +896,9 @@ async function main() {
     console.log("currentAuction", Boolean(currentAuctionPayload.data?.currentAuction?.id));
     console.log("currentAuctionTicket", Boolean(currentAuctionPayload.data?.currentAuction?.ticket?.id));
     console.log("currentAuctionTicketRating", typeof currentAuctionPayload.data?.currentAuction?.ticketRating?.ratingType === "string");
+    assert.equal(Boolean(currentAuctionPayload.data?.currentAuction?.id), true);
+    assert.equal(Boolean(currentAuctionPayload.data?.currentAuction?.ticket?.id), true);
+    assert.equal(typeof currentAuctionPayload.data?.currentAuction?.ticketRating?.ratingType === "string", true);
 
     const placeBidResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/${auctionId}/bids`, {
       method: "POST",
@@ -818,12 +912,14 @@ async function main() {
     });
     const placeBidPayload = await placeBidResponse.json();
     console.log("placeBid", placeBidPayload.data?.success ?? false);
+    assert.equal(placeBidPayload.data?.success, true);
 
     const bidListResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/${auctionId}/bids`);
     const bidListPayload = await bidListResponse.json();
     console.log("bidList", bidListPayload.data?.bidList?.length ?? 0);
     assert.equal(Array.isArray(bidListPayload.data?.bidList), true);
     assert.equal(bidListPayload.data.bidList.length >= 1, true);
+    assert.equal(bidListPayload.data?.bidList.every((entry) => entry.auctionId === auctionId), true);
     const bidDateFilterResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/${auctionId}/bids?createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
     const bidDateFilterPayload = await bidDateFilterResponse.json();
     console.log("bidDateFilters", Array.isArray(bidDateFilterPayload.data?.bidList) && bidDateFilterPayload.data.bidList.length >= 1);
@@ -840,6 +936,9 @@ async function main() {
     });
     const resolveAuctionPayload = await resolveAuctionResponse.json();
     console.log("resolveAuction", Boolean(resolveAuctionPayload.data?.winnerPlayerId));
+    assert.equal(resolveAuctionResponse.ok, true);
+    assert.equal(typeof resolveAuctionPayload.data?.winnerPlayerId === "string" || resolveAuctionPayload.data?.winnerPlayerId === null, true);
+    assert.equal(Boolean(resolveAuctionPayload.data?.winnerPlayerId), true);
 
     const processScheduledEventsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/scheduled-events/process`, {
       method: "POST",
@@ -856,6 +955,9 @@ async function main() {
         && Boolean(processScheduledEventsPayload.data?.journeyResult)
         && Boolean(processScheduledEventsPayload.data?.gameResult),
     );
+    assert.equal(Boolean(processScheduledEventsPayload.data?.shopResult), true);
+    assert.equal(Boolean(processScheduledEventsPayload.data?.journeyResult), true);
+    assert.equal(Boolean(processScheduledEventsPayload.data?.gameResult), true);
 
     const playerTicketsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/tickets?operatorPlayerId=${playerId}`);
     const playerTicketsPayload = await playerTicketsResponse.json();
@@ -872,7 +974,14 @@ async function main() {
     console.log("playerTickets", playerTicketList.length);
     console.log("playerTicketsQueryOptions", Array.isArray(queriedTicketList) && queriedTicketList.length <= 1);
     console.log("playerTicketsFilters", Array.isArray(playerTicketsFilteredList));
+    assert.equal(Array.isArray(playerTicketList), true);
+    assert.equal(playerTicketList.length >= 1, true);
+    assert.equal(Array.isArray(queriedTicketList), true);
+    assert.equal(queriedTicketList.length <= 1, true);
     assert.equal(Array.isArray(playerTicketsFilteredList), true);
+    assert.equal(playerTicketsFilteredList.length >= 1, true);
+    assert.equal(playerTicketsFilteredList.every((entry) => entry.source === "shop_purchase"), true);
+    assert.equal(queriedTicketList.length === 1, true);
     const departureTime = "2026-07-09T06:50:00+08:00";
     const arrivalTime = "2026-07-09T06:55:00+08:00";
 
@@ -913,6 +1022,9 @@ async function main() {
       const playerJourneysQueryPayload = await playerJourneysQueryResponse.json();
       const queriedJourneyList = playerJourneysQueryPayload.data?.journeyList ?? playerJourneysQueryPayload.journeyList;
       console.log("playerJourneysQueryOptions", Array.isArray(queriedJourneyList) && queriedJourneyList.length <= 1);
+      assert.equal(Array.isArray(queriedJourneyList), true);
+      assert.equal(queriedJourneyList.length <= 1, true);
+      assert.equal(queriedJourneyList.length >= 1, true);
 
       const startJourneyResponse = await fetch(`http://127.0.0.1:8788/journeys/${journeyId}/start`, {
         method: "POST",
@@ -926,16 +1038,20 @@ async function main() {
       });
       const startJourneyPayload = await startJourneyResponse.json();
       console.log("startJourney", startJourneyPayload.data?.status === "started");
+      assert.equal(startJourneyPayload.data?.status, "started");
 
       const currentJourneyResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${playerId}`);
       const currentJourneyPayload = await currentJourneyResponse.json();
       console.log("currentJourney", Boolean(currentJourneyPayload.data?.currentJourney?.id));
       assert.equal(currentJourneyResponse.ok, true);
       assert.equal(Boolean(currentJourneyPayload.data?.currentJourney?.id), true);
+      assert.equal(currentJourneyPayload.data?.currentJourney?.id, journeyId);
 
       const publicJourneyResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/public-journey?requestingPlayerId=${playerId}`);
       const publicJourneyPayload = await publicJourneyResponse.json();
       console.log("publicJourney", Boolean(publicJourneyPayload.data?.publicJourneyInfo?.journeyId));
+      assert.equal(Boolean(publicJourneyPayload.data?.publicJourneyInfo?.journeyId), true);
+      assert.equal(publicJourneyPayload.data?.publicJourneyInfo?.journeyId, journeyId);
 
       const completeJourneyResponse = await fetch(`http://127.0.0.1:8788/journeys/${journeyId}/complete`, {
         method: "POST",
@@ -949,6 +1065,7 @@ async function main() {
       });
       const completeJourneyPayload = await completeJourneyResponse.json();
       console.log("completeJourney", completeJourneyPayload.data?.status === "completed");
+      assert.equal(completeJourneyPayload.data?.status, "completed");
     } else {
       console.log("reservedJourney", "skipped");
       console.log("playerJourneysQueryOptions", "skipped");
@@ -963,6 +1080,8 @@ async function main() {
     const playerTicketsAfterJourneyList = playerTicketsAfterJourneyPayload.ticketList ?? playerTicketsAfterJourneyPayload.data?.ticketList ?? [];
     const incidentJourneyTicket = playerTicketsAfterJourneyList.find((entry) => entry.ticket?.transportType !== TransportType.UNIVERSAL)?.ticket
       ?? null;
+    assert.equal(Array.isArray(playerTicketsAfterJourneyList), true);
+    assert.equal(playerTicketsAfterJourneyList.length >= 1, true);
 
     if (incidentJourneyTicket) {
       const createIncidentJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
@@ -984,6 +1103,7 @@ async function main() {
       });
       const createIncidentJourneyPayload = await createIncidentJourneyResponse.json();
       console.log("createIncidentJourney", Boolean(createIncidentJourneyPayload.data?.id));
+      assert.equal(Boolean(createIncidentJourneyPayload.data?.id), true);
 
       const incidentJourneyId = createIncidentJourneyPayload.data?.id ?? null;
 
@@ -1000,6 +1120,7 @@ async function main() {
         });
         const startIncidentJourneyPayload = await startIncidentJourneyResponse.json();
         console.log("startIncidentJourney", startIncidentJourneyPayload.data?.status === "started");
+        assert.equal(startIncidentJourneyPayload.data?.status, "started");
 
         const submitIncidentResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents`, {
           method: "POST",
@@ -1016,6 +1137,7 @@ async function main() {
         });
         const submitIncidentPayload = await submitIncidentResponse.json();
         console.log("submitIncident", Boolean(submitIncidentPayload.data?.id));
+        assert.equal(Boolean(submitIncidentPayload.data?.id), true);
         const pendingIncidentListResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents?operatorPlayerId=${playerId}&status=pending&playerId=${playerId}`);
         const pendingIncidentListPayload = await pendingIncidentListResponse.json();
         console.log("trafficIncidentFilters", Array.isArray(pendingIncidentListPayload.requestList) && pendingIncidentListPayload.requestList.some((item) => item.id === submitIncidentPayload.data?.id));
@@ -1032,6 +1154,9 @@ async function main() {
         console.log("trafficIncidentReviewSummary", Boolean(reviewSummaryPayload.data?.summary));
         assert.equal(reviewSummaryResponse.ok, true);
         assert.equal(Boolean(reviewSummaryPayload.data?.summary), true);
+        assert.equal(typeof reviewSummaryPayload.data?.summary?.pendingCount === "number", true);
+        assert.equal(typeof reviewSummaryPayload.data?.summary?.approveCount === "number", true);
+        assert.equal(typeof reviewSummaryPayload.data?.summary?.rejectCount === "number", true);
 
         const requestId = submitIncidentPayload.data?.id ?? null;
         let firstApprovedReturnedTicket = null;
@@ -1048,10 +1173,12 @@ async function main() {
           const approveIncidentPayload = await approveIncidentResponse.json();
           firstApprovedReturnedTicket = approveIncidentPayload.data?.returnedTicket ?? null;
           console.log("approveIncident", Boolean(approveIncidentPayload.data?.returnedTicket?.id));
+          assert.equal(Boolean(approveIncidentPayload.data?.returnedTicket?.id), true);
 
           const incidentJourneyResponse = await fetch(`http://127.0.0.1:8788/journeys/${incidentJourneyId}`);
           const incidentJourneyPayload = await incidentJourneyResponse.json();
           console.log("incidentJourneyResolved", incidentJourneyPayload.data?.status === "incident_resolved");
+          assert.equal(incidentJourneyPayload.data?.status, "incident_resolved");
 
           const currentJourneyAfterIncidentResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${playerId}`);
           const currentJourneyAfterIncidentPayload = await currentJourneyAfterIncidentResponse.json();
@@ -1126,6 +1253,8 @@ async function main() {
                 console.log("batchRejectIncident", batchReviewPayload.data?.reviewedCount === 1);
                 assert.equal(batchReviewResponse.ok, true);
                 assert.equal(batchReviewPayload.data?.reviewedCount === 1, true);
+                assert.equal(Array.isArray(batchReviewPayload.data?.resultList), true);
+                assert.equal(batchReviewPayload.data?.resultList.length >= 1, true);
               } else {
                 console.log("batchRejectIncident", "skipped");
               }
@@ -1162,10 +1291,20 @@ async function main() {
     const gameRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records`);
     const gameRecordsPayload = await gameRecordsResponse.json();
     console.log("gameRecords", Array.isArray(gameRecordsPayload.data?.recordList));
+    assert.equal(Array.isArray(gameRecordsPayload.data?.recordList), true);
+    assert.equal(gameRecordsPayload.data?.recordList.length >= 1, true);
 
     const pagedGameRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records?sortBy=createdAt&sortDirection=desc&limit=2`);
     const pagedGameRecordsPayload = await pagedGameRecordsResponse.json();
     console.log("gameRecordsQueryOptions", Array.isArray(pagedGameRecordsPayload.data?.recordList) && pagedGameRecordsPayload.data.recordList.length <= 2);
+    assert.equal(Array.isArray(pagedGameRecordsPayload.data?.recordList), true);
+    assert.equal(pagedGameRecordsPayload.data?.recordList.length <= 2, true);
+
+    const createdAtFilteredGameRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records?createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
+    const createdAtFilteredGameRecordsPayload = await createdAtFilteredGameRecordsResponse.json();
+    console.log("gameRecordsDateFilters", Array.isArray(createdAtFilteredGameRecordsPayload.data?.recordList) && createdAtFilteredGameRecordsPayload.data.recordList.length >= 1);
+    assert.equal(Array.isArray(createdAtFilteredGameRecordsPayload.data?.recordList), true);
+    assert.equal(createdAtFilteredGameRecordsPayload.data?.recordList.length >= 1, true);
 
     const reviewResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/review`);
     const reviewPayload = await reviewResponse.json();
@@ -1175,12 +1314,25 @@ async function main() {
     console.log("reviewBlindBoxes", Array.isArray(reviewPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList));
     console.log("reviewSummary", Boolean(reviewPayload.data?.reviewData?.summary?.recordTypeCounts));
     console.log("reviewTrafficSummary", typeof reviewPayload.data?.reviewData?.summary?.trafficIncidentSummary?.approveCount === "number");
+    assert.equal(Array.isArray(reviewPayload.data?.reviewData?.recordList), true);
+    assert.equal(Array.isArray(reviewPayload.data?.reviewData?.ranking), true);
+    assert.equal(Boolean(reviewPayload.data?.reviewData?.game?.id), true);
+    assert.equal(Array.isArray(reviewPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList), true);
+    assert.equal(Boolean(reviewPayload.data?.reviewData?.summary?.recordTypeCounts), true);
+    assert.equal(typeof reviewPayload.data?.reviewData?.summary?.trafficIncidentSummary?.submitCount === "number", true);
+    assert.equal(typeof reviewPayload.data?.reviewData?.summary?.trafficIncidentSummary?.approveCount === "number", true);
+    assert.equal(typeof reviewPayload.data?.reviewData?.summary?.trafficIncidentSummary?.rejectCount === "number", true);
+    assert.equal(typeof reviewPayload.data?.reviewData?.summary?.trafficIncidentSummary?.pendingCount === "number", true);
+    assert.equal(reviewPayload.data?.reviewData?.recordList.length >= 1, true);
+    assert.equal(reviewPayload.data?.reviewData?.ranking.length >= 1, true);
+    assert.equal(reviewPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList.length >= 1, true);
 
     const deleteMapResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}`, {
       method: "DELETE",
     });
     const deleteMapPayload = await deleteMapResponse.json();
     console.log("deleteMap", deleteMapPayload.data?.success === true);
+    assert.equal(deleteMapPayload.data?.success, true);
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));

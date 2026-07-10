@@ -395,6 +395,10 @@
               <div class="mini-item"><span>拍賣狀態</span><span id="overview-auction-state">未載入</span></div>
               <div class="mini-item"><span>管理摘要</span><span id="overview-admin-count">0</span></div>
               <div class="mini-item"><span>旅程數</span><span id="overview-journey-count">0</span></div>
+              <div class="mini-item"><span>待審交通</span><span id="overview-traffic-count">0</span></div>
+              <div class="mini-item"><span>待辦旅程</span><span id="overview-journey-pending-count">0</span></div>
+              <div class="mini-item"><span>審核待辦</span><span id="overview-review-count">0</span></div>
+              <div class="mini-item"><span>旅程待辦</span><span id="overview-action-queue-count">0</span></div>
             </div>
             <div style="margin-top: 16px;">
               <h3 style="margin-bottom: 10px;">API 回應</h3>
@@ -462,6 +466,9 @@
             <div class="mini-list" id="management-preview" style="margin-top: 16px;">
               <div class="mini-item"><span>巡檢摘要</span><span id="management-preview-summary">未載入</span></div>
               <div class="mini-item"><span>待審交通</span><span id="management-preview-incidents">未載入</span></div>
+              <div class="mini-item"><span>管理清單</span><span id="management-preview-checklist">未載入</span></div>
+              <div class="mini-item"><span>審核摘要</span><span id="management-preview-review">未載入</span></div>
+              <div class="mini-item"><span>旅程總數</span><span id="management-preview-journeys">未載入</span></div>
             </div>
           </div>
         </div>
@@ -619,6 +626,10 @@
         document.getElementById("overview-auction-state").textContent = overview?.currentAuction ? "進行中" : "待命";
         document.getElementById("overview-admin-count").textContent = String(overview?.summary?.playerResultList?.length ?? 0);
         document.getElementById("overview-journey-count").textContent = String(overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
+          document.getElementById("overview-traffic-count").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
+          document.getElementById("overview-journey-pending-count").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
+          document.getElementById("overview-review-count").textContent = String(overview?.summary?.recordList?.length ?? 0);
+          document.getElementById("overview-action-queue-count").textContent = String(overview?.journeyDashboard?.actionQueue?.length ?? 0);
         document.getElementById("shop-details-count").textContent = String(overview?.generalShopItemList?.length ?? 0);
         document.getElementById("auction-details").textContent = overview?.currentAuction?.ticket?.ratingGrade ?? "未載入";
         document.getElementById("priority-details").textContent = overview?.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
@@ -781,6 +792,15 @@
             ? `待審 ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${checklistSummary.dueReservedJourneyCount ?? 0}`
             : "已取得管理巡檢總覽";
           document.getElementById("management-preview-incidents").textContent = String(snapshotPayload.data.snapshot.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+          document.getElementById("management-preview-checklist").textContent = checklistSummary
+            ? `${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} 待審 / ${checklistSummary.dueReservedJourneyCount ?? 0} 旅程`
+            : "已取得 checklist";
+          document.getElementById("management-preview-review").textContent = overviewSummary
+            ? `${overviewSummary.recordList?.length ?? 0} 筆 / ${overviewSummary.trafficIncidentSummary?.pendingCount ?? 0} 待審`
+            : "已取得 review summary";
+          document.getElementById("management-preview-journeys").textContent = overviewSummary
+            ? `${overviewSummary.journeyDashboard?.summary?.totalJourneyCount ?? 0} 總旅程`
+            : "已取得旅程統計";
           document.getElementById("admin-summary").textContent = checklistSummary
             ? `Checklist: ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} 個待審`
             : "已取得管理巡檢總覽";
@@ -806,6 +826,10 @@
           document.getElementById("overview-auction-state").textContent = overview.currentAuction ? "進行中" : "待命";
           document.getElementById("overview-admin-count").textContent = String(overview.summary?.playerResultList?.length ?? 0);
           document.getElementById("shop-details-count").textContent = String(overview.generalShopItemList?.length ?? 0);
+          document.getElementById("overview-traffic-count").textContent = String(overview.trafficIncidentRequestList?.length ?? 0);
+          document.getElementById("overview-journey-pending-count").textContent = String(overview.journeyDashboard?.summary?.dueToStartCount ?? 0);
+          document.getElementById("overview-review-count").textContent = String(overview.summary?.recordList?.length ?? 0);
+          document.getElementById("overview-action-queue-count").textContent = String(overview.journeyDashboard?.actionQueue?.length ?? 0);
           document.getElementById("auction-details").textContent = overview.currentAuction?.ticket?.ratingGrade ?? "未載入";
           document.getElementById("priority-details").textContent = overview.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
             ? "有優先購買權"
@@ -821,6 +845,15 @@
           document.getElementById("current-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToStartCount ?? 0);
           document.getElementById("reserved-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToCompleteCount ?? 0);
           document.getElementById("traffic-review-details").textContent = String(overview.trafficIncidentRequestList?.length ?? 0);
+          document.getElementById("management-preview-checklist").textContent = overview.summary
+            ? `${overview.summary.recordList?.length ?? 0} 筆 review`
+            : document.getElementById("management-preview-checklist").textContent;
+          document.getElementById("management-preview-review").textContent = overview.summary
+            ? `${overview.summary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overview.summary.trafficIncidentSummary?.approveCount ?? 0} 已核`
+            : document.getElementById("management-preview-review").textContent;
+          document.getElementById("management-preview-journeys").textContent = overview.journeyDashboard?.summary
+            ? `${overview.journeyDashboard.summary.totalJourneyCount ?? 0} 總旅程`
+            : document.getElementById("management-preview-journeys").textContent;
         }
 
         setOutput(summary);
