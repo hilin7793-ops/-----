@@ -1,0 +1,14 @@
+{
+  "name": "japan-game-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "api:dev": "node ./scripts/start-api-server.js",
+    "smoke:test:api": "node ./scripts/api-smoke-test.js",
+    "smoke:test": "node ./scripts/smoke-test.js",
+    "smoke:test:pocketbase": "node ./scripts/pocketbase-adapter-smoke-test.js",
+    "smoke:test:pocketbase:flow": "node ./scripts/pocketbase-flow-smoke-test.js",
+    "smoke:test:pocketbase:auth": "node ./scripts/pocketbase-auth-smoke-test.js"
+  }
+}

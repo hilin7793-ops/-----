@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅程與車票系統 V2.0</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F3F4F6;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --border-color: #E5E7EB;
+            --danger-color: #FF5A5F;
+            --bg-color: #FAFAFA;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'LiHei Pro', sans-serif;
+        }
+
+        body {
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 模擬手機螢幕 */
+        #app-container {
+            width: 100%;
+            max-width: 414px; /* iPhone Max 寬度 */
+            height: 896px;
+            max-height: 100vh;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* 頁面通用設定 */
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            overflow-y: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: var(--bg-color);
+        }
+        .page.active {
+            display: flex;
+        }
+
+        /* 頂部導航列 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--text-main);
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* 首頁上方競標入口徽章 */
+        .header-badge {
+            border: 2px solid var(--text-main);
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .header-badge:active {
+            transform: scale(0.95);
+            background: var(--secondary-color);
+        }
+
+        /* 內容區塊 */
+        .content {
+            padding: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        /* 表單元件 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* 按鈕樣式 */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--text-main);
+            background: transparent;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn-fill {
+            background: var(--text-main);
+            color: #fff;
+        }
+        .btn-danger {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        /* 首頁特定樣式 */
+        .map-placeholder {
+            width: 100%;
+            height: 300px;
+            border: 2px dashed var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 18px;
+            text-align: center;
+            padding: 20px;
+        }
+        .home-menu {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: auto;
+        }
+        .home-menu .btn {
+            flex: 1;
+            font-size: 16px;
+            padding: 20px 10px;
+        }
+
+        /* 商店表格 */
+        .store-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .store-table th, .store-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px 5px;
+            text-align: center;
+        }
+        .store-table th {
+            background: var(--secondary-color);
+        }
+        .store-refresh-btn {
+            height: 100px;
+            font-size: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 彈窗樣式 */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* 旅程紀錄列表 */
+        .record-item {
+            border: 2px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            margin-bottom: 15px;
+            background: #fff;
+        }
+        
+        /* 競標卡片 */
+        .bid-card {
+            border: 2px solid var(--border-color);
+            height: 250px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+
+    <!-- 1. 首頁 -->
+    <div id="page-home" class="page active">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-login')">玩家<br>登入</div>
+            <!-- 競標頁面入口改來這裡了，點擊徽章即可進入！ -->
+            <div class="header-badge" onclick="nav('page-bidding')">競標車票: "車票"<br>距離結束: "時間"</div>
+            <div class="btn-icon" style="font-size: 12px;">目前<br>金幣</div>
+        </div>
+        <div class="content" style="display: flex; flex-direction: column;">
+            <div class="map-placeholder">
+                地圖<br><br>標記盲盒在地圖位置
+            </div>
+            <div class="home-menu">
+                <button class="btn" onclick="nav('page-planning')">旅程<br>規畫</button>
+                <button class="btn" onclick="nav('page-store')">商 店</button>
+                <button class="btn" onclick="nav('page-record')">旅程<br>紀錄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 登入頁 -->
+    <div id="page-login" class="page">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-home')">返回</div>
+            <div class="header-title">系統登入</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="content" style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
+            <div class="form-group">
+                <label>帳號</label>
+                <input type="text" class="form-control" placeholder="請輸入帳號">
+            </div>
+            <div class="form-group">
+                <label>密碼</label>
+                <input type="password" class="form-control" placeholder="請輸入密碼">
+            </div>
+            <div style="margin-top: 40px;">
+                <button class="btn" onclick="nav('page-home')">登 入</button>
+                <button class="btn btn-fill" onclick="nav('page-register')">註 冊</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 註冊頁 -->
+    <div id="page-register" class="page">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-login')">返回</div>
+            <div class="header-title">建立帳號</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="content">
+            <div class="form-group">
+                <label>帳號</label>
+                <input type="text" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>密碼</label>
+                <input type="password" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>確認密碼</label>
+                <input type="password" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>ID</label>
+                <input type="text" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>加入房間</label>
+                <input type="text" class="form-control">
+            </div>
+            <button class="btn btn-fill" style="margin-top: 20px;" onclick="nav('page-login')">註 冊</button>
+        </div>
+    </div>
+
+    <!-- 4. 車票商店 -->
+    <div id="page-store" class="page">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-home')">返回</div>
+            <div class="header-title">車票商店</div>
+            <div class="btn-icon" style="font-size: 12px;">目前<br>金幣</div>
+        </div>
+        <div class="content">
+            <table class="store-table">
+                <thead>
+                    <tr>
+                        <!-- 新增了序號，並把交通項改成交通工具 -->
+                        <th>序號</th>
+                        <th>交通工具</th>
+                        <th>長度</th>
+                        <th>價格</th>
+                        <th>購買?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>#1</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
+                    <tr><td>#2</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
+                    <tr><td>#3</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
+                    <tr><td>#4</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
+                    <tr><td>#5</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
+                </tbody>
+            </table>
+            <p style="text-align: right; color: var(--text-muted); font-size: 12px; margin-bottom: 20px;">* 被購買不顯示</p>
+            <button class="btn store-refresh-btn">
+                刷 新
+                <span style="font-size: 18px; font-weight: normal;">(500 金幣)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 5. 旅程規劃頁 -->
+    <div id="page-planning" class="page">
+        <div class="header">
+            <!-- 拔掉保存更改的文字，只留單純的「返回」 -->
+            <div class="btn-icon" onclick="nav('page-home')">返回</div>
+            <div class="header-title">旅程規畫</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="content">
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="出發地 (輸入框)">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="目的地 (輸入框)">
+            </div>
+            <div class="form-group">
+                <select class="form-control">
+                    <option>交通工具 (單選下拉選單)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button class="btn" style="text-align: left;" onclick="toggleModal('modal-select-ticket')">選擇車票 (已選 X 張)</button>
+            </div>
+            <div class="form-group">
+                <label>出發時間:</label>
+                <input type="datetime-local" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>抵達時間:</label>
+                <input type="datetime-local" class="form-control">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button class="btn">保 存</button>
+                <button class="btn btn-danger">刪除 (清空以上)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 旅程紀錄 -->
+    <div id="page-record" class="page">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-home')">返回</div>
+            <div class="header-title">旅程紀錄</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="content">
+            <div class="record-item">A 記錄</div>
+            <!-- 佔位符 -->
+            <div class="record-item" style="opacity: 0.5;">B 記錄 (示意)</div>
+            <div class="record-item" style="opacity: 0.3;">C 記錄 (示意)</div>
+        </div>
+    </div>
+
+    <!-- 7. 競標頁面 -->
+    <div id="page-bidding" class="page">
+        <div class="header">
+            <div class="btn-icon" onclick="nav('page-home')">返回</div>
+            <div class="header-title">競 標</div>
+            <div style="width: 40px;"></div>
+        </div>
+        <div class="content" style="display: flex; flex-direction: column;">
+            <div class="bid-card">
+                車票訊息
+            </div>
+            <div class="form-group" style="margin-top: auto;">
+                <input type="number" step="50" class="form-control" placeholder="出價 (50倍數輸入框)">
+            </div>
+            <button class="btn btn-fill">確 認</button>
+        </div>
+    </div>
+
+    <!-- 選擇車票彈窗 (Modal) -->
+    <div id="modal-select-ticket" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="text-align: center; margin-bottom: 20px;">選擇車票彈窗</h3>
+            <div style="height: 300px; overflow-y: auto;">
+                <!-- 示意列表 -->
+                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
+                    "交通工具" : "時長"
+                </label>
+                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
+                    高鐵 : 1.5小時
+                </label>
+                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
+                    客運 : 4小時
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-fill" onclick="toggleModal('modal-select-ticket')" style="margin-bottom: 0;">保存</button>
+                <button class="btn btn-danger" onclick="toggleModal('modal-select-ticket')" style="margin-bottom: 0;">取消</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 頁面切換邏輯
+    function nav(pageId) {
+        // 隱藏所有頁面
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        // 顯示目標頁面
+        document.getElementById(pageId).classList.add('active');
+    }
+
+    // 彈窗開關邏輯
+    function toggleModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        } else {
+            modal.classList.add('active');
+        }
+    }
+</script>
+
+</body>
+</html>

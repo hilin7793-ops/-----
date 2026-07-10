@@ -1,0 +1,52 @@
+import { TransportType } from "../constants/transportTypes.js";
+
+export const JAPAN_DEFAULT_TICKET_GENERATION_RULES = Object.freeze({
+  ruleSetName: "japan-default",
+  transportWeightRules: Object.freeze({
+    [TransportType.AIRPLANE]: 6,
+    [TransportType.SHINKANSEN]: 12,
+    [TransportType.LIMITED_EXPRESS]: 20,
+    [TransportType.HIGHWAY_NIGHT_BUS]: 18,
+    [TransportType.LOCAL_TRAIN]: 35,
+    [TransportType.TAXI]: 4,
+    [TransportType.ROUTE_BUS]: 30,
+    [TransportType.FERRY]: 10,
+    [TransportType.UNIVERSAL]: 15,
+  }),
+  transportDurationMultiplierRules: Object.freeze({
+    [TransportType.AIRPLANE]: 1,
+    [TransportType.SHINKANSEN]: 1.2,
+    [TransportType.LIMITED_EXPRESS]: 2,
+    [TransportType.HIGHWAY_NIGHT_BUS]: 2.5,
+    [TransportType.LOCAL_TRAIN]: 1.5,
+    [TransportType.TAXI]: 0.5,
+    [TransportType.ROUTE_BUS]: 1.5,
+    [TransportType.FERRY]: 6,
+    [TransportType.UNIVERSAL]: 0.3,
+  }),
+  transportPriceMultiplierRules: Object.freeze({
+    [TransportType.AIRPLANE]: 8,
+    [TransportType.SHINKANSEN]: 5,
+    [TransportType.LIMITED_EXPRESS]: 3.5,
+    [TransportType.HIGHWAY_NIGHT_BUS]: 2,
+    [TransportType.LOCAL_TRAIN]: 1,
+    [TransportType.TAXI]: 2.5,
+    [TransportType.ROUTE_BUS]: 0.8,
+    [TransportType.FERRY]: 1,
+    [TransportType.UNIVERSAL]: 1.8,
+  }),
+  baseUsableMinutesRandomRule: Object.freeze({
+    average: 55,
+    standardDeviation: 20,
+    step: 10,
+    minValue: 10,
+    maxValue: 100,
+  }),
+  basePriceRandomRule: Object.freeze({
+    average: 2500,
+    standardDeviation: 800,
+    step: 100,
+    minValue: 0,
+    maxValue: 5000,
+  }),
+});
