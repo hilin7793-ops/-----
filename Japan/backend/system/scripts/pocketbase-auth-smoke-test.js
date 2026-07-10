@@ -1,4 +1,4 @@
-import { createPlayer, createGame, createMap, addLocation, setStartLocation, setGoalLocation, initializePlayerForGame, createDataAccessLayer, createPocketBaseRestAdapter, TransportType } from "../src/index.js";
+import { CollectionName, createPlayer, createGame, createMap, addLocation, setStartLocation, setGoalLocation, initializePlayerForGame, createDataAccessLayer, createPocketBaseRestAdapter, TransportType } from "../src/index.js";
 import { createAppServer } from "../src/api/createAppServer.js";
 import { getPocketBaseTestConfig } from "./pocketbase-test-utils.js";
 
@@ -123,6 +123,42 @@ async function main() {
     initialMoney: 5000,
   });
 
+  const auctionTicket = await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.TICKETS,
+    data: {
+      gameId: game.id,
+      transportType: TransportType.LOCAL_TRAIN,
+      baseDuration: 60,
+      basePrice: 100,
+      usableMinutes: 120,
+      price: 100,
+      ratingScore: 4,
+      ratingGrade: "A",
+      ratingType: "auction",
+      status: "listed",
+      ticketSource: "auction_generated",
+      metadata: {},
+    },
+  });
+
+  const auctionRecord = await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.AUCTIONS,
+    data: {
+      gameId: game.id,
+      mapId: map.id,
+      shopType: "auction",
+      ticketId: auctionTicket.id,
+      ticketRatingScore: 4,
+      ticketRatingGrade: "A",
+      ticketRatingType: "auction",
+      startTime: "2026-07-09T06:30:00+08:00",
+      endTime: "2026-07-09T06:40:00+08:00",
+      status: "active",
+      bidCount: 0,
+      totalBidAmount: 0,
+    },
+  });
+
   const server = createAppServer({ dataAccessLayer });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -145,6 +181,45 @@ async function main() {
     });
     const checklistPayload = await checklistResponse.json();
     console.log("pocketbaseAuthHostAccess", checklistPayload.success === true && Boolean(checklistPayload.data?.checklist?.summary));
+
+    const snapshotResponse = await fetch(`http://127.0.0.1:8790/games/${game.id}/management-snapshot?currentTime=2026-07-09T06:35:00%2B08:00`, {
+      headers: {
+        Authorization: `Bearer ${authUser.token}`,
+      },
+    });
+    const snapshotPayload = await snapshotResponse.json();
+    console.log(
+      "pocketbaseAuthManagementSnapshot",
+      snapshotPayload.success === true &&
+        Boolean(snapshotPayload.data?.snapshot?.overview?.overview?.summary) &&
+        Boolean(snapshotPayload.data?.snapshot?.checklist?.summary),
+    );
+
+    const trafficSummaryResponse = await fetch(`http://127.0.0.1:8790/games/${game.id}/traffic-incidents/review-summary`, {
+      headers: {
+        Authorization: `Bearer ${authUser.token}`,
+      },
+    });
+    const trafficSummaryPayload = await trafficSummaryResponse.json();
+    console.log(
+      "pocketbaseAuthTrafficReviewSummary",
+      trafficSummaryPayload.success === true &&
+        typeof trafficSummaryPayload.data?.reviewSummary?.totalCount === "number",
+    );
+
+    const auctionBidsResponse = await fetch(`http://127.0.0.1:8790/games/${game.id}/auction-shop/${auctionRecord.id}/bids?createdAtAfter=2026-07-09T06:00:00%2B08:00&createdAtBefore=2026-07-09T07:00:00%2B08:00`, {
+      headers: {
+        Authorization: `Bearer ${authUser.token}`,
+      },
+    });
+    const auctionBidsPayload = await auctionBidsResponse.json();
+    console.log(
+      "pocketbaseAuthAuctionBidQuery",
+      auctionBidsResponse.ok === true &&
+        auctionBidsPayload.success === true &&
+        Array.isArray(auctionBidsPayload.data?.bidList) &&
+        auctionBidsPayload.data.bidList.length === 0,
+    );
 
     const sessionResponse = await fetch("http://127.0.0.1:8790/auth/session", {
       headers: {

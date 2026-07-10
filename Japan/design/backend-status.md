@@ -205,6 +205,7 @@
 - 已有 `request auth context` 骨架
 - 主持人操作可優先使用 `authContext.playerId === hostPlayerId`
 - 玩家自有操作可優先使用 `authContext.playerId === playerId`
+- `GET /games/:gameId/access` 已補 `canObserveGame` / `canReviewGame`，可供只讀觀察與賽後檢視使用
 - 開發期仍保留 `operatorPlayerId` 作為 fallback，但需要明確開關，production / strict 模式可停用
 - `players` schema 已補 `authUserId`
 - 已有 `FORBIDDEN` 錯誤碼
@@ -224,9 +225,16 @@
 
 - `Japan/backend/system/scripts/api-smoke-test.js` 可通過
 - `Japan/backend/system/scripts/smoke-test.js` 可通過
+- `Japan/backend/system/scripts/access-control-smoke-test.js` 可通過
+- `Japan/backend/system/scripts/visibility-smoke-test.js` 可通過
+- `Japan/backend/system/scripts/service-rules-smoke-test.js` 可通過
 - 已驗證：
   - 核心遊戲流程
   - 公開/玩家/主持人列表 API 的 query options 串接
+  - 交通中斷申請列表的狀態與建立時間區間查詢
+  - 拍賣出價列表的建立時間區間查詢
+  - 競標出價列表的建立時間區間查詢
+  - 目前旅程 / 保留旅程 route 查詢驗證
   - 一般商店票券評級輸出
   - 一般商店優先購買權阻擋與資料回傳
   - 競標商店只生成 `A / S` 長票
@@ -234,6 +242,21 @@
   - review 聚合
   - 主持人權限防護
   - 玩家權限防護
+  - access-control smoke test 已以 assert 驗證 host/member/outsider 權限矩陣
+  - api smoke test 已以 assert 驗證 access route 的 observe/review/manage 權限欄位
+  - api smoke test 已以 assert 驗證 current / reserved journey route 讀取，並驗證交通異常後 current journey 會清空
+  - api smoke test 已以 assert 驗證競標出價清單與時間區間查詢
+  - visibility smoke test 已以 assert 驗證公開旅程、公開紀錄與盲盒可見性
+  - access profile 的觀察 / 賽後檢視欄位
+  - 位置 / 旅程 / 記錄 / 盲盒可見性
+  - service 規則的時間、步行、計程車、票券、特殊狀態與記錄可見性驗證
+  - service 規則的時間不合法邊界案例
+  - 盲盒免費刷新特殊狀態的建立與消耗連動
+  - 一般商店優先購買權拒絕案例
+  - 競標並列時不產生唯一得標者、會銷毀票券
+  - 目前旅程 / 保留旅程 service 查詢驗證
+  - PocketBase 真實環境中的拍賣出價時間區間查詢
+  - 旅程建立與基礎接續規則驗證
   - 交通中斷批次審核
 
 ### 2.15 PocketBase 結構同步
@@ -273,6 +296,11 @@
 - `maps`、`game records`、`public game records`、`traffic incidents`、`player records`、`player tickets`、`player special states`、`player journeys`、`blind boxes`、`public blind boxes` 已支援 `sortBy / sortDirection / limit / offset`
 - `blind-box review` 已支援共用 query options，以及三組列表各自獨立的排序/分頁 query options
 - 其他列表 API 已接入同一套 query options，route 層查詢參數已統一
+- `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 已補進一步的條件篩選入口，能直接用 query 進行更細的列表過濾
+- `journeys` 與 `records` 已補時間區間篩選，能用 `departureAfter / departureBefore / arrivalAfter / arrivalBefore` 與 `createdAtAfter / createdAtBefore` 做更完整的複合查詢
+- `traffic incidents` 也已補 `createdAtAfter / createdAtBefore`，可依建立時間區間縮小申請列表
+- `locations` 已可依 `locationName / locationType` 進一步篩選
+- `player tickets` 與 `player special states` 也已補更細的 query 篩選入口，可依來源、類型與建立時間區間做進一步查詢
 
 ### 3.4 PocketBase 真實環境驗證
 
@@ -280,7 +308,7 @@
 - 已完成 schema build 與 migration 套用
 - `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js` 已可在本機 PocketBase 服務下通過
 - PocketBase smoke test 已共用測試前置檢查，缺少憑證時會一致報出環境需求
-- 已補 PocketBase 真實環境驗證的主要煙霧測試路徑，包含 adapter、flow、auth
+- 已補 PocketBase 真實環境驗證的主要煙霧測試路徑，包含 adapter、flow、auth、管理端巡檢總覽、交通中斷審核摘要與拍賣出價查詢
 - 後續主要是持續擴充 CI、自動化排程與更廣的真實資料庫覆蓋
 
 ### 3.5 管理端能力
@@ -299,28 +327,41 @@
 
 ### 4.1 後端功能缺口
 
-- 更完整的進階篩選
-- 更多以 PocketBase 實庫執行的端對端驗證
-- 前端需要補齊完整互動頁面與角色導覽
+- 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間查詢，但仍可持續擴充
+- 更多以 PocketBase 實庫執行的端對端驗證，特別是角色、可見性、排程與批次操作的交叉情境
+- 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
 
 ### 4.2 權限系統缺口
 
-- host/player/admin 權限矩陣一致化
-- 非自有但可授權的觀察/裁判模式
+- host/player/admin 權限矩陣已完成主要路由落點，`GET /games/:gameId/access` 也已補 `canObserveGame` / `canReviewGame`，但仍可把 observer / referee / admin 的說法再持續整理得更一致
+- 非自有但可授權的觀察/裁判模式已可從 access profile 讀到主要旗標，但路由層還能再做更細的正式分流
+- `api.md` 與 route 層註解已再往 `authContext` 正式來源收斂，`operatorPlayerId` 不再被描述成正式權限來源
 
 ### 4.3 測試缺口
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
-- 尚未建立完整單元測試與 service 層規則測試
-- 權限拒絕案例與邊界案例仍可補強，例如商店冷卻、優先購買權、競標並列、盲盒特殊狀態連動
+- 已補足可見性與 access profile 的記憶體層驗證腳本
+- 尚未建立完整單元測試與更全面的 service 層規則測試，但已補上多個關鍵 service 規則 smoke test、條件查詢驗證與旅程建立驗證
+- 已補上目前旅程 / 保留旅程的 service 查詢驗證
+- 權限拒絕案例與邊界案例仍可補強，例如競標並列、盲盒特殊狀態連動，以及更多跨流程的組合驗證
 
 ### 4.4 前端
 
-- 目前尚未開始正式前端開發
-- 現有 `Japan/frontend` 內容目前僅有 `index.html`
-- `index.html` 仍偏靜態示意頁，尚未形成完整產品流程
+- 目前尚未完成正式前端產品
+- 現有 `Japan/frontend` 已有 `index.html` 控制台骨架，並已可直接讀取 `auth/session`、`access`、`management-snapshot` 等實際 API
+- 現有 `Japan/frontend` 也已能直接讀取 `overview`，可顯示基本的遊戲、商店與管理摘要
+- 現有 `Japan/frontend` 也已可直接讀取一般商店清單與目前拍賣
+- 現有 `Japan/frontend` 也已開始顯示商店與拍賣摘要
+- 現有 `Japan/frontend` 也已可直接讀取玩家旅程列表
+- 現有 `Japan/frontend` 也已可直接讀取目前旅程與保留旅程詳情
+- 現有 `Japan/frontend` 也已可直接顯示旅程預覽清單
+- 現有 `Japan/frontend` 也已可直接讀取 `checklist`
+- 現有 `Japan/frontend` 也已可在 `management-snapshot` 中看到交通中斷審核摘要
+- 現有 `Japan/frontend` 也已可直接顯示管理巡檢摘要
+- 現有 `Japan/frontend` 也已可在旅程摘要中看到目前旅程與保留旅程的實際條目
+- 後續仍需把旅程、商店、拍賣與管理操作頁面接成完整產品流程，補齊編輯、操作與狀態流轉頁面，才算真正完成前端
 
 ## 5. 建議下一步
 

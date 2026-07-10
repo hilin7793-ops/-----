@@ -221,24 +221,42 @@ export async function listBlindBoxes({
   gameId,
   requesterId = null,
   visibilityMode = "player",
+  filterOptions = {},
   queryOptions = {},
 }) {
   assertDataAccessLayer(dataAccessLayer);
+  const {
+    openedStatus,
+    ...recordFilterOptions
+  } = filterOptions;
+
   const blindBoxList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.BLIND_BOXES,
-    filterOptions: { gameId },
+    filterOptions: { gameId, ...recordFilterOptions },
     queryOptions,
   });
 
   return {
-    blindBoxList: await Promise.all(blindBoxList.map((blindBoxData) =>
-      filterBlindBoxVisibility({
-        dataAccessLayer,
-        gameId,
-        requesterId,
-        blindBoxData,
-        visibilityMode,
-      }))),
+    blindBoxList: await Promise.all(blindBoxList
+      .filter((blindBoxData) => {
+        if (openedStatus === true && blindBoxData.openedStatus !== true) {
+          return false;
+        }
+
+        if (openedStatus === false && blindBoxData.openedStatus === true) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((blindBoxData) =>
+        filterBlindBoxVisibility({
+          dataAccessLayer,
+          gameId,
+          requesterId,
+          blindBoxData,
+          visibilityMode,
+        }))),
   };
 }
 
@@ -1013,19 +1031,48 @@ export async function getPlayerBlindBoxSpecialStates({
   dataAccessLayer,
   gameId,
   playerId,
+  filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    stateType,
+    createdAtAfter,
+    createdAtBefore,
+    ...specialStateFilterOptions
+  } = filterOptions;
+
   const specialStateList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.PLAYER_SPECIAL_STATES,
     filterOptions: {
       gameId,
       playerId,
       isConsumed: false,
+      ...specialStateFilterOptions,
     },
     queryOptions,
   });
 
-  return { specialStateList };
+  return {
+    specialStateList: specialStateList.filter((state) => {
+      if (stateType && state.stateType !== stateType) {
+        return false;
+      }
+
+      const stateCreatedAt = state.createdAt ? new Date(state.createdAt).getTime() : null;
+      const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+      const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+      if (createdAtAfterTime !== null && (stateCreatedAt === null || stateCreatedAt < createdAtAfterTime)) {
+        return false;
+      }
+
+      if (createdAtBeforeTime !== null && (stateCreatedAt === null || stateCreatedAt > createdAtBeforeTime)) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 export async function consumePlayerBlindBoxSpecialState({

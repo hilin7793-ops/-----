@@ -52,7 +52,8 @@ import {
 import { buildQueryOptions } from "../queryOptions.js";
 
 // Authorization in this module is centered on `authContext`.
-// Legacy compatibility inputs are still accepted where needed by handlers.
+// Handler inputs may still accept compatibility fields, but they are not the
+// formal source of authority.
 export function createGameRoutes({ dataAccessLayer }) {
   return [
     {
@@ -396,6 +397,14 @@ export function createGameRoutes({ dataAccessLayer }) {
                 ...(query.playerId ? { playerId: query.playerId } : {}),
                 ...(query.status ? { status: query.status } : {}),
                 ...(query.transportType ? { transportType: query.transportType } : {}),
+                ...(query.incidentRequestId ? { incidentRequestId: query.incidentRequestId } : {}),
+                ...(query.isLocked !== undefined
+                  ? { isLocked: query.isLocked === "true" }
+                  : {}),
+                ...(query.departureAfter ? { departureAfter: query.departureAfter } : {}),
+                ...(query.departureBefore ? { departureBefore: query.departureBefore } : {}),
+                ...(query.arrivalAfter ? { arrivalAfter: query.arrivalAfter } : {}),
+                ...(query.arrivalBefore ? { arrivalBefore: query.arrivalBefore } : {}),
               },
               queryOptions: buildQueryOptions(query),
             })),
@@ -580,6 +589,13 @@ export function createGameRoutes({ dataAccessLayer }) {
             dataAccessLayer,
             gameId: params.gameId,
             visibilityMode: query.visibilityMode ?? "post_game_review",
+            filterOptions: {
+              ...(query.playerId ? { playerId: query.playerId } : {}),
+              ...(query.recordType ? { recordType: query.recordType } : {}),
+              ...(query.action ? { action: query.action } : {}),
+              ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+              ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+            },
             queryOptions: buildQueryOptions(query),
           }),
         },
@@ -592,13 +608,20 @@ export function createGameRoutes({ dataAccessLayer }) {
         statusCode: 200,
         payload: {
           success: true,
-          data: await getPublicRecordsDuringGame({
-            dataAccessLayer,
-            gameId: params.gameId,
-            requestingPlayerId: authContext?.playerId ?? query.requestingPlayerId ?? null,
-            queryOptions: buildQueryOptions(query),
-          }),
-        },
+            data: await getPublicRecordsDuringGame({
+              dataAccessLayer,
+              gameId: params.gameId,
+              requestingPlayerId: authContext?.playerId ?? query.requestingPlayerId ?? null,
+              filterOptions: {
+                ...(query.playerId ? { playerId: query.playerId } : {}),
+                ...(query.recordType ? { recordType: query.recordType } : {}),
+                ...(query.action ? { action: query.action } : {}),
+                ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+                ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+              },
+              queryOptions: buildQueryOptions(query),
+            }),
+          },
       }),
     },
     {
@@ -659,6 +682,12 @@ export function createGameRoutes({ dataAccessLayer }) {
               gameId: params.gameId,
               playerId: params.playerId,
               visibilityMode: query.visibilityMode ?? "during_game",
+              filterOptions: {
+                ...(query.recordType ? { recordType: query.recordType } : {}),
+                ...(query.action ? { action: query.action } : {}),
+                ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+                ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+              },
               queryOptions: buildQueryOptions(query),
             }),
           },
@@ -729,6 +758,12 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               playerId: params.playerId,
+              filterOptions: {
+                ...(query.source ? { source: query.source } : {}),
+                ...(query.ticketId ? { ticketId: query.ticketId } : {}),
+                ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+                ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+              },
               queryOptions: buildQueryOptions(query),
             })),
           },
@@ -754,6 +789,11 @@ export function createGameRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               playerId: params.playerId,
+              filterOptions: {
+                ...(query.stateType ? { stateType: query.stateType } : {}),
+                ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+                ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+              },
               queryOptions: buildQueryOptions(query),
             })),
           },
@@ -958,13 +998,18 @@ export function createGameRoutes({ dataAccessLayer }) {
     {
       method: "GET",
       template: "/games/:gameId/auction-shop/:auctionId/bids",
-      handler: async ({ params }) => ({
+      handler: async ({ params, query }) => ({
         statusCode: 200,
         payload: {
           success: true,
           data: await getAuctionBids({
             dataAccessLayer,
             auctionId: params.auctionId,
+            filterOptions: {
+              ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+              ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+            },
+            queryOptions: buildQueryOptions(query),
           }),
         },
       }),

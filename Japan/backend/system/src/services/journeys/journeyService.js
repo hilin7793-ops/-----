@@ -47,13 +47,48 @@ export async function listPlayerJourneys({
   filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    departureAfter,
+    departureBefore,
+    arrivalAfter,
+    arrivalBefore,
+    ...journeyFilterOptions
+  } = filterOptions;
+
   const journeyList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.JOURNEYS,
-    filterOptions: { gameId, playerId, ...filterOptions },
+    filterOptions: { gameId, playerId, ...journeyFilterOptions },
     queryOptions,
   });
 
-  return { journeyList };
+  return {
+    journeyList: journeyList.filter((journey) => {
+      const departureTime = journey.departureTime ? new Date(journey.departureTime).getTime() : null;
+      const arrivalTime = journey.arrivalTime ? new Date(journey.arrivalTime).getTime() : null;
+      const departureAfterTime = departureAfter ? new Date(departureAfter).getTime() : null;
+      const departureBeforeTime = departureBefore ? new Date(departureBefore).getTime() : null;
+      const arrivalAfterTime = arrivalAfter ? new Date(arrivalAfter).getTime() : null;
+      const arrivalBeforeTime = arrivalBefore ? new Date(arrivalBefore).getTime() : null;
+
+      if (departureAfterTime !== null && (departureTime === null || departureTime < departureAfterTime)) {
+        return false;
+      }
+
+      if (departureBeforeTime !== null && (departureTime === null || departureTime > departureBeforeTime)) {
+        return false;
+      }
+
+      if (arrivalAfterTime !== null && (arrivalTime === null || arrivalTime < arrivalAfterTime)) {
+        return false;
+      }
+
+      if (arrivalBeforeTime !== null && (arrivalTime === null || arrivalTime > arrivalBeforeTime)) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 export async function listGameJourneys({
@@ -62,13 +97,48 @@ export async function listGameJourneys({
   filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    departureAfter,
+    departureBefore,
+    arrivalAfter,
+    arrivalBefore,
+    ...journeyFilterOptions
+  } = filterOptions;
+
   const journeyList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.JOURNEYS,
-    filterOptions: { gameId, ...filterOptions },
+    filterOptions: { gameId, ...journeyFilterOptions },
     queryOptions,
   });
 
-  return { journeyList };
+  return {
+    journeyList: journeyList.filter((journey) => {
+      const departureTime = journey.departureTime ? new Date(journey.departureTime).getTime() : null;
+      const arrivalTime = journey.arrivalTime ? new Date(journey.arrivalTime).getTime() : null;
+      const departureAfterTime = departureAfter ? new Date(departureAfter).getTime() : null;
+      const departureBeforeTime = departureBefore ? new Date(departureBefore).getTime() : null;
+      const arrivalAfterTime = arrivalAfter ? new Date(arrivalAfter).getTime() : null;
+      const arrivalBeforeTime = arrivalBefore ? new Date(arrivalBefore).getTime() : null;
+
+      if (departureAfterTime !== null && (departureTime === null || departureTime < departureAfterTime)) {
+        return false;
+      }
+
+      if (departureBeforeTime !== null && (departureTime === null || departureTime > departureBeforeTime)) {
+        return false;
+      }
+
+      if (arrivalAfterTime !== null && (arrivalTime === null || arrivalTime < arrivalAfterTime)) {
+        return false;
+      }
+
+      if (arrivalBeforeTime !== null && (arrivalTime === null || arrivalTime > arrivalBeforeTime)) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 function hasReached(currentTime, targetTime) {

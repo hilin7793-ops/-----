@@ -89,13 +89,39 @@ export async function getMap({ dataAccessLayer, mapId }) {
 }
 
 export async function listMaps({ dataAccessLayer, filterOptions = {}, queryOptions = {} }) {
+  const {
+    hasStartLocation,
+    hasGoalLocation,
+    ...recordFilterOptions
+  } = filterOptions;
+
   const mapList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.MAPS,
-    filterOptions,
+    filterOptions: recordFilterOptions,
     queryOptions,
   });
 
-  return { mapList };
+  return {
+    mapList: mapList.filter((mapData) => {
+      if (hasStartLocation === true && !mapData.startLocation) {
+        return false;
+      }
+
+      if (hasStartLocation === false && mapData.startLocation) {
+        return false;
+      }
+
+      if (hasGoalLocation === true && !mapData.goalLocation) {
+        return false;
+      }
+
+      if (hasGoalLocation === false && mapData.goalLocation) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 export async function addLocation({
@@ -164,13 +190,32 @@ export async function removeLocation({ dataAccessLayer, mapId, locationId }) {
   };
 }
 
-export async function listLocations({ dataAccessLayer, mapId }) {
+export async function listLocations({ dataAccessLayer, mapId, filterOptions = {}, queryOptions = {} }) {
+  const {
+    locationName,
+    locationType,
+    ...recordFilterOptions
+  } = filterOptions;
+
   const locationList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.LOCATIONS,
-    filterOptions: { mapId },
+    filterOptions: { mapId, ...recordFilterOptions },
+    queryOptions,
   });
 
-  return { locationList };
+  return {
+    locationList: locationList.filter((locationData) => {
+      if (locationName && locationData.name !== locationName) {
+        return false;
+      }
+
+      if (locationType && locationData.locationType !== locationType) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 export async function setStartLocation({ dataAccessLayer, mapId, locationId }) {

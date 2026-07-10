@@ -58,6 +58,8 @@ export async function getGameAccessProfile({
   const isHost = isAuthenticated && gameData.hostPlayerId === effectiveOperatorPlayerId;
   const isJoinedGame = Boolean(gamePlayerRecord);
   const isTargetPlayer = Boolean(targetPlayerId) && effectiveOperatorPlayerId === targetPlayerId;
+  const canObserveGame = isHost || isJoinedGame;
+  const canReviewGame = isHost || isJoinedGame;
 
   return {
     gameId,
@@ -68,6 +70,8 @@ export async function getGameAccessProfile({
     isJoinedGame,
     isTargetPlayer,
     canViewHostDashboard: isHost,
+    canObserveGame,
+    canReviewGame,
     canManageGame: isHost,
     canAccessTargetPlayerSelfData: isTargetPlayer,
     authSource: authContext?.source ?? "anonymous",

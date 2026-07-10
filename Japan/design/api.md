@@ -24,9 +24,15 @@
 
 目前 API 可先用三種角色理解：
 
-- `public`：不需要 `operatorPlayerId`
+- `public`：不需要登入即可存取
 - `player-self`：需要可解析到操作者玩家身分，正式路徑以 `authContext` 為主
 - `host`：需要可解析到主持人玩家身分，正式路徑以 `authContext` 為主
+
+目前 `access` 與 review 類 API 的觀察/審查語意可再細分為：
+
+- `observer`：可讀取遊戲進行中的公開資料，對應 `canObserveGame`
+- `reviewer`：可讀取賽後 review 與審查資料，對應 `canReviewGame`
+- `admin`：可執行主持人管理操作，對應 `canManageGame`
 
 目前後端的 request auth 過渡規則：
 
@@ -390,11 +396,19 @@ Query:
 - `isJoinedGame`
 - `isTargetPlayer`
 - `canViewHostDashboard`
+- `canObserveGame`
+- `canReviewGame`
 - `canManageGame`
 - `canAccessTargetPlayerSelfData`
 - `authSource`
 - `roleSet`
 - `usedOperatorFallback`
+
+補充：
+
+- `canObserveGame` 對應可看進行中公開資訊的觀察權限
+- `canReviewGame` 對應可看賽後 review 與管理審查摘要的權限
+- `canManageGame` 對應主持人管理操作權限
 
 ### `POST /games/:gameId/join`
 

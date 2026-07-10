@@ -1,502 +1,808 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>旅程與車票系統 V2.0</title>
-    <style>
-        :root {
-            --primary-color: #4A90E2;
-            --secondary-color: #F3F4F6;
-            --text-main: #333333;
-            --text-muted: #888888;
-            --border-color: #E5E7EB;
-            --danger-color: #FF5A5F;
-            --bg-color: #FAFAFA;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>縱貫搶旗賽控制台</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(12, 17, 34, 0.88);
+      --panel-soft: rgba(255, 255, 255, 0.06);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f4f7fb;
+      --muted: #98a6c7;
+      --accent: #f6c85f;
+      --accent-2: #6ee7b7;
+      --danger: #ff6b6b;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --radius: 22px;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Helvetica Neue', Arial, 'LiHei Pro', sans-serif;
-        }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(110, 231, 183, 0.18), transparent 30%),
+        radial-gradient(circle at right center, rgba(246, 200, 95, 0.16), transparent 26%),
+        linear-gradient(160deg, #0b1020 0%, #101a33 46%, #121c2d 100%);
+      overflow: hidden;
+    }
 
-        body {
-            background-color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+    .shell {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
 
-        /* 模擬手機螢幕 */
-        #app-container {
-            width: 100%;
-            max-width: 414px; /* iPhone Max 寬度 */
-            height: 896px;
-            max-height: 100vh;
-            background-color: var(--bg-color);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+    .app {
+      width: min(1180px, 100%);
+      min-height: min(820px, calc(100vh - 48px));
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(14, 20, 39, 0.95), rgba(9, 13, 26, 0.96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
 
-        /* 頁面通用設定 */
-        .page {
-            display: none;
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-            overflow-y: auto;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: var(--bg-color);
-        }
-        .page.active {
-            display: flex;
-        }
+    .sidebar {
+      padding: 28px 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
 
-        /* 頂部導航列 */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            z-index: 10;
-        }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
 
-        .btn-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid var(--text-main);
-            background: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.04em;
+    }
 
-        .header-title {
-            font-size: 18px;
-            font-weight: bold;
-        }
+    .brand p, .subtle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
 
-        /* 首頁上方競標入口徽章 */
-        .header-badge {
-            border: 2px solid var(--text-main);
-            border-radius: 20px;
-            padding: 5px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fff;
-        }
-        .header-badge:active {
-            transform: scale(0.95);
-            background: var(--secondary-color);
-        }
+    .nav-item, .chip, .action {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 18px;
+    }
 
-        /* 內容區塊 */
-        .content {
-            padding: 20px;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
+    .nav-item {
+      padding: 14px 16px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 15px;
+      transition: transform .18s ease, background .18s ease;
+    }
 
-        /* 表單元件 */
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: var(--text-main);
-        }
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
+    .nav-item:hover, .action:hover { transform: translateY(-1px); background: rgba(255,255,255,0.07); }
 
-        /* 按鈕樣式 */
-        .btn {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid var(--text-main);
-            background: transparent;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.2s;
-            text-align: center;
-        }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .btn-fill {
-            background: var(--text-main);
-            color: #fff;
-        }
-        .btn-danger {
-            border-color: var(--danger-color);
-            color: var(--danger-color);
-        }
+    .nav-item.active {
+      border-color: rgba(246, 200, 95, 0.55);
+      background: rgba(246, 200, 95, 0.12);
+    }
 
-        /* 首頁特定樣式 */
-        .map-placeholder {
-            width: 100%;
-            height: 300px;
-            border: 2px dashed var(--border-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 10px;
-            margin: 20px 0;
-            color: var(--text-muted);
-            font-size: 18px;
-            text-align: center;
-            padding: 20px;
-        }
-        .home-menu {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: auto;
-        }
-        .home-menu .btn {
-            flex: 1;
-            font-size: 16px;
-            padding: 20px 10px;
-        }
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
 
-        /* 商店表格 */
-        .store-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        .store-table th, .store-table td {
-            border: 1px solid var(--border-color);
-            padding: 10px 5px;
-            text-align: center;
-        }
-        .store-table th {
-            background: var(--secondary-color);
-        }
-        .store-refresh-btn {
-            height: 100px;
-            font-size: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+    .chip {
+      padding: 12px 14px;
+      color: var(--muted);
+    }
 
-        /* 彈窗樣式 */
-        .modal-overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: #fff;
-            width: 90%;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
+    .main {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      padding: 26px;
+      gap: 18px;
+    }
 
-        /* 旅程紀錄列表 */
-        .record-item {
-            border: 2px solid var(--border-color);
-            padding: 20px;
-            border-radius: 8px;
-            font-size: 18px;
-            margin-bottom: 15px;
-            background: #fff;
-        }
-        
-        /* 競標卡片 */
-        .bid-card {
-            border: 2px solid var(--border-color);
-            height: 250px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            background: #fff;
-        }
-    </style>
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero h2 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    .hero .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .action {
+      padding: 12px 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform .18s ease, background .18s ease;
+    }
+
+    .action.primary {
+      background: linear-gradient(135deg, rgba(246, 200, 95, 0.2), rgba(110, 231, 183, 0.14));
+      border-color: rgba(246, 200, 95, 0.4);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .panel h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel-soft);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card .label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mini-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+    }
+
+    .row strong { display: block; margin-bottom: 4px; }
+    .row span { color: var(--muted); font-size: 14px; }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .status-bar {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 18px;
+    }
+
+    .status-pill {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      border-radius: 16px;
+      color: var(--muted);
+      min-height: 70px;
+    }
+
+    .status-pill strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .api-form {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .api-form input, .api-form button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .api-form button {
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(246, 200, 95, 0.2), rgba(110, 231, 183, 0.14));
+      border-color: rgba(246, 200, 95, 0.4);
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid var(--line);
+      color: #d9e2ff;
+      overflow: auto;
+      max-height: 340px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    @media (max-width: 920px) {
+      body { overflow: auto; }
+      .app { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--line); }
+      .grid { grid-template-columns: 1fr; }
+      .hero { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
+  <div class="shell">
+    <main class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>縱貫搶旗賽</h1>
+          <p>後端已可串接，前端目前先整理成可持續擴充的控制台骨架。</p>
+        </div>
 
-<div id="app-container">
+        <button class="nav-item active" onclick="setSection('overview')">總覽儀表板</button>
+        <button class="nav-item" onclick="setSection('journeys')">旅程與車票</button>
+        <button class="nav-item" onclick="setSection('shops')">商店與拍賣</button>
+        <button class="nav-item" onclick="setSection('management')">管理與審核</button>
 
-    <!-- 1. 首頁 -->
-    <div id="page-home" class="page active">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-login')">玩家<br>登入</div>
-            <!-- 競標頁面入口改來這裡了，點擊徽章即可進入！ -->
-            <div class="header-badge" onclick="nav('page-bidding')">競標車票: "車票"<br>距離結束: "時間"</div>
-            <div class="btn-icon" style="font-size: 12px;">目前<br>金幣</div>
+        <div class="sidebar-footer">
+          <div class="chip">API Base: `http://127.0.0.1:8788`</div>
+          <div class="chip">Auth: `Bearer token` / `authContext`</div>
+          <div class="chip">Status: 前端骨架已建立，仍可再接真資料</div>
         </div>
-        <div class="content" style="display: flex; flex-direction: column;">
-            <div class="map-placeholder">
-                地圖<br><br>標記盲盒在地圖位置
-            </div>
-            <div class="home-menu">
-                <button class="btn" onclick="nav('page-planning')">旅程<br>規畫</button>
-                <button class="btn" onclick="nav('page-store')">商 店</button>
-                <button class="btn" onclick="nav('page-record')">旅程<br>紀錄</button>
-            </div>
-        </div>
-    </div>
+      </aside>
 
-    <!-- 2. 登入頁 -->
-    <div id="page-login" class="page">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-home')">返回</div>
-            <div class="header-title">系統登入</div>
-            <div style="width: 40px;"></div>
+      <section class="main">
+        <div class="hero">
+          <div>
+            <h2>控制台入口</h2>
+            <p class="subtle">先把首頁、商店、旅程、管理與審核入口收斂，後續可逐步接上 API 與即時狀態。</p>
+          </div>
+        <div class="actions">
+            <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
+            <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
+            <a class="action" href="javascript:void(0)" onclick="loadManagementSnapshot()">管理總覽</a>
+            <a class="action" href="javascript:void(0)" onclick="loadChecklist()">檢查待辦</a>
+            <a class="action" href="javascript:void(0)" onclick="loadJourneys()">載入旅程</a>
+            <a class="action" href="javascript:void(0)" onclick="loadGeneralShop()">商店清單</a>
+            <a class="action" href="javascript:void(0)" onclick="loadCurrentAuction()">目前拍賣</a>
+          </div>
         </div>
-        <div class="content" style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
-            <div class="form-group">
-                <label>帳號</label>
-                <input type="text" class="form-control" placeholder="請輸入帳號">
-            </div>
-            <div class="form-group">
-                <label>密碼</label>
-                <input type="password" class="form-control" placeholder="請輸入密碼">
-            </div>
-            <div style="margin-top: 40px;">
-                <button class="btn" onclick="nav('page-home')">登 入</button>
-                <button class="btn btn-fill" onclick="nav('page-register')">註 冊</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- 3. 註冊頁 -->
-    <div id="page-register" class="page">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-login')">返回</div>
-            <div class="header-title">建立帳號</div>
-            <div style="width: 40px;"></div>
-        </div>
-        <div class="content">
-            <div class="form-group">
-                <label>帳號</label>
-                <input type="text" class="form-control">
+        <div class="grid">
+          <div class="panel">
+            <h3 id="section-title">總覽儀表板</h3>
+            <div class="api-form">
+              <input id="api-base" type="text" value="http://127.0.0.1:8788" placeholder="API Base">
+              <input id="game-id" type="text" placeholder="Game ID">
+              <input id="player-id" type="text" placeholder="Player ID">
+              <button type="button" onclick="refreshDashboard()">載入資料</button>
             </div>
-            <div class="form-group">
-                <label>密碼</label>
-                <input type="password" class="form-control">
+            <div class="status-bar">
+              <div class="status-pill"><strong>Auth</strong><span id="auth-status">尚未載入</span></div>
+              <div class="status-pill"><strong>Access</strong><span id="access-status">尚未載入</span></div>
+              <div class="status-pill"><strong>Snapshot</strong><span id="snapshot-status">尚未載入</span></div>
             </div>
-            <div class="form-group">
-                <label>確認密碼</label>
-                <input type="password" class="form-control">
+            <div class="cards">
+              <div class="card">
+                <div class="label">遊戲狀態</div>
+                <div class="value" id="game-status">Ready</div>
+                <div class="subtle" id="game-summary">等待串接目前 game / map / player 狀態。</div>
+              </div>
+              <div class="card">
+                <div class="label">商店狀態</div>
+                <div class="value" id="shop-status">Open</div>
+                <div class="subtle" id="shop-summary">一般商店、競標商店與優先購買權皆已在後端完成。</div>
+              </div>
+              <div class="card">
+                <div class="label">管理摘要</div>
+                <div class="value" id="admin-status">Host</div>
+                <div class="subtle" id="admin-summary">可串接 checklist、snapshot、review summary。</div>
+              </div>
+              <div class="card">
+                <div class="label">可見性</div>
+                <div class="value" id="visibility-status">OK</div>
+                <div class="subtle" id="visibility-summary">觀察、審核、自身資料與公開資訊已分層。</div>
+              </div>
             </div>
-            <div class="form-group">
-                <label>ID</label>
-                <input type="text" class="form-control">
+            <div class="mini-list" id="overview-quick-list">
+              <div class="mini-item"><span>商店項目</span><span id="overview-shop-count">0</span></div>
+              <div class="mini-item"><span>拍賣狀態</span><span id="overview-auction-state">未載入</span></div>
+              <div class="mini-item"><span>管理摘要</span><span id="overview-admin-count">0</span></div>
+              <div class="mini-item"><span>旅程數</span><span id="overview-journey-count">0</span></div>
             </div>
-            <div class="form-group">
-                <label>加入房間</label>
-                <input type="text" class="form-control">
+            <div style="margin-top: 16px;">
+              <h3 style="margin-bottom: 10px;">API 回應</h3>
+              <pre id="api-output">尚未載入資料。</pre>
             </div>
-            <button class="btn btn-fill" style="margin-top: 20px;" onclick="nav('page-login')">註 冊</button>
-        </div>
-    </div>
+            <p class="footer-note">
+              目前這份頁面先保留最小可用骨架。下一步若要正式化，可以把各卡片接到 `GET /auth/session`、
+              `GET /games/:gameId/access`、`management-snapshot`、`overview` 等 API。
+            </p>
+          </div>
 
-    <!-- 4. 車票商店 -->
-    <div id="page-store" class="page">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-home')">返回</div>
-            <div class="header-title">車票商店</div>
-            <div class="btn-icon" style="font-size: 12px;">目前<br>金幣</div>
+          <div class="panel">
+            <h3 id="right-panel-title">主要入口</h3>
+            <div class="list">
+              <div class="row">
+                <div>
+                  <strong>旅程規畫</strong>
+                  <span>規畫出發、到達、票券、旅程狀態。</span>
+                </div>
+                <div id="journey-entry">Journey</div>
+              </div>
+              <div class="row">
+                <div>
+                  <strong>一般商店</strong>
+                  <span>商品、刷新、優先購買權。</span>
+                </div>
+                <div id="shop-entry">Shop</div>
+              </div>
+              <div class="row">
+                <div>
+                  <strong>競標拍賣</strong>
+                  <span>出價、結算、票券評級與並列處理。</span>
+                </div>
+                <div id="auction-entry">Auction</div>
+              </div>
+              <div class="row">
+                <div>
+                  <strong>管理巡檢</strong>
+                  <span>checklist、snapshot、review summary。</span>
+                </div>
+                <div id="admin-entry">Admin</div>
+              </div>
+            </div>
+            <div class="mini-list" id="shop-details" style="margin-top: 16px;">
+              <div class="mini-item"><span>一般商店</span><span id="shop-details-count">0</span></div>
+              <div class="mini-item"><span>目前拍賣</span><span id="auction-details">未載入</span></div>
+              <div class="mini-item"><span>優先權</span><span id="priority-details">未載入</span></div>
+              <div class="mini-item"><span>玩家旅程</span><span id="journey-details">未載入</span></div>
+              <div class="mini-item"><span>待審交通</span><span id="traffic-review-details">未載入</span></div>
+              <div class="mini-item"><span>目前旅程</span><span id="current-journey-details">未載入</span></div>
+              <div class="mini-item"><span>保留旅程</span><span id="reserved-journey-details">未載入</span></div>
+            </div>
+            <div class="mini-list" id="journey-preview" style="margin-top: 16px;">
+              <div class="mini-item"><span>旅程預覽</span><span id="journey-preview-count">未載入</span></div>
+              <div class="mini-item"><span>預覽清單</span><span id="journey-preview-items">未載入</span></div>
+            </div>
+            <div class="mini-list" id="management-preview" style="margin-top: 16px;">
+              <div class="mini-item"><span>巡檢摘要</span><span id="management-preview-summary">未載入</span></div>
+              <div class="mini-item"><span>待審交通</span><span id="management-preview-incidents">未載入</span></div>
+            </div>
+          </div>
         </div>
-        <div class="content">
-            <table class="store-table">
-                <thead>
-                    <tr>
-                        <!-- 新增了序號，並把交通項改成交通工具 -->
-                        <th>序號</th>
-                        <th>交通工具</th>
-                        <th>長度</th>
-                        <th>價格</th>
-                        <th>購買?</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>#1</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
-                    <tr><td>#2</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
-                    <tr><td>#3</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
-                    <tr><td>#4</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
-                    <tr><td>#5</td><td></td><td></td><td></td><td><input type="checkbox"></td></tr>
-                </tbody>
-            </table>
-            <p style="text-align: right; color: var(--text-muted); font-size: 12px; margin-bottom: 20px;">* 被購買不顯示</p>
-            <button class="btn store-refresh-btn">
-                刷 新
-                <span style="font-size: 18px; font-weight: normal;">(500 金幣)</span>
-            </button>
-        </div>
-    </div>
+      </section>
+    </main>
+  </div>
 
-    <!-- 5. 旅程規劃頁 -->
-    <div id="page-planning" class="page">
-        <div class="header">
-            <!-- 拔掉保存更改的文字，只留單純的「返回」 -->
-            <div class="btn-icon" onclick="nav('page-home')">返回</div>
-            <div class="header-title">旅程規畫</div>
-            <div style="width: 40px;"></div>
-        </div>
-        <div class="content">
-            <div class="form-group">
-                <input type="text" class="form-control" placeholder="出發地 (輸入框)">
-            </div>
-            <div class="form-group">
-                <input type="text" class="form-control" placeholder="目的地 (輸入框)">
-            </div>
-            <div class="form-group">
-                <select class="form-control">
-                    <option>交通工具 (單選下拉選單)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <button class="btn" style="text-align: left;" onclick="toggleModal('modal-select-ticket')">選擇車票 (已選 X 張)</button>
-            </div>
-            <div class="form-group">
-                <label>出發時間:</label>
-                <input type="datetime-local" class="form-control">
-            </div>
-            <div class="form-group">
-                <label>抵達時間:</label>
-                <input type="datetime-local" class="form-control">
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button class="btn">保 存</button>
-                <button class="btn btn-danger">刪除 (清空以上)</button>
-            </div>
-        </div>
-    </div>
+  <script>
+    const state = {
+      authSession: null,
+      accessProfile: null,
+      managementSnapshot: null,
+      lastResponse: null,
+    };
 
-    <!-- 6. 旅程紀錄 -->
-    <div id="page-record" class="page">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-home')">返回</div>
-            <div class="header-title">旅程紀錄</div>
-            <div style="width: 40px;"></div>
-        </div>
-        <div class="content">
-            <div class="record-item">A 記錄</div>
-            <!-- 佔位符 -->
-            <div class="record-item" style="opacity: 0.5;">B 記錄 (示意)</div>
-            <div class="record-item" style="opacity: 0.3;">C 記錄 (示意)</div>
-        </div>
-    </div>
+    function setSection(section) {
+      const titles = {
+        overview: "總覽儀表板",
+        journeys: "旅程與車票",
+        shops: "商店與拍賣",
+        management: "管理與審核",
+      };
 
-    <!-- 7. 競標頁面 -->
-    <div id="page-bidding" class="page">
-        <div class="header">
-            <div class="btn-icon" onclick="nav('page-home')">返回</div>
-            <div class="header-title">競 標</div>
-            <div style="width: 40px;"></div>
-        </div>
-        <div class="content" style="display: flex; flex-direction: column;">
-            <div class="bid-card">
-                車票訊息
-            </div>
-            <div class="form-group" style="margin-top: auto;">
-                <input type="number" step="50" class="form-control" placeholder="出價 (50倍數輸入框)">
-            </div>
-            <button class="btn btn-fill">確 認</button>
-        </div>
-    </div>
+      document.getElementById("section-title").textContent = titles[section] ?? "總覽儀表板";
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
+      if (window.event?.currentTarget) {
+        window.event.currentTarget.classList.add("active");
+      }
+    }
 
-    <!-- 選擇車票彈窗 (Modal) -->
-    <div id="modal-select-ticket" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="text-align: center; margin-bottom: 20px;">選擇車票彈窗</h3>
-            <div style="height: 300px; overflow-y: auto;">
-                <!-- 示意列表 -->
-                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
-                    "交通工具" : "時長"
-                </label>
-                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
-                    高鐵 : 1.5小時
-                </label>
-                <label style="display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
-                    <input type="checkbox" style="width: 20px; height: 20px; margin-right: 15px;">
-                    客運 : 4小時
-                </label>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-fill" onclick="toggleModal('modal-select-ticket')" style="margin-bottom: 0;">保存</button>
-                <button class="btn btn-danger" onclick="toggleModal('modal-select-ticket')" style="margin-bottom: 0;">取消</button>
-            </div>
-        </div>
-    </div>
+    function getBaseUrl() {
+      return document.getElementById("api-base").value.trim().replace(/\/$/, "");
+    }
 
-</div>
+    function getGameId() {
+      return document.getElementById("game-id").value.trim();
+    }
 
-<script>
-    // 頁面切換邏輯
-    function nav(pageId) {
-        // 隱藏所有頁面
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
+    function setOutput(payload) {
+      state.lastResponse = payload;
+      document.getElementById("api-output").textContent = JSON.stringify(payload, null, 2);
+    }
+
+    function updatePill(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    async function fetchJson(path, options = {}) {
+      const response = await fetch(`${getBaseUrl()}${path}`, options);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message ?? `Request failed: ${response.status}`);
+      }
+      return payload;
+    }
+
+    async function loadAuthSession() {
+      try {
+        const payload = await fetchJson("/auth/session");
+        state.authSession = payload.data ?? null;
+        updatePill("auth-status", state.authSession?.authMode ?? "unknown");
+        setOutput({ type: "auth/session", payload });
+      } catch (error) {
+        updatePill("auth-status", "error");
+        setOutput({ type: "auth/session", error: error.message });
+      }
+    }
+
+    async function loadAccessProfile() {
+      const gameId = getGameId();
+      if (!gameId) {
+        updatePill("access-status", "missing game id");
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/access`);
+        state.accessProfile = payload.data ?? null;
+        updatePill("access-status", state.accessProfile?.canObserveGame ? "可觀察" : "不可觀察");
+        setOutput({ type: "games/access", payload });
+      } catch (error) {
+        updatePill("access-status", "error");
+        setOutput({ type: "games/access", error: error.message });
+      }
+    }
+
+    async function loadManagementSnapshot() {
+      const gameId = getGameId();
+      if (!gameId) {
+        updatePill("snapshot-status", "missing game id");
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/management-snapshot?currentTime=${encodeURIComponent(new Date().toISOString())}`);
+        state.managementSnapshot = payload.data ?? null;
+        const snapshot = payload.data?.snapshot ?? null;
+        document.getElementById("management-preview-summary").textContent = snapshot?.checklist?.summary
+          ? `待審 ${snapshot.checklist.summary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${snapshot.checklist.summary.dueReservedJourneyCount ?? 0}`
+          : "已載入 snapshot";
+        document.getElementById("management-preview-incidents").textContent = String(snapshot?.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+        updatePill("snapshot-status", "loaded");
+        setOutput({ type: "games/management-snapshot", payload });
+      } catch (error) {
+        updatePill("snapshot-status", "error");
+        setOutput({ type: "games/management-snapshot", error: error.message });
+      }
+    }
+
+    async function loadChecklist() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/checklist?currentTime=${encodeURIComponent(new Date().toISOString())}`);
+        const checklist = payload.data?.checklist ?? null;
+        document.getElementById("admin-status").textContent = checklist ? "Checklist Ready" : "Loaded";
+        document.getElementById("admin-summary").textContent = checklist?.summary
+          ? `待審交通中斷 ${checklist.summary.pendingTrafficIncidentRequestCount ?? 0} / 到點旅程 ${checklist.summary.dueReservedJourneyCount ?? 0}`
+          : "已載入 checklist";
+        updatePill("snapshot-status", checklist ? "checklist" : "loaded");
+        setOutput({ type: "games/checklist", payload });
+      } catch (error) {
+        updatePill("snapshot-status", "error");
+        setOutput({ type: "games/checklist", error: error.message });
+      }
+    }
+
+    async function loadOverview() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/overview?currentTime=${encodeURIComponent(new Date().toISOString())}`);
+        const overview = payload.data?.overview ?? null;
+        document.getElementById("game-status").textContent = overview?.game?.status ?? "unknown";
+        document.getElementById("game-summary").textContent = overview?.game?.name ? `Game: ${overview.game.name}` : "已載入 overview";
+        document.getElementById("shop-status").textContent = overview?.currentAuction ? "Auction Live" : "Shop Ready";
+        document.getElementById("shop-summary").textContent = overview?.generalShopItemList
+          ? `一般商店 ${overview.generalShopItemList.length} 筆 / 拍賣 ${overview.currentAuction ? "進行中" : "待命"}`
+          : "已載入商店與拍賣摘要";
+        document.getElementById("admin-status").textContent = overview?.summary ? "Overview Ready" : "Loaded";
+        document.getElementById("admin-summary").textContent = overview?.summary
+          ? `玩家 ${overview.ranking?.length ?? 0} 人 / 盲盒 ${overview.blindBoxList?.length ?? 0} 筆`
+          : "已取得 overview";
+        document.getElementById("overview-shop-count").textContent = String(overview?.generalShopItemList?.length ?? 0);
+        document.getElementById("overview-auction-state").textContent = overview?.currentAuction ? "進行中" : "待命";
+        document.getElementById("overview-admin-count").textContent = String(overview?.summary?.playerResultList?.length ?? 0);
+        document.getElementById("overview-journey-count").textContent = String(overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
+        document.getElementById("shop-details-count").textContent = String(overview?.generalShopItemList?.length ?? 0);
+        document.getElementById("auction-details").textContent = overview?.currentAuction?.ticket?.ratingGrade ?? "未載入";
+        document.getElementById("priority-details").textContent = overview?.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
+          ? "有優先購買權"
+          : "無優先購買權";
+        document.getElementById("journey-details").textContent = String(overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
+        document.getElementById("traffic-review-details").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
+        document.getElementById("current-journey-details").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
+        document.getElementById("reserved-journey-details").textContent = String(overview?.journeyDashboard?.summary?.dueToCompleteCount ?? 0);
+        setOutput({ type: "games/overview", payload });
+      } catch (error) {
+        setOutput({ type: "games/overview", error: error.message });
+      }
+    }
+
+    async function loadGeneralShop() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/general-shop/items`);
+        const shopTicketList = payload.data?.shopTicketList ?? [];
+        document.getElementById("shop-status").textContent = shopTicketList.length > 0 ? "Shop Live" : "Shop Empty";
+        document.getElementById("shop-summary").textContent = `一般商店 ${shopTicketList.length} 筆`;
+        document.getElementById("overview-shop-count").textContent = String(shopTicketList.length);
+        document.getElementById("shop-details-count").textContent = String(shopTicketList.length);
+        document.getElementById("priority-details").textContent = payload.data?.priorityState?.prioritySource ?? "none";
+        setOutput({ type: "games/general-shop/items", payload });
+      } catch (error) {
+        setOutput({ type: "games/general-shop/items", error: error.message });
+      }
+    }
+
+    async function loadCurrentAuction() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const payload = await fetchJson(`/games/${gameId}/auction-shop/current?currentTime=${encodeURIComponent(new Date().toISOString())}`);
+        const currentAuction = payload.data?.currentAuction ?? null;
+        document.getElementById("auction-entry").textContent = currentAuction ? "Auction Live" : "Auction Idle";
+        document.getElementById("auction-details").textContent = currentAuction?.ticketRating?.ratingGrade ?? "未載入";
+        document.getElementById("shop-status").textContent = currentAuction ? "Auction Live" : "Shop Ready";
+        document.getElementById("shop-summary").textContent = currentAuction
+          ? `目前拍賣 ${currentAuction.ticketRating?.ratingGrade ?? "-"} 級`
+          : "目前沒有進行中的拍賣";
+        document.getElementById("overview-auction-state").textContent = currentAuction ? "進行中" : "待命";
+        setOutput({ type: "games/auction-shop/current", payload });
+      } catch (error) {
+        setOutput({ type: "games/auction-shop/current", error: error.message });
+      }
+    }
+
+    async function loadJourneys() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        const [journeyPayload, currentJourneyPayload, reservedJourneyPayload] = await Promise.all([
+          fetchJson(`/games/${gameId}/players/${playerId}/journeys?operatorPlayerId=${encodeURIComponent(playerId)}`),
+          fetchJson(`/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/journeys/reserved?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+        ]);
+
+        const payload = journeyPayload;
+        const journeyList = payload.data?.journeyList ?? [];
+        const currentJourney = currentJourneyPayload?.data?.currentJourney ?? null;
+        const reservedJourney = reservedJourneyPayload?.data?.reservedJourney ?? null;
+        document.getElementById("journey-entry").textContent = journeyList.length > 0 ? `Journeys ${journeyList.length}` : "Journey Empty";
+        document.getElementById("journey-details").textContent = `${journeyList.length} 筆`;
+        document.getElementById("overview-journey-count").textContent = String(journeyList.length);
+        document.getElementById("game-summary").textContent = `Player ${playerId} journeys loaded`;
+        document.getElementById("current-journey-details").textContent = currentJourney
+          ? `${currentJourney.id ?? "current"} / ${currentJourney.status ?? "unknown"}`
+          : "無目前旅程";
+        document.getElementById("reserved-journey-details").textContent = reservedJourney
+          ? `${reservedJourney.id ?? "reserved"} / ${reservedJourney.status ?? "unknown"}`
+          : "無保留旅程";
+        document.getElementById("journey-preview-count").textContent = `${journeyList.slice(0, 5).length} 筆`;
+        document.getElementById("journey-preview-items").textContent = journeyList
+          .slice(0, 5)
+          .map((journey) => `${journey.id ?? "-"}:${journey.status ?? "unknown"}`)
+          .join(" | ") || "無旅程";
+        setOutput({
+          type: "games/players/journeys",
+          payload: {
+            journeys: journeyPayload,
+            currentJourney: currentJourneyPayload,
+            reservedJourney: reservedJourneyPayload,
+          },
         });
-        // 顯示目標頁面
-        document.getElementById(pageId).classList.add('active');
+      } catch (error) {
+        setOutput({ type: "games/players/journeys", error: error.message });
+      }
     }
 
-    // 彈窗開關邏輯
-    function toggleModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal.classList.contains('active')) {
-            modal.classList.remove('active');
-        } else {
-            modal.classList.add('active');
+    async function refreshDashboard() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID 後再載入資料。" });
+        return;
+      }
+
+      const summary = {
+        auth: null,
+        access: null,
+        snapshot: null,
+      };
+
+      try {
+        const [authPayload, accessPayload, snapshotPayload, overviewPayload] = await Promise.all([
+          fetchJson("/auth/session").catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/access`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/management-snapshot?currentTime=${encodeURIComponent(new Date().toISOString())}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/overview?currentTime=${encodeURIComponent(new Date().toISOString())}`).catch((error) => ({ error: error.message })),
+        ]);
+
+        summary.auth = authPayload;
+        summary.access = accessPayload;
+        summary.snapshot = snapshotPayload;
+        summary.overview = overviewPayload;
+
+        if (authPayload?.data) {
+          updatePill("auth-status", authPayload.data.authMode ?? "unknown");
+          document.getElementById("game-status").textContent = authPayload.data.authVerified ? "Auth OK" : "Auth Pending";
+          document.getElementById("game-summary").textContent = authPayload.data.authUserId ? `User: ${authPayload.data.authUserId}` : "未取得 authUserId";
         }
-    }
-</script>
 
+        if (accessPayload?.data) {
+          updatePill("access-status", accessPayload.data.canObserveGame ? "可觀察" : "不可觀察");
+          document.getElementById("visibility-status").textContent = accessPayload.data.canReviewGame ? "Review OK" : "Review Pending";
+          document.getElementById("visibility-summary").textContent = accessPayload.data.isHost ? "Host access 已就緒" : "等待 host / self 權限";
+        }
+
+        if (snapshotPayload?.data?.snapshot) {
+          updatePill("snapshot-status", "loaded");
+          document.getElementById("admin-status").textContent = "Snapshot Ready";
+          const checklistSummary = snapshotPayload.data.snapshot.checklist?.summary;
+          const overviewSummary = snapshotPayload.data.snapshot.overview?.overview?.summary;
+          document.getElementById("management-preview-summary").textContent = checklistSummary
+            ? `待審 ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${checklistSummary.dueReservedJourneyCount ?? 0}`
+            : "已取得管理巡檢總覽";
+          document.getElementById("management-preview-incidents").textContent = String(snapshotPayload.data.snapshot.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+          document.getElementById("admin-summary").textContent = checklistSummary
+            ? `Checklist: ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} 個待審`
+            : "已取得管理巡檢總覽";
+          document.getElementById("shop-status").textContent = overviewSummary ? "Overview Ready" : "Loaded";
+          document.getElementById("shop-summary").textContent = overviewSummary
+            ? `玩家 ${snapshotPayload.data.snapshot.overview?.overview?.playerList?.length ?? 0} 人，商店/拍賣已載入`
+            : "商店與拍賣資料已準備好";
+        }
+
+        if (overviewPayload?.data?.overview) {
+          const overview = overviewPayload.data.overview;
+          document.getElementById("game-status").textContent = overview.game?.status ?? document.getElementById("game-status").textContent;
+          document.getElementById("game-summary").textContent = overview.game?.name ? `Game: ${overview.game.name}` : document.getElementById("game-summary").textContent;
+          document.getElementById("shop-status").textContent = overview.currentAuction ? "Auction Live" : "Shop Ready";
+          document.getElementById("shop-summary").textContent = overview.generalShopItemList
+            ? `一般商店 ${overview.generalShopItemList.length} 筆 / 拍賣 ${overview.currentAuction ? "進行中" : "待命"}`
+            : document.getElementById("shop-summary").textContent;
+          document.getElementById("admin-status").textContent = overview.summary ? "Overview Ready" : document.getElementById("admin-status").textContent;
+          document.getElementById("admin-summary").textContent = overview.summary
+            ? `玩家 ${overview.ranking?.length ?? 0} 人 / 盲盒 ${overview.blindBoxList?.length ?? 0} 筆`
+            : document.getElementById("admin-summary").textContent;
+          document.getElementById("overview-shop-count").textContent = String(overview.generalShopItemList?.length ?? 0);
+          document.getElementById("overview-auction-state").textContent = overview.currentAuction ? "進行中" : "待命";
+          document.getElementById("overview-admin-count").textContent = String(overview.summary?.playerResultList?.length ?? 0);
+          document.getElementById("shop-details-count").textContent = String(overview.generalShopItemList?.length ?? 0);
+          document.getElementById("auction-details").textContent = overview.currentAuction?.ticket?.ratingGrade ?? "未載入";
+          document.getElementById("priority-details").textContent = overview.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
+            ? "有優先購買權"
+            : "無優先購買權";
+          document.getElementById("current-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToStartCount ?? 0);
+          document.getElementById("reserved-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToCompleteCount ?? 0);
+          document.getElementById("traffic-review-details").textContent = String(overview.trafficIncidentRequestList?.length ?? 0);
+        }
+
+        setOutput(summary);
+      } catch (error) {
+        setOutput({ error: error.message, summary });
+      }
+    }
+  </script>
 </body>
 </html>

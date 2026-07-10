@@ -172,18 +172,36 @@ export async function getPlayerRecords({
   filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    createdAtAfter,
+    createdAtBefore,
+    ...recordFilterOptions
+  } = filterOptions;
+
   const recordList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.RECORDS,
     filterOptions: {
       gameId,
       playerId,
-      ...filterOptions,
+      ...recordFilterOptions,
     },
     queryOptions,
   });
 
   const filteredRecordList = [];
   for (const recordData of recordList) {
+    const recordCreatedAt = recordData.createdAt ? new Date(recordData.createdAt).getTime() : null;
+    const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+    const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+    if (createdAtAfterTime !== null && (recordCreatedAt === null || recordCreatedAt < createdAtAfterTime)) {
+      continue;
+    }
+
+    if (createdAtBeforeTime !== null && (recordCreatedAt === null || recordCreatedAt > createdAtBeforeTime)) {
+      continue;
+    }
+
     filteredRecordList.push(await filterRecordDataByVisibility({
       dataAccessLayer,
       gameId,
@@ -203,17 +221,35 @@ export async function getGameRecords({
   filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    createdAtAfter,
+    createdAtBefore,
+    ...recordFilterOptions
+  } = filterOptions;
+
   const recordList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.RECORDS,
     filterOptions: {
       gameId,
-      ...filterOptions,
+      ...recordFilterOptions,
     },
     queryOptions,
   });
 
   const filteredRecordList = [];
   for (const recordData of recordList) {
+    const recordCreatedAt = recordData.createdAt ? new Date(recordData.createdAt).getTime() : null;
+    const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+    const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+    if (createdAtAfterTime !== null && (recordCreatedAt === null || recordCreatedAt < createdAtAfterTime)) {
+      continue;
+    }
+
+    if (createdAtBeforeTime !== null && (recordCreatedAt === null || recordCreatedAt > createdAtBeforeTime)) {
+      continue;
+    }
+
     filteredRecordList.push(await filterRecordDataByVisibility({
       dataAccessLayer,
       gameId,
@@ -230,13 +266,14 @@ export async function getPublicRecordsDuringGame({
   dataAccessLayer,
   gameId,
   requestingPlayerId,
+  filterOptions = {},
   queryOptions = {},
 }) {
   return getGameRecords({
     dataAccessLayer,
     gameId,
     visibilityMode: "during_game",
-    filterOptions: {},
+    filterOptions,
     queryOptions,
   }).then(async ({ recordList }) => ({
     publicRecordList: await Promise.all(recordList.map((recordData) =>

@@ -36,6 +36,10 @@ export function createTrafficIncidentRoutes({ dataAccessLayer }) {
               playerId: query.playerId ?? null,
               journeyId: query.journeyId ?? null,
               status: query.status ?? null,
+              filterOptions: {
+                ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+                ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+              },
               queryOptions: buildQueryOptions(query),
             })),
           },

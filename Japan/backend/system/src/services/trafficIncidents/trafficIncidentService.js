@@ -36,22 +36,47 @@ export async function listTrafficIncidentRequests({
   playerId = null,
   journeyId = null,
   status = null,
+  filterOptions = {},
   queryOptions = {},
 }) {
-  const filterOptions = {
+  const {
+    createdAtAfter,
+    createdAtBefore,
+    ...requestFilterOptions
+  } = filterOptions;
+
+  const requestFilters = {
     ...(gameId ? { gameId } : {}),
     ...(playerId ? { playerId } : {}),
     ...(journeyId ? { journeyId } : {}),
     ...(status ? { status } : {}),
+    ...requestFilterOptions,
   };
 
   const requestList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.TRAFFIC_INCIDENT_REQUESTS,
-    filterOptions,
+    filterOptions: requestFilters,
     queryOptions,
   });
 
-  return { requestList };
+  const filteredRequestList = [];
+  for (const requestData of requestList) {
+    const requestCreatedAt = requestData.createdAt ? new Date(requestData.createdAt).getTime() : null;
+    const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+    const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+    if (createdAtAfterTime !== null && (requestCreatedAt === null || requestCreatedAt < createdAtAfterTime)) {
+      continue;
+    }
+
+    if (createdAtBeforeTime !== null && (requestCreatedAt === null || requestCreatedAt > createdAtBeforeTime)) {
+      continue;
+    }
+
+    filteredRequestList.push(requestData);
+  }
+
+  return { requestList: filteredRequestList };
 }
 
 export async function getTrafficIncidentReviewSummary({

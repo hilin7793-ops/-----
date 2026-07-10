@@ -240,18 +240,46 @@ export async function getPlayerTickets({
   filterOptions = {},
   queryOptions = {},
 }) {
+  const {
+    source,
+    ticketId,
+    createdAtAfter,
+    createdAtBefore,
+    ...ticketFilterOptions
+  } = filterOptions;
+
   const playerTicketList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.PLAYER_TICKETS,
     filterOptions: {
       gameId,
       playerId,
-      ...filterOptions,
+      ...ticketFilterOptions,
     },
     queryOptions,
   });
 
   const ticketList = [];
   for (const playerTicket of playerTicketList) {
+    const playerTicketCreatedAt = playerTicket.createdAt ? new Date(playerTicket.createdAt).getTime() : null;
+    const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+    const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+    if (source && playerTicket.source !== source) {
+      continue;
+    }
+
+    if (ticketId && playerTicket.ticketId !== ticketId) {
+      continue;
+    }
+
+    if (createdAtAfterTime !== null && (playerTicketCreatedAt === null || playerTicketCreatedAt < createdAtAfterTime)) {
+      continue;
+    }
+
+    if (createdAtBeforeTime !== null && (playerTicketCreatedAt === null || playerTicketCreatedAt > createdAtBeforeTime)) {
+      continue;
+    }
+
     const ticketData = await dataAccessLayer.getRecordById({
       collectionName: CollectionName.TICKETS,
       recordId: playerTicket.ticketId,

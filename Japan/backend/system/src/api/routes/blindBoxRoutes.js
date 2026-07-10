@@ -18,6 +18,26 @@ import {
 } from "../../index.js";
 import { buildBlindBoxReviewQueryOptions, buildQueryOptions } from "../queryOptions.js";
 
+function parseBooleanQueryValue(value) {
+  if (value === true || value === false) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return null;
+}
+
 // Authorization in this module is centered on `authContext`.
 // Legacy compatibility inputs are still accepted where needed by handlers.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
@@ -213,6 +233,13 @@ export function createBlindBoxRoutes({ dataAccessLayer }) {
               gameId: params.gameId,
               requesterId: authContext?.playerId ?? query.requesterId ?? null,
               visibilityMode,
+              filterOptions: {
+                ...(query.locationId ? { locationId: query.locationId } : {}),
+                ...(query.status ? { status: query.status } : {}),
+                ...(parseBooleanQueryValue(query.openedStatus) !== null
+                  ? { openedStatus: parseBooleanQueryValue(query.openedStatus) }
+                  : {}),
+              },
               queryOptions: buildQueryOptions(query),
             })),
           },

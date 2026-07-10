@@ -13,6 +13,26 @@ import {
 } from "../../index.js";
 import { buildQueryOptions } from "../queryOptions.js";
 
+function parseBooleanQueryValue(value) {
+  if (value === true || value === false) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
+  return null;
+}
+
 export function createMapRoutes({ dataAccessLayer }) {
   return [
     {
@@ -24,6 +44,16 @@ export function createMapRoutes({ dataAccessLayer }) {
           success: true,
           ...(await listMaps({
             dataAccessLayer,
+            filterOptions: {
+              ...(query.name ? { name: query.name } : {}),
+              ...(query.countryOrRegion ? { countryOrRegion: query.countryOrRegion } : {}),
+              ...(parseBooleanQueryValue(query.hasStartLocation) !== null
+                ? { hasStartLocation: parseBooleanQueryValue(query.hasStartLocation) }
+                : {}),
+              ...(parseBooleanQueryValue(query.hasGoalLocation) !== null
+                ? { hasGoalLocation: parseBooleanQueryValue(query.hasGoalLocation) }
+                : {}),
+            },
             queryOptions: buildQueryOptions(query),
           })),
         },
@@ -105,6 +135,10 @@ export function createMapRoutes({ dataAccessLayer }) {
           ...(await listLocations({
             dataAccessLayer,
             mapId: params.mapId,
+            filterOptions: {
+              ...(query.locationName ? { locationName: query.locationName } : {}),
+              ...(query.locationType ? { locationType: query.locationType } : {}),
+            },
             queryOptions: buildQueryOptions(query),
           })),
         },

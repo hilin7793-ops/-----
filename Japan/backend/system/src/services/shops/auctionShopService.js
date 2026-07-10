@@ -316,12 +316,41 @@ export async function placeBid({
   };
 }
 
-export async function getAuctionBids({ dataAccessLayer, auctionId }) {
+export async function getAuctionBids({
+  dataAccessLayer,
+  auctionId,
+  filterOptions = {},
+  queryOptions = {},
+}) {
+  const {
+    createdAtAfter,
+    createdAtBefore,
+    ...bidFilterOptions
+  } = filterOptions;
+
   const bidList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.AUCTION_BIDS,
-    filterOptions: { auctionId },
+    filterOptions: { auctionId, ...bidFilterOptions },
+    queryOptions,
   });
-  return { bidList };
+
+  return {
+    bidList: bidList.filter((bidData) => {
+      const bidCreatedAt = bidData.createdAt ? new Date(bidData.createdAt).getTime() : null;
+      const createdAtAfterTime = createdAtAfter ? new Date(createdAtAfter).getTime() : null;
+      const createdAtBeforeTime = createdAtBefore ? new Date(createdAtBefore).getTime() : null;
+
+      if (createdAtAfterTime !== null && (bidCreatedAt === null || bidCreatedAt < createdAtAfterTime)) {
+        return false;
+      }
+
+      if (createdAtBeforeTime !== null && (bidCreatedAt === null || bidCreatedAt > createdAtBeforeTime)) {
+        return false;
+      }
+
+      return true;
+    }),
+  };
 }
 
 function findWinningBid(bidList) {

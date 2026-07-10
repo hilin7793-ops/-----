@@ -19,6 +19,7 @@ import {
   getGame,
   getGeneralShopItems,
   getCurrentAuction,
+  getAuctionBids,
   getPlayerCurrentJourney,
   getPlayerLocation,
   getPlayerRecords,
@@ -629,6 +630,19 @@ async function main() {
     canAfford: (input) => canAfford({ dataAccessLayer, ...input }),
     deductPlayerMoney: (input) => deductPlayerMoney({ dataAccessLayer, ...input }),
   });
+
+  const auctionBids = await getAuctionBids({
+    dataAccessLayer,
+    auctionId: currentAuction.currentAuction.id,
+    filterOptions: {
+      createdAtAfter: "2026-07-09T06:30:00+08:00",
+      createdAtBefore: "2026-07-09T06:35:00+08:00",
+    },
+  });
+  console.log(
+    "auctionBidDateFilter",
+    auctionBids.bidList.length === 2,
+  );
   await placeBid({
     dataAccessLayer,
     gameId: game.id,
