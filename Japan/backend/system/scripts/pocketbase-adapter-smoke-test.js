@@ -3,26 +3,13 @@ import {
   createDataAccessLayer,
   createPocketBaseRestAdapter,
 } from "../src/index.js";
+import { getPocketBaseTestConfig } from "./pocketbase-test-utils.js";
 
 async function main() {
-  const {
-    POCKETBASE_URL,
-    POCKETBASE_ADMIN_EMAIL,
-    POCKETBASE_ADMIN_PASSWORD,
-    POCKETBASE_AUTH_TOKEN,
-  } = process.env;
-
-  if (!POCKETBASE_AUTH_TOKEN && (!POCKETBASE_ADMIN_EMAIL || !POCKETBASE_ADMIN_PASSWORD)) {
-    throw new Error(
-      "Set POCKETBASE_ADMIN_EMAIL and POCKETBASE_ADMIN_PASSWORD, or POCKETBASE_AUTH_TOKEN, before running pocketbase adapter smoke test.",
-    );
-  }
+  const pocketBaseConfig = getPocketBaseTestConfig();
 
   const adapter = createPocketBaseRestAdapter({
-    baseUrl: POCKETBASE_URL ?? "http://127.0.0.1:8090",
-    adminEmail: POCKETBASE_ADMIN_EMAIL,
-    adminPassword: POCKETBASE_ADMIN_PASSWORD,
-    authToken: POCKETBASE_AUTH_TOKEN ?? null,
+    ...pocketBaseConfig,
   });
 
   const dal = createDataAccessLayer(adapter);

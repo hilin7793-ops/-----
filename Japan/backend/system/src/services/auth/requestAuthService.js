@@ -33,6 +33,18 @@ function isOperatorFallbackEnabled() {
   return process.env.NODE_ENV !== "production";
 }
 
+function isDevAuthUserFallbackEnabled() {
+  if (process.env.JAPAN_DISABLE_DEV_AUTH_USER_FALLBACK === "1") {
+    return false;
+  }
+
+  if (process.env.JAPAN_AUTH_STRICT === "1") {
+    return false;
+  }
+
+  return process.env.NODE_ENV !== "production";
+}
+
 async function tryResolvePocketBaseAuthUser({
   request,
   fetchImpl = globalThis.fetch,
@@ -103,8 +115,8 @@ export async function resolveRequestAuthContext({
   query = {},
 }) {
   const pocketBaseAuth = await tryResolvePocketBaseAuthUser({ request });
-  const devAuthUserId = getDevAuthUserId(request);
   const authToken = pocketBaseAuth.authToken;
+  const devAuthUserId = isDevAuthUserFallbackEnabled() ? getDevAuthUserId(request) : null;
   const authUserId = pocketBaseAuth.authUserId ?? devAuthUserId;
   const operatorFallbackEnabled = isOperatorFallbackEnabled();
   const fallbackOperatorPlayerId = operatorFallbackEnabled ? getFallbackOperatorPlayerId({ body, query }) : null;

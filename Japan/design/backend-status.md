@@ -27,10 +27,10 @@
 
 ### 0.2 未完成
 
-- 正式 PocketBase 身份驗證仍未完全收斂，`operatorPlayerId` fallback 仍存在
+- 正式 PocketBase 身份驗證仍未完全收斂，`operatorPlayerId` / `x-auth-user-id` fallback 仍存在
 - production 環境下的權限邊界尚未完全切到真實 token 驗證
 - 前端尚未形成完整可用產品，現階段仍以單頁靜態 UI 為主
-- PocketBase 真實資料庫整合測試覆蓋仍不足
+- PocketBase 真實資料庫整合測試已可在本機 PocketBase 環境通過，但仍缺自動化/持續整合覆蓋
 - 單元測試與 service 細粒度測試仍不足
 - 查詢排序、分頁與進階篩選仍可持續擴充
 - 管理端批次/巡檢工具仍有可補強空間
@@ -248,6 +248,8 @@
 - 目前支援 `x-auth-user-id -> players.authUserId -> playerId` 映射
 - 已補 PocketBase `users` auth collection migration 與專用 smoke test 腳本
 - 真 token smoke test 仍需本機提供 PocketBase 管理員憑證或 admin token
+- PocketBase smoke test 已整理出共用前置檢查，缺少憑證時會一致報出環境需求
+- `x-auth-user-id` 與 `operatorPlayerId` 皆可用環境變數關閉，進一步收斂 production 行為
 - 仍需補完整 auth collection 規劃、登入流程與 production 驗證策略
 
 ### 3.2 API 文件角色標示
@@ -265,15 +267,18 @@
 
 - 已有 PocketBase adapter
 - 已完成 schema build 與 migration 套用
-- 但主要流程驗證仍以 in-memory smoke test 為主
-- 尚未完成完整真實資料庫整合測試流程
+- `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js` 已可在本機 PocketBase 服務下通過
+- PocketBase smoke test 已共用測試前置檢查，缺少憑證時會一致報出環境需求
+- 仍缺持續整合、自動化排程與更廣的真實資料庫覆蓋
 
 ### 3.5 管理端能力
 
 - 已有 overview/checklist/process
 - 已有旅程 dashboard、旅程待辦 action queue、例外旅程列表、旅程摘要、整局旅程列表查詢、預約旅程批次取消、旅程批次鎖定、旅程批次解鎖
-- `overview` 已整合 `journeyDashboard`
+- `overview` 已整合 `journeyDashboard`，並補上 `activeAuctionCount` / `currentAuctionBidCount` 等巡檢摘要
+- 新增 `GET /games/:gameId/management-snapshot`，可一次取得 `overview + checklist + traffic incident review` 的主持人巡檢總覽
 - `createAppServer` 已收斂為 route 組裝層，`auth`、`traffic incidents`、`blind boxes` 已拆出獨立 route module
+- 新增 `GET /games/:gameId/traffic-incidents/review-summary`，可快速取得交通中斷批次審核摘要
 - 但批次管理能力仍不完整
 - 仍可再補更多巡檢、統計與批量操作
 
@@ -298,7 +303,7 @@
 
 - 單元測試
 - service 層規則測試
-- PocketBase 真實整合測試
+- PocketBase 真實整合測試仍需擴充到 CI / 自動化環境
 - 權限拒絕案例覆蓋擴充
 - 關鍵邊界案例仍可補強，例如商店冷卻、優先購買權、競標並列、盲盒特殊狀態連動
 

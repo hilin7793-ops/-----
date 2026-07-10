@@ -1,10 +1,12 @@
 import { CollectionName } from "../../constants/collectionNames.js";
+import { AuctionStatus } from "../../constants/statuses.js";
 import { listBlindBoxes } from "../blindBoxes/blindBoxService.js";
 import { getGame, getRanking } from "../games/gameService.js";
 import { getGameJourneyDashboard } from "../journeys/journeyService.js";
-import { getCurrentAuction } from "../shops/auctionShopService.js";
+import { getGameChecklist } from "./checklistService.js";
+import { getAuctionBids, getCurrentAuction } from "../shops/auctionShopService.js";
 import { getGeneralShopItems } from "../shops/generalShopService.js";
-import { listTrafficIncidentRequests } from "../trafficIncidents/trafficIncidentService.js";
+import { getTrafficIncidentReviewSummary, listTrafficIncidentRequests } from "../trafficIncidents/trafficIncidentService.js";
 
 async function listGamePlayersWithProfiles({ dataAccessLayer, gameId }) {
   const gamePlayerList = await dataAccessLayer.listRecords({
@@ -42,6 +44,7 @@ export async function getGameOverview({
     blindBoxData,
     trafficIncidentData,
     journeyDashboardData,
+    activeAuctionCount,
   ] = await Promise.all([
     getGame({ dataAccessLayer, gameId }),
     getRanking({ dataAccessLayer, gameId }),
@@ -56,7 +59,18 @@ export async function getGameOverview({
     }),
     listTrafficIncidentRequests({ dataAccessLayer, gameId }),
     getGameJourneyDashboard({ dataAccessLayer, gameId, currentTime }),
+    dataAccessLayer.listRecords({
+      collectionName: CollectionName.AUCTIONS,
+      filterOptions: { gameId, status: AuctionStatus[1] },
+    }).then((list) => list.length),
   ]);
+
+  const currentAuctionBidCount = currentAuctionData.currentAuction?.id
+    ? await getAuctionBids({
+        dataAccessLayer,
+        auctionId: currentAuctionData.currentAuction.id,
+      }).then((result) => result.bidList.length)
+    : 0;
 
   return {
     overview: {
@@ -73,7 +87,43 @@ export async function getGameOverview({
         generalShopItemCount: generalShopData.shopTicketList?.length ?? 0,
         blindBoxCount: blindBoxData.blindBoxList?.length ?? 0,
         pendingTrafficIncidentCount: (trafficIncidentData.requestList ?? []).filter((item) => item.status === "pending").length,
+        activeAuctionCount,
+        currentAuctionBidCount,
         journeyExceptionCount: journeyDashboardData.dashboard.exceptionJourneyList.length,
+      },
+      currentTime,
+    },
+  };
+}
+
+export async function getGameManagementSnapshot({
+  dataAccessLayer,
+  gameId,
+  currentTime = new Date().toISOString(),
+}) {
+  const [overviewData, checklistData] = await Promise.all([
+    getGameOverview({ dataAccessLayer, gameId, currentTime }),
+    getGameChecklist({ dataAccessLayer, gameId, currentTime }),
+  ]);
+  const trafficIncidentReviewData = await getTrafficIncidentReviewSummary({
+    dataAccessLayer,
+    gameId,
+  });
+
+  return {
+    managementSnapshot: {
+      overview: overviewData.overview,
+      checklist: checklistData.checklist,
+      trafficIncidentReview: trafficIncidentReviewData.reviewSummary,
+      summary: {
+        playerCount: overviewData.overview.summary.playerCount,
+        pendingTrafficIncidentCount: overviewData.overview.summary.pendingTrafficIncidentCount,
+        activeAuctionCount: overviewData.overview.summary.activeAuctionCount,
+        currentAuctionBidCount: overviewData.overview.summary.currentAuctionBidCount,
+        dueJourneyStartCount: checklistData.checklist.summary.dueJourneyStartCount,
+        dueJourneyCompleteCount: checklistData.checklist.summary.dueJourneyCompleteCount,
+        resolvableAuctionCount: checklistData.checklist.summary.resolvableAuctionCount,
+        trafficIncidentPendingCount: trafficIncidentReviewData.reviewSummary.pendingCount,
       },
       currentTime,
     },

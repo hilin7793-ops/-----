@@ -54,6 +54,37 @@ export async function listTrafficIncidentRequests({
   return { requestList };
 }
 
+export async function getTrafficIncidentReviewSummary({
+  dataAccessLayer,
+  gameId,
+}) {
+  const { requestList } = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId,
+  });
+
+  const summary = requestList.reduce((accumulator, requestData) => {
+    accumulator.totalCount += 1;
+    accumulator[`${requestData.status}Count`] = (accumulator[`${requestData.status}Count`] ?? 0) + 1;
+    if (requestData.status === "pending") {
+      accumulator.pendingRequestIdList.push(requestData.id);
+    }
+    return accumulator;
+  }, {
+    totalCount: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+    pendingRequestIdList: [],
+  });
+
+  summary.pendingCount = summary.pendingRequestIdList.length;
+
+  return {
+    reviewSummary: summary,
+  };
+}
+
 export async function submitTrafficIncidentRequest({
   dataAccessLayer,
   gameId,

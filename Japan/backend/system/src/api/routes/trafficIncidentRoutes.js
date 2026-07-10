@@ -3,6 +3,7 @@ import {
   assertSelfAccess,
   approveTrafficIncidentRequest,
   getTrafficIncidentRequest,
+  getTrafficIncidentReviewSummary,
   listTrafficIncidentRequests,
   rejectTrafficIncidentRequest,
   reviewTrafficIncidentRequestsBatch,
@@ -35,6 +36,29 @@ export function createTrafficIncidentRoutes({ dataAccessLayer }) {
               status: query.status ?? null,
               queryOptions: buildQueryOptions(query),
             })),
+          },
+        };
+      },
+    },
+    {
+      method: "GET",
+      template: "/games/:gameId/traffic-incidents/review-summary",
+      handler: async ({ params, authContext, query }) => {
+        await assertGameHostAccess({
+          dataAccessLayer,
+          gameId: params.gameId,
+          authContext,
+          operatorPlayerId: query.operatorPlayerId,
+        });
+
+        return {
+          statusCode: 200,
+          payload: {
+            success: true,
+            data: await getTrafficIncidentReviewSummary({
+              dataAccessLayer,
+              gameId: params.gameId,
+            }),
           },
         };
       },

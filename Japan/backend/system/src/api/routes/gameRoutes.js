@@ -16,6 +16,7 @@ import {
   getGameChecklist,
   getGame,
   getGameRecords,
+  getGameManagementSnapshot,
   getGameOverview,
   getGeneralShopItems,
   getGameJourneyActionQueue,
@@ -520,6 +521,30 @@ export function createGameRoutes({ dataAccessLayer }) {
           payload: {
             success: true,
             data: await getGameOverview({
+              dataAccessLayer,
+              gameId: params.gameId,
+              currentTime: query.currentTime ?? new Date().toISOString(),
+            }),
+          },
+        };
+      },
+    },
+    {
+      method: "GET",
+      template: "/games/:gameId/management-snapshot",
+      handler: async ({ params, query, authContext }) => {
+        await assertGameHostAccess({
+          dataAccessLayer,
+          gameId: params.gameId,
+          authContext,
+          operatorPlayerId: query.operatorPlayerId,
+        });
+
+        return {
+          statusCode: 200,
+          payload: {
+            success: true,
+            data: await getGameManagementSnapshot({
               dataAccessLayer,
               gameId: params.gameId,
               currentTime: query.currentTime ?? new Date().toISOString(),
