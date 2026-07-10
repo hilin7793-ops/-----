@@ -339,7 +339,7 @@
 
 - host/player/admin 權限矩陣已完成主要路由落點，`GET /games/:gameId/access` 也已補 `canObserveGame` / `canReviewGame`，但仍可把 observer / referee / admin 的說法再持續整理得更一致
 - 非自有但可授權的觀察/裁判模式已可從 access profile 讀到主要旗標，但路由層還能再做更細的正式分流
-- `api.md` 與 route 層註解已再往 `authContext` 正式來源收斂，`operatorPlayerId` 不再被描述成正式權限來源
+- `api.md` 與 route 層註解已再往 `authContext` 正式來源收斂，`operatorPlayerId` 只保留為相容輸入，不再被描述成正式權限來源
 
 ### 4.3 測試缺口
 
@@ -349,6 +349,7 @@
 - 已補足可見性與 access profile 的記憶體層驗證腳本
 - 尚未建立完整單元測試與更全面的 service 層規則測試，但已補上多個關鍵 service 規則 smoke test、條件查詢驗證與旅程建立驗證
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
+- 已以 assert 再確認 traffic incident review summary 與 batch review
 - 權限拒絕案例與邊界案例仍可補強，例如競標並列、盲盒特殊狀態連動，以及更多跨流程的組合驗證
 
 ### 4.4 前端
