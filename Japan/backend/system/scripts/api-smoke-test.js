@@ -311,11 +311,17 @@ async function main() {
     console.log("overviewShopItemRating", typeof overviewPayload.data?.overview?.generalShopItemList?.[0]?.ticket?.ratingType === "string");
     console.log("overviewShopItemPriority", typeof overviewPayload.data?.overview?.generalShopItemList?.[0]?.priorityAccess?.prioritySource === "string");
     console.log("overviewJourneyDashboard", typeof overviewPayload.data?.overview?.journeyDashboard?.summary?.totalJourneyCount === "number");
+    assert.equal(Boolean(overviewPayload.data?.overview?.game?.id), true);
+    assert.equal(Array.isArray(overviewPayload.data?.overview?.playerList), true);
+    assert.equal(Array.isArray(overviewPayload.data?.overview?.generalShopItemList), true);
+    assert.equal(typeof overviewPayload.data?.overview?.journeyDashboard?.summary?.totalJourneyCount === "number", true);
 
     const checklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
     const checklistPayload = await checklistResponse.json();
     console.log("checklistData", Boolean(checklistPayload.data?.checklist?.summary));
     console.log("checklistIncidents", Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList));
+    assert.equal(Boolean(checklistPayload.data?.checklist?.summary), true);
+    assert.equal(Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList), true);
 
     const forbiddenChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=not-host`);
     const forbiddenChecklistPayload = await forbiddenChecklistResponse.json();
@@ -335,6 +341,8 @@ async function main() {
     });
     const processChecklistPayload = await processChecklistResponse.json();
     console.log("processChecklist", Boolean(processChecklistPayload.data?.checklistBefore) && Boolean(processChecklistPayload.data?.checklistAfter));
+    assert.equal(Boolean(processChecklistPayload.data?.checklistBefore), true);
+    assert.equal(Boolean(processChecklistPayload.data?.checklistAfter), true);
 
     const playerRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/records?operatorPlayerId=${playerId}`);
     const playerRecordsPayload = await playerRecordsResponse.json();
@@ -365,11 +373,15 @@ async function main() {
 
     const specialStatesQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=1`);
     const specialStatesQueryPayload = await specialStatesQueryResponse.json();
+    const specialStatesFilteredResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}&stateType=free_shop_refresh_count&createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
+    const specialStatesFilteredPayload = await specialStatesFilteredResponse.json();
     console.log(
       "specialStatesQueryOptions",
       Array.isArray(specialStatesQueryPayload.specialStateList ?? specialStatesQueryPayload.data?.specialStateList)
         && (specialStatesQueryPayload.specialStateList ?? specialStatesQueryPayload.data?.specialStateList).length <= 1,
     );
+    console.log("specialStatesFilters", Array.isArray(specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList));
+    assert.equal(Array.isArray(specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList), true);
 
     const createFreeJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
       method: "POST",
@@ -851,11 +863,16 @@ async function main() {
     const playerTicketsQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/tickets?operatorPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=1`);
     const playerTicketsQueryPayload = await playerTicketsQueryResponse.json();
     const queriedTicketList = playerTicketsQueryPayload.ticketList ?? playerTicketsQueryPayload.data?.ticketList ?? [];
+    const playerTicketsFilteredResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/tickets?operatorPlayerId=${playerId}&source=shop_purchase&createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
+    const playerTicketsFilteredPayload = await playerTicketsFilteredResponse.json();
+    const playerTicketsFilteredList = playerTicketsFilteredPayload.ticketList ?? playerTicketsFilteredPayload.data?.ticketList ?? [];
     const journeyTicket = playerTicketList.find((entry) => entry.ticket?.transportType !== TransportType.UNIVERSAL)?.ticket
       ?? playerTicketList[0]?.ticket
       ?? null;
     console.log("playerTickets", playerTicketList.length);
     console.log("playerTicketsQueryOptions", Array.isArray(queriedTicketList) && queriedTicketList.length <= 1);
+    console.log("playerTicketsFilters", Array.isArray(playerTicketsFilteredList));
+    assert.equal(Array.isArray(playerTicketsFilteredList), true);
     const departureTime = "2026-07-09T06:50:00+08:00";
     const arrivalTime = "2026-07-09T06:55:00+08:00";
 
@@ -1010,6 +1027,12 @@ async function main() {
         assert.equal(Array.isArray(pendingIncidentCreatedAtPayload.requestList), true);
         assert.equal(pendingIncidentCreatedAtPayload.requestList.some((item) => item.id === submitIncidentPayload.data?.id), true);
 
+        const reviewSummaryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents/review-summary?operatorPlayerId=${playerId}`);
+        const reviewSummaryPayload = await reviewSummaryResponse.json();
+        console.log("trafficIncidentReviewSummary", Boolean(reviewSummaryPayload.data?.summary));
+        assert.equal(reviewSummaryResponse.ok, true);
+        assert.equal(Boolean(reviewSummaryPayload.data?.summary), true);
+
         const requestId = submitIncidentPayload.data?.id ?? null;
         let firstApprovedReturnedTicket = null;
         if (requestId) {
@@ -1101,6 +1124,8 @@ async function main() {
                 });
                 const batchReviewPayload = await batchReviewResponse.json();
                 console.log("batchRejectIncident", batchReviewPayload.data?.reviewedCount === 1);
+                assert.equal(batchReviewResponse.ok, true);
+                assert.equal(batchReviewPayload.data?.reviewedCount === 1, true);
               } else {
                 console.log("batchRejectIncident", "skipped");
               }

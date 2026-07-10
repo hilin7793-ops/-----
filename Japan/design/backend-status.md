@@ -246,13 +246,17 @@
   - api smoke test 已以 assert 驗證 access route 的 observe/review/manage 權限欄位
   - api smoke test 已以 assert 驗證 current / reserved journey route 讀取，並驗證交通異常後 current journey 會清空
   - api smoke test 已以 assert 驗證競標出價清單與時間區間查詢
+  - api smoke test 已以 assert 驗證 overview / checklist / checklist process
+  - api smoke test 已以 assert 驗證 traffic incident review summary / review batch
   - visibility smoke test 已以 assert 驗證公開旅程、公開紀錄與盲盒可見性
   - access profile 的觀察 / 賽後檢視欄位
   - 位置 / 旅程 / 記錄 / 盲盒可見性
   - service 規則的時間、步行、計程車、票券、特殊狀態與記錄可見性驗證
   - service 規則的時間不合法邊界案例
   - 盲盒免費刷新特殊狀態的建立與消耗連動
+  - 盲盒免費刷新消耗後查回結果為 consumed
   - 一般商店優先購買權拒絕案例
+  - 票券與特殊狀態查詢的來源 / 類型 / 建立時間區間驗證
   - 競標並列時不產生唯一得標者、會銷毀票券
   - 目前旅程 / 保留旅程 service 查詢驗證
   - PocketBase 真實環境中的拍賣出價時間區間查詢
@@ -354,6 +358,8 @@
 - 現有 `Japan/frontend` 也已能直接讀取 `overview`，可顯示基本的遊戲、商店與管理摘要
 - 現有 `Japan/frontend` 也已可直接讀取一般商店清單與目前拍賣
 - 現有 `Japan/frontend` 也已開始顯示商店與拍賣摘要
+- 現有 `Japan/frontend` 也已可直接顯示商店與拍賣預覽清單
+- 現有 `Japan/frontend` 的側欄入口已可直接切到商店與拍賣資料載入
 - 現有 `Japan/frontend` 也已可直接讀取玩家旅程列表
 - 現有 `Japan/frontend` 也已可直接讀取目前旅程與保留旅程詳情
 - 現有 `Japan/frontend` 也已可直接顯示旅程預覽清單

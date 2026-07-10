@@ -409,6 +409,7 @@ async function main() {
   assert.equal(Boolean(freeRefreshEffectResult.specialStateData.id), true);
   assert.equal(consumedSpecialState.isConsumed, true);
   assert.equal(consumedSpecialStates.specialStateList.length, 1);
+  assert.equal(consumedSpecialStates.specialStateList[0]?.isConsumed, true);
 
   const auctionTicket = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.TICKETS,

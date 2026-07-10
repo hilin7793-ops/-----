@@ -326,9 +326,9 @@
         </div>
 
         <button class="nav-item active" onclick="setSection('overview')">總覽儀表板</button>
-        <button class="nav-item" onclick="setSection('journeys')">旅程與車票</button>
-        <button class="nav-item" onclick="setSection('shops')">商店與拍賣</button>
-        <button class="nav-item" onclick="setSection('management')">管理與審核</button>
+        <button class="nav-item" onclick="setSection('journeys'); loadJourneys()">旅程與車票</button>
+        <button class="nav-item" onclick="setSection('shops'); loadGeneralShop(); loadCurrentAuction()">商店與拍賣</button>
+        <button class="nav-item" onclick="setSection('management'); loadManagementSnapshot()">管理與審核</button>
 
         <div class="sidebar-footer">
           <div class="chip">API Base: `http://127.0.0.1:8788`</div>
@@ -446,6 +446,14 @@
               <div class="mini-item"><span>待審交通</span><span id="traffic-review-details">未載入</span></div>
               <div class="mini-item"><span>目前旅程</span><span id="current-journey-details">未載入</span></div>
               <div class="mini-item"><span>保留旅程</span><span id="reserved-journey-details">未載入</span></div>
+            </div>
+            <div class="mini-list" id="shop-preview" style="margin-top: 16px;">
+              <div class="mini-item"><span>商店預覽</span><span id="shop-preview-count">未載入</span></div>
+              <div class="mini-item"><span>預覽清單</span><span id="shop-preview-items">未載入</span></div>
+            </div>
+            <div class="mini-list" id="auction-preview" style="margin-top: 16px;">
+              <div class="mini-item"><span>拍賣預覽</span><span id="auction-preview-count">未載入</span></div>
+              <div class="mini-item"><span>拍賣票券</span><span id="auction-preview-ticket">未載入</span></div>
             </div>
             <div class="mini-list" id="journey-preview" style="margin-top: 16px;">
               <div class="mini-item"><span>旅程預覽</span><span id="journey-preview-count">未載入</span></div>
@@ -641,6 +649,11 @@
         document.getElementById("overview-shop-count").textContent = String(shopTicketList.length);
         document.getElementById("shop-details-count").textContent = String(shopTicketList.length);
         document.getElementById("priority-details").textContent = payload.data?.priorityState?.prioritySource ?? "none";
+        document.getElementById("shop-preview-count").textContent = `${shopTicketList.slice(0, 5).length} 筆`;
+        document.getElementById("shop-preview-items").textContent = shopTicketList
+          .slice(0, 5)
+          .map((item) => `${item.ticket?.id ?? item.id ?? "-"}:${item.ticket?.ratingGrade ?? item.ticket?.ratingType ?? "unknown"}`)
+          .join(" | ") || "無商店項目";
         setOutput({ type: "games/general-shop/items", payload });
       } catch (error) {
         setOutput({ type: "games/general-shop/items", error: error.message });
@@ -664,6 +677,10 @@
           ? `目前拍賣 ${currentAuction.ticketRating?.ratingGrade ?? "-"} 級`
           : "目前沒有進行中的拍賣";
         document.getElementById("overview-auction-state").textContent = currentAuction ? "進行中" : "待命";
+        document.getElementById("auction-preview-count").textContent = currentAuction ? "1 筆" : "0 筆";
+        document.getElementById("auction-preview-ticket").textContent = currentAuction
+          ? `${currentAuction.ticket?.id ?? "-"}:${currentAuction.ticketRating?.ratingGrade ?? currentAuction.ticketRating?.ratingType ?? "unknown"}`
+          : "目前沒有拍賣";
         setOutput({ type: "games/auction-shop/current", payload });
       } catch (error) {
         setOutput({ type: "games/auction-shop/current", error: error.message });
@@ -793,6 +810,14 @@
           document.getElementById("priority-details").textContent = overview.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
             ? "有優先購買權"
             : "無優先購買權";
+          document.getElementById("shop-preview-count").textContent = `${overview.generalShopItemList?.slice(0, 5).length ?? 0} 筆`;
+          document.getElementById("shop-preview-items").textContent = overview.generalShopItemList?.slice(0, 5)
+            .map((item) => `${item.ticket?.id ?? item.id ?? "-"}:${item.ticket?.ratingGrade ?? item.ticket?.ratingType ?? "unknown"}`)
+            .join(" | ") || "無商店項目";
+          document.getElementById("auction-preview-count").textContent = overview.currentAuction ? "1 筆" : "0 筆";
+          document.getElementById("auction-preview-ticket").textContent = overview.currentAuction
+            ? `${overview.currentAuction.ticket?.id ?? "-"}:${overview.currentAuction.ticketRating?.ratingGrade ?? overview.currentAuction.ticketRating?.ratingType ?? "unknown"}`
+            : "目前沒有拍賣";
           document.getElementById("current-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToStartCount ?? 0);
           document.getElementById("reserved-journey-details").textContent = String(overview.journeyDashboard?.summary?.dueToCompleteCount ?? 0);
           document.getElementById("traffic-review-details").textContent = String(overview.trafficIncidentRequestList?.length ?? 0);
