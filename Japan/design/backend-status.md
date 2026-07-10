@@ -22,13 +22,13 @@
 - 交通異常申請、審核、批次審核、返還票券與旅程修正已完成
 - 遊戲開始、結束、排名、排程事件處理已完成
 - 紀錄、review、公開可見性與賽後審查資料已完成
-- auth context 骨架、host/self 權限檢查、dev fallback 已可運作
+- auth context 骨架、host/self 權限檢查、PocketBase token 驗證主路徑、dev fallback 已可運作
 - API smoke test 與 in-memory smoke test 已存在且可驗證主要流程
 
 ### 0.2 未完成
 
-- 正式 PocketBase 身份驗證仍未完全收斂，`operatorPlayerId` / `x-auth-user-id` fallback 仍存在
-- production 環境下的權限邊界尚未完全切到真實 token 驗證
+- 正式 PocketBase 身份驗證主路徑已補齊，`x-auth-user-id` fallback 與 `operatorPlayerId` fallback 都改為明確 opt-in 的開發開關；production / strict 模式可停用
+- production 環境下的權限邊界仍可持續補強，但已不再依賴 `x-auth-user-id` 作為 token 的替代驗證
 - 前端尚未形成完整可用產品，現階段仍以單頁靜態 UI 為主
 - PocketBase 真實資料庫整合測試已可在本機 PocketBase 環境通過，但仍缺自動化/持續整合覆蓋
 - 單元測試與 service 細粒度測試仍不足
@@ -198,7 +198,7 @@
 - 已有 `request auth context` 骨架
 - 主持人操作可優先使用 `authContext.playerId === hostPlayerId`
 - 玩家自有操作可優先使用 `authContext.playerId === playerId`
-- 開發期仍保留 `operatorPlayerId` 作為 fallback
+- 開發期仍保留 `operatorPlayerId` 作為 fallback，但需要明確開關，production / strict 模式可停用
 - `players` schema 已補 `authUserId`
 - 已有 `FORBIDDEN` 錯誤碼
 - 已有 `GET /auth/session` 可直接觀察 request auth 解析結果
@@ -244,12 +244,13 @@
 
 - `requestAuthService` 已存在
 - `createAppServer` 已會建立 `authContext`
-- 已可嘗試用 `Authorization: Bearer ...` 配合 PocketBase `auth-refresh` 驗證
-- 目前支援 `x-auth-user-id -> players.authUserId -> playerId` 映射
+- 已可用 `Authorization: Bearer ...` 優先配合 PocketBase `auth-refresh` 驗證
+- 目前支援 `Authorization: Bearer ... -> PocketBase auth-refresh -> players.authUserId -> playerId` 映射
 - 已補 PocketBase `users` auth collection migration 與專用 smoke test 腳本
 - 真 token smoke test 仍需本機提供 PocketBase 管理員憑證或 admin token
 - PocketBase smoke test 已整理出共用前置檢查，缺少憑證時會一致報出環境需求
-- `x-auth-user-id` 與 `operatorPlayerId` 皆可用環境變數關閉，進一步收斂 production 行為
+- `x-auth-user-id` 需要明確開啟 `JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK=1` 才會使用，`operatorPlayerId` 需要 `JAPAN_ENABLE_OPERATOR_FALLBACK=1` 才會使用
+- `GET /auth/session` 可直接看到 `authMode` / `authPolicy` / `operatorFallbackEnabled` / `devAuthUserFallbackEnabled` / `authStrictEnabled`
 - 仍需補完整 auth collection 規劃、登入流程與 production 驗證策略
 
 ### 3.2 API 文件角色標示
@@ -316,7 +317,7 @@
 
 ## 5. 建議下一步
 
-1. 讓 `requestAuthService` 真正驗證 PocketBase token，取代目前的 header/dev fallback
+1. 持續補完整 auth collection 規劃、登入流程與 production 驗證策略
 2. 補 PocketBase 真實整合測試，優先覆蓋一般商店優先購買權與競標 `A / S` 票生成
 3. 補更完整的查詢排序、分頁、篩選能力
 4. 規劃前端串接順序，先接 `overview / checklist / general-shop / auction-shop`

@@ -3,8 +3,32 @@ import { AppError, assert } from "../../lib/appError.js";
 import { CollectionName } from "../../constants/collectionNames.js";
 import { getGame } from "../games/gameService.js";
 
+function isOperatorFallbackEnabled() {
+  if (process.env.JAPAN_DISABLE_OPERATOR_FALLBACK === "1") {
+    return false;
+  }
+
+  if (process.env.JAPAN_AUTH_STRICT === "1") {
+    return false;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  return process.env.JAPAN_ENABLE_OPERATOR_FALLBACK === "1";
+}
+
 function resolveEffectiveOperatorPlayerId({ authContext, operatorPlayerId }) {
-  return authContext?.playerId ?? operatorPlayerId ?? null;
+  if (authContext?.playerId) {
+    return authContext.playerId;
+  }
+
+  if (!isOperatorFallbackEnabled()) {
+    return null;
+  }
+
+  return operatorPlayerId ?? null;
 }
 
 export async function getGameAccessProfile({

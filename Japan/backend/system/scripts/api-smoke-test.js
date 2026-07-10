@@ -3,6 +3,8 @@ import { createAppServer } from "../src/api/createAppServer.js";
 import { TransportType } from "../src/index.js";
 
 async function main() {
+  process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK ??= "1";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK ??= "1";
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
   const server = createAppServer({ dataAccessLayer });
 

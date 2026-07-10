@@ -25,16 +25,14 @@
 目前 API 可先用三種角色理解：
 
 - `public`：不需要 `operatorPlayerId`
-- `player-self`：需要可解析到操作者玩家身分，目前可用 `authContext` 或 `operatorPlayerId`
-- `host`：需要可解析到主持人玩家身分，目前可用 `authContext` 或 `operatorPlayerId`
+- `player-self`：需要可解析到操作者玩家身分，正式路徑以 `authContext` 為主
+- `host`：需要可解析到主持人玩家身分，正式路徑以 `authContext` 為主
 
 目前後端的 request auth 過渡規則：
 
 - 若 request 可建立可信 `authContext.playerId`，優先使用它
-- 開發期若沒有 `authContext.playerId`，仍可 fallback 到 `operatorPlayerId`
 - 若設定 `POCKETBASE_AUTH_COLLECTION`，後端會先嘗試用 `Authorization: Bearer ...` 對 PocketBase 做 `auth-refresh`
-- `x-auth-user-id` 可作為目前開發中的 auth user 對應測試 header
-- `Authorization: Bearer ...` 已進入過渡驗證階段，但仍需依賴 PocketBase auth collection 設定
+- `x-auth-user-id` 與 `operatorPlayerId` 都是開發/測試相容欄位，正式整合應以 `Authorization: Bearer ...` 與 `authContext` 為主
 
 目前已實作的角色分類如下。
 
@@ -330,7 +328,7 @@ Request body:
 
 ## Games
 
-主持人／管理端操作目前優先以 `authContext.playerId` 驗證，沒有 auth context 時才 fallback 到 `operatorPlayerId`。
+主持人／管理端操作以 `authContext.playerId` 驗證為正式路徑，`operatorPlayerId` 僅保留作為開發與測試相容欄位。
 
 ### `POST /games`
 
@@ -364,7 +362,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選，開發期 fallback 用
+- `operatorPlayerId`，可選，僅供開發與測試相容
 - `targetPlayerId`，可選，用於判定是否可視為 self access
 
 回應包含：
@@ -561,7 +559,7 @@ Query:
 Query:
 
 - `currentTime`，可選，用於判定目前是否已達旅程／拍賣處理時點
-- `operatorPlayerId`，必填，需為 host player
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 
 回應包含：
 
@@ -741,7 +739,7 @@ Request body:
 
 ## Game Player
 
-玩家自己的資料查詢目前優先使用 `authContext.playerId` 驗證，沒有 auth context 時才 fallback 到 `operatorPlayerId`。
+玩家自己的資料查詢以 `authContext.playerId` 驗證為正式路徑，`operatorPlayerId` 僅供開發與測試相容。
 
 ### `GET /games/:gameId/players/:playerId/money`
 
@@ -749,7 +747,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，必填，需等於 `playerId`
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 
 ### `GET /games/:gameId/players/:playerId/records`
 
@@ -758,7 +756,7 @@ Query:
 Query:
 
 - `visibilityMode`，預設 `during_game`
-- `operatorPlayerId`，必填，需等於 `playerId`
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -794,7 +792,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，必填，需等於 `playerId`
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -806,7 +804,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，必填，需等於 `playerId`
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1052,7 +1050,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，必填，需為 host player
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 - `playerId`
 - `journeyId`
 - `status`
@@ -1092,7 +1090,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，必填，需為該局 host player
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 
 ### `POST /traffic-incidents/:requestId/approve`
 
@@ -1271,7 +1269,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，必填，需為 host player
+- `operatorPlayerId`，僅供開發與測試相容；正式驗證請使用 `authContext`
 - `sortBy`，可選，作為三組 review 列表的共同預設排序
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選

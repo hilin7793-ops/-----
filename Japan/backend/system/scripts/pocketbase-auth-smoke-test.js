@@ -145,6 +145,21 @@ async function main() {
     });
     const checklistPayload = await checklistResponse.json();
     console.log("pocketbaseAuthHostAccess", checklistPayload.success === true && Boolean(checklistPayload.data?.checklist?.summary));
+
+    const sessionResponse = await fetch("http://127.0.0.1:8790/auth/session", {
+      headers: {
+        Authorization: `Bearer ${authUser.token}`,
+      },
+    });
+    const sessionPayload = await sessionResponse.json();
+    console.log(
+      "pocketbaseAuthTokenVerified",
+      sessionPayload.success === true &&
+        sessionPayload.data?.authMode === "pocketbase_token" &&
+        sessionPayload.data?.authVerified === true &&
+        sessionPayload.data?.authTokenPresent === true &&
+        sessionPayload.data?.authUserId === authUser.user.id,
+    );
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));

@@ -30,7 +30,11 @@ function isOperatorFallbackEnabled() {
     return false;
   }
 
-  return process.env.NODE_ENV !== "production";
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  return process.env.JAPAN_ENABLE_OPERATOR_FALLBACK === "1";
 }
 
 function isDevAuthUserFallbackEnabled() {
@@ -42,7 +46,15 @@ function isDevAuthUserFallbackEnabled() {
     return false;
   }
 
-  return process.env.NODE_ENV !== "production";
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  return process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK === "1";
+}
+
+function isAuthStrictEnabled() {
+  return process.env.JAPAN_AUTH_STRICT === "1";
 }
 
 async function tryResolvePocketBaseAuthUser({
@@ -56,6 +68,7 @@ async function tryResolvePocketBaseAuthUser({
   if (!authToken || !authCollection || typeof fetchImpl !== "function") {
     return {
       authToken,
+      authTokenPresent: Boolean(authToken),
       authCollection,
       authUserId: null,
       authRecord: null,
@@ -79,6 +92,7 @@ async function tryResolvePocketBaseAuthUser({
     if (!response.ok) {
       return {
         authToken,
+        authTokenPresent: true,
         authCollection,
         authUserId: null,
         authRecord: null,
@@ -90,6 +104,7 @@ async function tryResolvePocketBaseAuthUser({
     const payload = await response.json();
     return {
       authToken,
+      authTokenPresent: true,
       authCollection,
       authUserId: payload?.record?.id ?? null,
       authRecord: payload?.record ?? null,
@@ -99,6 +114,7 @@ async function tryResolvePocketBaseAuthUser({
   } catch (error) {
     return {
       authToken,
+      authTokenPresent: true,
       authCollection,
       authUserId: null,
       authRecord: null,
@@ -116,9 +132,16 @@ export async function resolveRequestAuthContext({
 }) {
   const pocketBaseAuth = await tryResolvePocketBaseAuthUser({ request });
   const authToken = pocketBaseAuth.authToken;
-  const devAuthUserId = isDevAuthUserFallbackEnabled() ? getDevAuthUserId(request) : null;
-  const authUserId = pocketBaseAuth.authUserId ?? devAuthUserId;
+  const authTokenPresent = pocketBaseAuth.authTokenPresent ?? Boolean(authToken);
+  const devAuthUserFallbackEnabled = isDevAuthUserFallbackEnabled();
+  const devAuthUserId = devAuthUserFallbackEnabled ? getDevAuthUserId(request) : null;
+  const authUserId = pocketBaseAuth.authVerified
+    ? pocketBaseAuth.authUserId
+    : authTokenPresent
+      ? null
+      : devAuthUserId;
   const operatorFallbackEnabled = isOperatorFallbackEnabled();
+  const authStrictEnabled = isAuthStrictEnabled();
   const fallbackOperatorPlayerId = operatorFallbackEnabled ? getFallbackOperatorPlayerId({ body, query }) : null;
 
   let playerRecord = null;
@@ -131,9 +154,25 @@ export async function resolveRequestAuthContext({
 
   const playerId = playerRecord?.id ?? fallbackOperatorPlayerId ?? null;
   const roleSet = playerId ? ["player"] : [];
+  const authMode = pocketBaseAuth.authVerified
+    ? "pocketbase_token"
+    : authTokenPresent
+      ? "pocketbase_token_failed"
+      : playerRecord
+        ? "dev_auth_user"
+        : fallbackOperatorPlayerId
+          ? "operator_fallback"
+          : "anonymous";
+  const authPolicy = {
+    strict: authStrictEnabled,
+    operatorFallbackEnabled,
+    devAuthUserFallbackEnabled,
+    productionSafe: authStrictEnabled || process.env.NODE_ENV === "production",
+  };
 
   return {
     authToken,
+    authTokenPresent,
     authUserId,
     authCollection: pocketBaseAuth.authCollection || null,
     authVerified: pocketBaseAuth.authVerified,
@@ -149,8 +188,12 @@ export async function resolveRequestAuthContext({
       : fallbackOperatorPlayerId
         ? "operator_player_fallback"
         : "anonymous",
+    authMode,
+    authPolicy,
     usedOperatorFallback: !playerRecord && Boolean(fallbackOperatorPlayerId),
     operatorFallbackEnabled,
+    devAuthUserFallbackEnabled,
+    authStrictEnabled,
     fallbackOperatorPlayerId,
   };
 }
