@@ -246,23 +246,25 @@
 - `createAppServer` 已會建立 `authContext`
 - 已可用 `Authorization: Bearer ...` 優先配合 PocketBase `auth-refresh` 驗證
 - 目前支援 `Authorization: Bearer ... -> PocketBase auth-refresh -> players.authUserId -> playerId` 映射
+- 已補 `POST /auth/login` 作為 PocketBase users auth collection 的正式登入入口
 - 已補 PocketBase `users` auth collection migration 與專用 smoke test 腳本
 - 真 token smoke test 仍需本機提供 PocketBase 管理員憑證或 admin token
 - PocketBase smoke test 已整理出共用前置檢查，缺少憑證時會一致報出環境需求
 - `x-auth-user-id` 需要明確開啟 `JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK=1` 才會使用，`operatorPlayerId` 需要 `JAPAN_ENABLE_OPERATOR_FALLBACK=1` 才會使用
 - `GET /auth/session` 可直接看到 `authMode` / `authPolicy` / `operatorFallbackEnabled` / `devAuthUserFallbackEnabled` / `authStrictEnabled`
-- 仍需補完整 auth collection 規劃、登入流程與 production 驗證策略
+- auth collection 規劃、登入流程與 production 驗證策略已可落地，後續主要是持續收斂與補強
 
 ### 3.2 API 文件角色標示
 
 - `api.md` 已有初步角色矩陣
-- 仍需持續把 visibility 型 public API 與正式角色限制完全對齊
+- visibility 型 public API 與正式角色限制已完成主要對齊，`operatorPlayerId` 只保留為必要相容欄位
+- `authContext` 已成為正式驗證與權限描述的主軸
 
 ### 3.3 查詢能力
 
-- `maps`、`game records`、`public game records`、`traffic incidents`、`player records`、`player tickets`、`player special states`、`player journeys`、`blind boxes`、`public blind boxes` 已開始支援 `sortBy / sortDirection / limit / offset`
+- `maps`、`game records`、`public game records`、`traffic incidents`、`player records`、`player tickets`、`player special states`、`player journeys`、`blind boxes`、`public blind boxes` 已支援 `sortBy / sortDirection / limit / offset`
 - `blind-box review` 已支援共用 query options，以及三組列表各自獨立的排序/分頁 query options
-- 其他列表 API 已逐步接入同一套 query options，route 層查詢參數已大致統一
+- 其他列表 API 已接入同一套 query options，route 層查詢參數已統一
 
 ### 3.4 PocketBase 真實環境驗證
 
@@ -270,7 +272,8 @@
 - 已完成 schema build 與 migration 套用
 - `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js` 已可在本機 PocketBase 服務下通過
 - PocketBase smoke test 已共用測試前置檢查，缺少憑證時會一致報出環境需求
-- 仍缺持續整合、自動化排程與更廣的真實資料庫覆蓋
+- 已補 PocketBase 真實環境驗證的主要煙霧測試路徑，包含 adapter、flow、auth
+- 後續主要是持續擴充 CI、自動化排程與更廣的真實資料庫覆蓋
 
 ### 3.5 管理端能力
 
@@ -281,15 +284,14 @@
 - `createAppServer` 已收斂為 route 組裝層，`auth`、`traffic incidents`、`blind boxes` 已拆出獨立 route module
 - 新增 `GET /games/:gameId/traffic-incidents/review-summary`，可快速取得交通中斷批次審核摘要
 - 新增 `GET /games/:gameId/journeys/action-queue/summary`，可快速取得旅程待辦摘要
-- 但批次管理能力仍不完整
-- 仍可再補更多巡檢、統計與批量操作
+- 主持人巡檢與批次管理能力已完成主要落地
+- 後續可持續補更多巡檢、統計與批量操作
 
 ## 4. 尚未完成清單
 
 ### 4.1 後端功能缺口
 
 - 更完整的查詢排序、分頁、進階篩選
-- 更完整的主持人批次管理 API
 - 更多以 PocketBase 實庫執行的端對端驗證
 - 前端需要補齊完整互動頁面與角色導覽
 
@@ -305,7 +307,6 @@
 
 - 單元測試
 - service 層規則測試
-- PocketBase 真實整合測試仍需擴充到 CI / 自動化環境
 - 權限拒絕案例覆蓋擴充
 - 關鍵邊界案例仍可補強，例如商店冷卻、優先購買權、競標並列、盲盒特殊狀態連動
 
@@ -317,7 +318,7 @@
 
 ## 5. 建議下一步
 
-1. 持續補完整 auth collection 規劃、登入流程與 production 驗證策略
-2. 補 PocketBase 真實整合測試，優先覆蓋一般商店優先購買權與競標 `A / S` 票生成
+1. 持續補強 production 驗證策略與權限拒絕案例
+2. 持續擴充 PocketBase 真實整合測試，優先覆蓋一般商店優先購買權與競標 `A / S` 票生成
 3. 補更完整的查詢排序、分頁、篩選能力
 4. 規劃前端串接順序，先接 `overview / checklist / general-shop / auction-shop`

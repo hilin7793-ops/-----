@@ -18,6 +18,8 @@ import {
 } from "../../index.js";
 import { buildBlindBoxReviewQueryOptions, buildQueryOptions } from "../queryOptions.js";
 
+// Authorization in this module is centered on `authContext`.
+// Legacy compatibility inputs are still accepted where needed by handlers.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
   return [
     {

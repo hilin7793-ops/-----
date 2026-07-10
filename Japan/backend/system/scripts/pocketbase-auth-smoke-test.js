@@ -160,6 +160,26 @@ async function main() {
         sessionPayload.data?.authTokenPresent === true &&
         sessionPayload.data?.authUserId === authUser.user.id,
     );
+
+    const loginResponse = await fetch("http://127.0.0.1:8790/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        identity: email,
+        password,
+      }),
+    });
+    const loginPayload = await loginResponse.json();
+    console.log(
+      "pocketbaseAuthLoginRoute",
+      loginResponse.ok === true &&
+        loginPayload.success === true &&
+        loginPayload.data?.authCollection === "users" &&
+        typeof loginPayload.data?.token === "string" &&
+        loginPayload.data?.record?.id === authUser.user.id,
+    );
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
