@@ -7,6 +7,8 @@ import {
   getPlayerCurrentJourney,
   getPlayerReservedJourney,
   listGameJourneys,
+  getGameJourneyManagementSummary,
+  getGameJourneyActionQueueSummary,
   canViewPublicJourney,
   validateCreateJourney,
   validateJourneyTime,
@@ -22,10 +24,13 @@ import { addPlayerMoney, addTicketToPlayer, canAfford, deductPlayerMoney, getPla
 import { resolveAuction } from "../src/services/shops/auctionShopService.js";
 import { canRefreshGeneralShop, initializeGeneralShop, purchaseGeneralShopTicket } from "../src/services/shops/generalShopService.js";
 import { getGameChecklist } from "../src/services/overview/checklistService.js";
+import { getGameManagementSnapshot, getGameOverview } from "../src/services/overview/overviewService.js";
 import { canViewPlayerExactLocation, filterPlayerDataByVisibility, filterRecordDataByVisibility } from "../src/services/visibility/visibilityService.js";
 import { filterBlindBoxDataByVisibility } from "../src/services/visibility/visibilityService.js";
 import { getPlayerRecords, getGameRecords } from "../src/services/records/recordService.js";
+import { getBlindBoxReviewData } from "../src/services/blindBoxes/blindBoxService.js";
 import { listTrafficIncidentRequests } from "../src/services/trafficIncidents/trafficIncidentService.js";
+import { getAuctionBids } from "../src/services/shops/auctionShopService.js";
 
 async function main() {
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
@@ -177,6 +182,82 @@ async function main() {
   assert.equal(trafficIncidentListByFilters.requestList.length, 1);
   assert.equal(trafficIncidentListByFilters.requestList[0]?.id, incidentRequest.id);
 
+  await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.RECORDS,
+    data: {
+      gameId: gameData.id,
+      playerId: memberPlayer.id,
+      recordType: "blind_box",
+      action: "open",
+      payload: {
+        openedStatus: true,
+        visibleNote: "blind-box-record",
+      },
+      createdAt: "2026-07-10T10:40:00+08:00",
+    },
+  });
+  await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.BLIND_BOXES,
+    data: {
+      gameId: gameData.id,
+      mapId: mapData.id,
+      locationId: goalLocation.id,
+      status: "opened",
+      openedStatus: true,
+      openedBy: memberPlayer.id,
+      openedAt: "2026-07-10T10:40:00+08:00",
+      effectData: {
+        effectType: "money",
+        operator: "+=",
+        value: 10,
+      },
+      metadata: {},
+    },
+  });
+  await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.PLAYER_SPECIAL_STATES,
+    data: {
+      gameId: gameData.id,
+      playerId: memberPlayer.id,
+      stateType: "free_shop_refresh_count",
+      stateData: { count: 1 },
+      sourceBlindBoxId: null,
+      isConsumed: false,
+      createdAt: "2026-07-10T10:45:00+08:00",
+    },
+  });
+
+  const blindBoxReviewData = await getBlindBoxReviewData({
+    dataAccessLayer,
+    gameId: gameData.id,
+    queryOptions: {
+      blindBoxList: { sortBy: "openedAt", sortDirection: "desc", limit: 1 },
+      blindBoxEffectLogList: { sortBy: "createdAt", sortDirection: "desc", limit: 1 },
+      recordList: { sortBy: "createdAt", sortDirection: "desc", limit: 1 },
+    },
+  });
+  assert.equal(blindBoxReviewData.blindBoxReviewData.blindBoxList.length, 1);
+  assert.equal(blindBoxReviewData.blindBoxReviewData.blindBoxEffectLogList.length, 0);
+  assert.equal(blindBoxReviewData.blindBoxReviewData.recordList.length, 1);
+
+  const playerSpecialStates = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      stateType: "free_shop_refresh_count",
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T23:59:59+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+    },
+  });
+  assert.equal(playerSpecialStates.specialStateList.length, 1);
+  assert.equal(playerSpecialStates.specialStateList[0]?.stateType, "free_shop_refresh_count");
+
   const journeySummary = await getGameJourneySummary({
     dataAccessLayer,
     gameId: gameData.id,
@@ -187,6 +268,28 @@ async function main() {
   assert.equal(journeySummary.statusCounts.reserved, 1);
   assert.equal(journeySummary.dueToStartCount, 0);
   assert.equal(journeySummary.dueToCompleteCount, 1);
+
+  const journeyManagementSummary = await getGameJourneyManagementSummary({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(journeyManagementSummary.managementSummary.summary.totalJourneyCount, 2);
+  assert.equal(journeyManagementSummary.managementSummary.exceptionJourneyCount, 0);
+  assert.equal(journeyManagementSummary.managementSummary.actionQueueCount >= 0, true);
+  assert.equal(journeyManagementSummary.managementSummary.dueJourneyCompleteCount, 1);
+
+  const journeyActionQueueSummary = await getGameJourneyActionQueueSummary({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(journeyActionQueueSummary.actionQueueSummary.actionQueueCount >= 0, true);
+  assert.equal(Array.isArray(journeyActionQueueSummary.actionQueueSummary.journeyIdList), true);
+  assert.equal(
+    journeyActionQueueSummary.actionQueueSummary.journeyIdList.length,
+    journeyActionQueueSummary.actionQueueSummary.actionQueueCount,
+  );
 
   const checklist = await getGameChecklist({
     dataAccessLayer,
@@ -200,6 +303,28 @@ async function main() {
   assert.equal(checklist.checklist.summary.dueJourneyStartCount, 0);
   assert.equal(checklist.checklist.summary.dueJourneyCompleteCount, 1);
   assert.equal(checklist.checklist.summary.resolvableAuctionCount, 0);
+
+  const overview = await getGameOverview({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(overview.overview.summary.playerCount, 2);
+  assert.equal(overview.overview.summary.generalShopItemCount, 0);
+  assert.equal(overview.overview.summary.pendingTrafficIncidentCount, 1);
+  assert.equal(overview.overview.summary.journeyExceptionCount, 0);
+
+  const managementSnapshot = await getGameManagementSnapshot({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T10:15:00+08:00",
+  });
+  assert.equal(managementSnapshot.managementSnapshot.summary.playerCount, 2);
+  assert.equal(managementSnapshot.managementSnapshot.summary.pendingTrafficIncidentCount, 1);
+  assert.equal(managementSnapshot.managementSnapshot.summary.dueJourneyStartCount, 0);
+  assert.equal(managementSnapshot.managementSnapshot.summary.dueJourneyCompleteCount, 1);
+  assert.equal(managementSnapshot.managementSnapshot.summary.trafficIncidentPendingCount, 1);
+  assert.equal(managementSnapshot.managementSnapshot.summary.journeyActionQueueCount >= 0, true);
 
   await initializeGeneralShop({
     dataAccessLayer,
@@ -560,6 +685,7 @@ async function main() {
     visibilityMode: "during_game",
   });
   assert.equal(filteredBlindBox.effectData, undefined);
+  assert.equal(openedFilteredBlindBox.openedStatus, true);
   assert.equal(openedFilteredBlindBox.effectData?.effectType, "money");
 
   const reviewBlindBox = await filterBlindBoxDataByVisibility({
@@ -576,6 +702,8 @@ async function main() {
     blindBoxData: hiddenBlindBoxData,
     visibilityMode: "admin",
   });
+  assert.equal(reviewBlindBox.openedStatus, false);
+  assert.equal(adminBlindBox.openedStatus, false);
   assert.equal(reviewBlindBox.effectData?.value, 50);
   assert.equal(adminBlindBox.effectData?.value, 50);
 
@@ -772,10 +900,26 @@ async function main() {
     collectionName: CollectionName.AUCTION_BIDS,
     filterOptions: { auctionId: auctionRecord.id },
   });
+  const filteredAuctionBids = await getAuctionBids({
+    dataAccessLayer,
+    auctionId: auctionRecord.id,
+    filterOptions: {
+      createdAtAfter: "2026-07-10T12:05:00+08:00",
+      createdAtBefore: "2026-07-10T12:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+    },
+  });
   assert.equal(tieResolvedAuction.winnerPlayerId, null);
   assert.equal(tieResolvedAuction.wasDestroyed, true);
   assert.equal(destroyedAuctionTicket.status, "destroyed");
   assert.equal(auctionBidList.length, 2);
+  assert.equal(Array.isArray(filteredAuctionBids.bidList), true);
+  assert.equal(filteredAuctionBids.bidList.length, 1);
+  assert.equal(filteredAuctionBids.bidList[0]?.playerId, hostPlayer.id);
 
   const journeyTicketData = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.TICKETS,

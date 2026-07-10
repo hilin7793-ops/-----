@@ -335,6 +335,8 @@
 - 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間查詢，並已用 assert 確認部分 `maps` / `locations` / `records` / `journeys` / `blind boxes` / `player tickets` / `player special states` / `traffic incidents` / `auction bids` 查詢結果，但仍可持續擴充
 - 更多以 PocketBase 實庫執行的端對端驗證，特別是角色、可見性、排程與批次操作的交叉情境
 - 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
+- `api-smoke-test` 已再補上 `management-snapshot` 的整合驗證
+- `api-smoke-test` 也已驗到 `management-snapshot` 的 `trafficIncidentReview` 與 `journeyActionQueue` 子結構
 
 ### 4.2 權限系統缺口
 
@@ -348,6 +350,7 @@
 ### 4.3 測試缺口
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
+- 已新增 `unit-smoke-test.js`，先補上 `queryOptions` 與 `random` 純函式的獨立驗證
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
 - 已補足可見性與 access profile 的記憶體層驗證腳本
@@ -358,7 +361,13 @@
 - 已以 assert 再確認 service 層的資金可負擔與扣款邊界
 - 已以 assert 再確認 service 層的 journey summary 與 checklist 摘要欄位
 - 已以 assert 再確認 service 層的 journeys / traffic incidents 條件查詢與分頁
+- 已以 assert 再確認 service 層的 blind box review / special states 組合查詢
+- 已以 assert 再確認 service 層的 blind box review 查詢與 player special states 查詢
+- 已以 assert 再確認 service 層的 overview 與 management-snapshot 摘要欄位
+- 已以 assert 再確認 service 層的 journey management summary 與 action queue summary 聚合欄位
+- 已以 assert 再確認 service 層的拍賣並列與 bid 時間區間查詢
 - 已以 assert 再確認 blind box visible / opened visibility 邊界
+- 已以 assert 再確認 blind box 開啟狀態與 review / admin visibility 一致性
 - 已以 assert 再確認 public journey 非本人不可見邊界
 - 已以 assert 再確認 post_game_review / admin visibility 放行邊界
 - 已以 assert 再確認 player visibility 的 during_game / review 邊界
@@ -422,6 +431,10 @@
 - 現有 `Japan/frontend` 已能把 `management-snapshot` 與 `overview` 的主要數字同步映到畫面上，包含待審交通、待辦旅程、review summary 與旅程總數
 - 現有 `Japan/frontend` 的首頁快速摘要也已補上待審交通與待辦旅程，讓管理巡檢重點更直接可見
 - 現有 `Japan/frontend` 的首頁快速摘要也已補上審核待辦與旅程待辦，讓管理入口更接近可用狀態
+- 現有 `Japan/frontend` 的管理摘要也已補上交通待審與旅程待辦，能更直接對應 snapshot 的管理壓力點
+- 現有 `Japan/frontend` 的管理摘要也已補上待審清單筆數與動作類型數，方便快速看出管理壓力來源
+- 現有 `Japan/frontend` 的管理摘要已把動作類型數的推導統一成共用 helper，避免 `management-snapshot` 與 `overview` 顯示來源不一致
+- 現有 `Japan/frontend` 的管理摘要也已補上待辦內容清單，能直接看見前幾筆旅程待辦而不只是數字
 - 現有 `Japan/frontend` 也已開始顯示商店與拍賣摘要
 - 現有 `Japan/frontend` 也已可直接顯示商店與拍賣預覽清單
 - 現有 `Japan/frontend` 的側欄入口已可直接切到商店與拍賣資料載入

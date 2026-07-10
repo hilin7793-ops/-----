@@ -469,6 +469,11 @@
               <div class="mini-item"><span>管理清單</span><span id="management-preview-checklist">未載入</span></div>
               <div class="mini-item"><span>審核摘要</span><span id="management-preview-review">未載入</span></div>
               <div class="mini-item"><span>旅程總數</span><span id="management-preview-journeys">未載入</span></div>
+              <div class="mini-item"><span>交通待審</span><span id="management-preview-traffic-pending">未載入</span></div>
+              <div class="mini-item"><span>旅程待辦</span><span id="management-preview-action-queue">未載入</span></div>
+              <div class="mini-item"><span>待審清單</span><span id="management-preview-pending-list">未載入</span></div>
+              <div class="mini-item"><span>動作類型</span><span id="management-preview-action-types">未載入</span></div>
+              <div class="mini-item"><span>待辦內容</span><span id="management-preview-action-list">未載入</span></div>
             </div>
           </div>
         </div>
@@ -514,6 +519,32 @@
 
     function updatePill(id, text) {
       document.getElementById(id).textContent = text;
+    }
+
+    function getJourneyActionTypeCount(snapshot) {
+      const actionQueue = Array.isArray(snapshot?.journeyActionQueue?.actionQueue)
+        ? snapshot.journeyActionQueue.actionQueue
+        : [];
+      const firstAction = actionQueue[0] ?? null;
+      const suggestedActionCounts = firstAction?.suggestedActionCounts
+        ?? snapshot?.journeyActionQueue?.suggestedActionCounts
+        ?? snapshot?.journeyActionQueue?.summary?.journeyActionTypeCounts
+        ?? {};
+      return Object.keys(suggestedActionCounts).length;
+    }
+
+    function formatJourneyActionQueue(snapshot) {
+      const actionQueue = Array.isArray(snapshot?.journeyActionQueue?.actionQueue)
+        ? snapshot.journeyActionQueue.actionQueue
+        : [];
+      if (actionQueue.length === 0) {
+        return "0 筆";
+      }
+
+      return actionQueue.slice(0, 3).map((item) => {
+        const actionCount = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.length : 0;
+        return `${item?.journeyId ?? "-"}:${actionCount} 項`;
+      }).join(" | ");
     }
 
     async function fetchJson(path, options = {}) {
@@ -572,6 +603,13 @@
           ? `待審 ${snapshot.checklist.summary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${snapshot.checklist.summary.dueReservedJourneyCount ?? 0}`
           : "已載入 snapshot";
         document.getElementById("management-preview-incidents").textContent = String(snapshot?.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+        document.getElementById("management-preview-traffic-pending").textContent = String(snapshot?.trafficIncidentReview?.pendingCount ?? 0);
+        document.getElementById("management-preview-action-queue").textContent = String(snapshot?.journeyActionQueue?.actionQueue?.length ?? 0);
+        document.getElementById("management-preview-pending-list").textContent = snapshot?.trafficIncidentReview?.pendingRequestIdList?.length
+          ? `${snapshot.trafficIncidentReview.pendingRequestIdList.length} 筆`
+          : "0 筆";
+        document.getElementById("management-preview-action-types").textContent = `${getJourneyActionTypeCount(snapshot)} 種`;
+        document.getElementById("management-preview-action-list").textContent = formatJourneyActionQueue(snapshot);
         updatePill("snapshot-status", "loaded");
         setOutput({ type: "games/management-snapshot", payload });
       } catch (error) {
@@ -792,6 +830,13 @@
             ? `待審 ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${checklistSummary.dueReservedJourneyCount ?? 0}`
             : "已取得管理巡檢總覽";
           document.getElementById("management-preview-incidents").textContent = String(snapshotPayload.data.snapshot.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+          document.getElementById("management-preview-traffic-pending").textContent = String(snapshotPayload.data.snapshot.trafficIncidentReview?.pendingCount ?? 0);
+          document.getElementById("management-preview-action-queue").textContent = String(snapshotPayload.data.snapshot.journeyActionQueue?.actionQueue?.length ?? 0);
+          document.getElementById("management-preview-pending-list").textContent = snapshotPayload.data.snapshot.trafficIncidentReview?.pendingRequestIdList?.length
+            ? `${snapshotPayload.data.snapshot.trafficIncidentReview.pendingRequestIdList.length} 筆`
+            : "0 筆";
+          document.getElementById("management-preview-action-types").textContent = `${getJourneyActionTypeCount(snapshotPayload.data.snapshot)} 種`;
+          document.getElementById("management-preview-action-list").textContent = formatJourneyActionQueue(snapshotPayload.data.snapshot);
           document.getElementById("management-preview-checklist").textContent = checklistSummary
             ? `${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} 待審 / ${checklistSummary.dueReservedJourneyCount ?? 0} 旅程`
             : "已取得 checklist";
@@ -854,6 +899,24 @@
           document.getElementById("management-preview-journeys").textContent = overview.journeyDashboard?.summary
             ? `${overview.journeyDashboard.summary.totalJourneyCount ?? 0} 總旅程`
             : document.getElementById("management-preview-journeys").textContent;
+          document.getElementById("management-preview-traffic-pending").textContent = String(overview.summary?.pendingTrafficIncidentCount ?? 0);
+          document.getElementById("management-preview-action-queue").textContent = String(overview.journeyDashboard?.actionQueue?.length ?? 0);
+          document.getElementById("management-preview-pending-list").textContent = overview.summary?.pendingTrafficIncidentCount
+            ? `${overview.summary.pendingTrafficIncidentCount} 筆`
+            : "0 筆";
+          document.getElementById("management-preview-action-types").textContent = `${getJourneyActionTypeCount({
+            journeyActionQueue: {
+              summary: {
+                journeyActionTypeCounts: overview.journeyDashboard?.summary?.journeyActionTypeCounts,
+              },
+            },
+          })} 種`;
+          document.getElementById("management-preview-action-list").textContent = overview.journeyDashboard?.actionQueue?.length
+            ? overview.journeyDashboard.actionQueue.slice(0, 3).map((item) => {
+                const actionCount = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.length : 0;
+                return `${item?.journeyId ?? "-"}:${actionCount} 項`;
+              }).join(" | ")
+            : "0 筆";
         }
 
         setOutput(summary);

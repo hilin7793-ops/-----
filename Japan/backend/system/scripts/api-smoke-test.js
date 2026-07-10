@@ -339,6 +339,23 @@ async function main() {
     assert.equal(typeof checklistPayload.data?.checklist?.summary?.pendingTrafficIncidentCount === "number", true);
     assert.equal(typeof checklistPayload.data?.checklist?.summary?.dueToStartCount === "number", true);
 
+    const managementSnapshotResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/management-snapshot?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
+    const managementSnapshotPayload = await managementSnapshotResponse.json();
+    console.log("managementSnapshot", Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary));
+    assert.equal(Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary), true);
+    assert.equal(Array.isArray(managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.pendingRequestIdList), true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.pendingCount === "number", true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.approvedCount === "number", true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.rejectedCount === "number", true);
+    assert.equal(Array.isArray(managementSnapshotPayload.data?.managementSnapshot?.journeyActionQueue?.actionQueue), true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.journeyActionQueue?.actionQueueCount === "number", true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.playerCount >= 1, true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.pendingTrafficIncidentCount >= 0, true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.dueJourneyStartCount >= 0, true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.trafficIncidentPendingCount >= 0, true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.journeyActionQueueCount >= 0, true);
+    assert.equal(managementSnapshotPayload.data?.managementSnapshot?.summary?.dueJourneyCompleteCount >= 0, true);
+
     const forbiddenChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=not-host`);
     const forbiddenChecklistPayload = await forbiddenChecklistResponse.json();
     console.log("hostAccessGuard", forbiddenChecklistPayload.success === false && forbiddenChecklistPayload.errorCode === "FORBIDDEN");

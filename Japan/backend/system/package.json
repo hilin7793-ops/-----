@@ -10,6 +10,7 @@
     "smoke:test:access": "node ./scripts/access-control-smoke-test.js",
     "smoke:test:visibility": "node ./scripts/visibility-smoke-test.js",
     "smoke:test:rules": "node ./scripts/service-rules-smoke-test.js",
+    "smoke:test:unit": "node ./scripts/unit-smoke-test.js",
     "smoke:test:pocketbase": "node ./scripts/pocketbase-adapter-smoke-test.js",
     "smoke:test:pocketbase:flow": "node ./scripts/pocketbase-flow-smoke-test.js",
     "smoke:test:pocketbase:auth": "node ./scripts/pocketbase-auth-smoke-test.js"
