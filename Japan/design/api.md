@@ -39,6 +39,7 @@
 ### `public`
 
 - `GET /auth/session`
+- `POST /auth/login`
 - `GET /health`
 - `GET /maps`
 - `GET /maps/:mapId`
@@ -167,6 +168,21 @@
 - `source`
 - `usedOperatorFallback`
 - `fallbackOperatorPlayerId`
+
+### `POST /auth/login`
+
+用途：以 PocketBase `users` auth collection 完成正式登入，供前端取得 bearer token。
+
+Request body:
+
+```json
+{
+  "email": "player@example.com",
+  "password": "secret"
+}
+```
+
+回應會回傳可供後續 API 使用的登入結果與 auth 資訊。
 
 ### `GET /health`
 
@@ -552,6 +568,18 @@ Query:
 - `overview.generalShopItemList` 會包含車票評級與優先購買權資訊
 - `overview.currentAuction` 會包含競標票資訊與 `ticketRating`
 
+### `GET /games/:gameId/management-snapshot`
+
+用途：一次取得主持人巡檢所需的主要摘要。
+
+回應包含：
+
+- `snapshot.overview`
+- `snapshot.checklist`
+- `snapshot.trafficIncidentReviewSummary`
+- `snapshot.journeyManagement`
+- `snapshot.journeyActionQueueSummary`
+
 ### `GET /games/:gameId/checklist`
 
 用途：取得主持人目前需要處理的待辦檢查資料。
@@ -570,6 +598,14 @@ Query:
 - `checklist.dailyShopRefresh`
 - `checklist.auctionRoundCreation`
 - `checklist.summary`
+
+### `GET /games/:gameId/traffic-incidents/review-summary`
+
+用途：快速取得交通中斷批次審核摘要。
+
+### `GET /games/:gameId/journeys/action-queue/summary`
+
+用途：快速取得旅程待辦摘要。
 
 ### `POST /games/:gameId/checklist/process`
 

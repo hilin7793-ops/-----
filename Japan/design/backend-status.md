@@ -12,7 +12,7 @@
 ### 0.1 已完成
 
 - 核心後端服務分層已建立，包含 `api / services / data / utils / constants`
-- 地圖、地點、起點、終點的管理流程已完成
+- 地圖、地點、起點、終點、可用交通工具與特殊規則設定流程已完成
 - 玩家建立、玩家資料、金錢、車票、位置、旅程狀態查詢與更新已完成
 - 旅程建立、修改、取消、開始、完成、批次管理與管理端 dashboard 已完成
 - 車票生成、批次生成、持有、預約、消耗、銷毀、返還流程已完成
@@ -50,6 +50,8 @@
 - 地圖建立、查詢、更新、刪除
 - 地點建立、查詢、更新、刪除
 - 起點/終點設定
+- 可用交通工具設定、查詢與更新
+- 特殊規則設定與查詢
 - 玩家建立、玩家資料查詢、玩家資料更新
 - 遊戲建立、加入、離開、開始、結束、排名
 
@@ -127,6 +129,7 @@
 - 開啟盲盒
 - 盲盒 review 資料
 - 玩家特殊狀態查詢
+- 盲盒效果紀錄與玩家特殊狀態資料結構已完成
 
 ### 2.7 盲盒效果
 
@@ -162,6 +165,7 @@
 
 - `GET /games/:gameId/access`
 - `GET /games/:gameId/overview`
+- `GET /games/:gameId/management-snapshot`
 - `GET /games/:gameId/checklist`
 - `POST /games/:gameId/checklist/process`
 - `POST /games/:gameId/journeys/cancel-batch`
@@ -179,9 +183,12 @@
 - `POST /traffic-incidents/:requestId/reject`
 - `POST /games/:gameId/traffic-incidents/review-batch`
 - `GET /games/:gameId/blind-boxes/review`
+- `GET /games/:gameId/traffic-incidents/review-summary`
+- `GET /games/:gameId/journeys/action-queue/summary`
 
 ### 2.11 Auth / Session API
 
+- `POST /auth/login`
 - `GET /auth/session`
 
 ### 2.12 排程事件處理
@@ -234,6 +241,7 @@
 - 已補 `tickets` 評級欄位
 - 已補 `shops` 一般商店優先購買權欄位
 - 已補 `auctions` 競標票評級欄位
+- 已補 `blind_box_effect_logs` 與 `player_special_states` 結構
 - 已新增增量 migration：`1783566200_add_ticket_rating_and_shop_priority.js`
 - 已重新產生 schema 匯入檔
 - 已將舊 snapshot migration 改為 no-op，避免覆蓋較新的 schema
@@ -303,17 +311,16 @@
 ### 4.3 測試缺口
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
-- 已有 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
-- 單元測試
-- service 層規則測試
-- 權限拒絕案例覆蓋擴充
-- 關鍵邊界案例仍可補強，例如商店冷卻、優先購買權、競標並列、盲盒特殊狀態連動
+- 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
+- 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
+- 尚未建立完整單元測試與 service 層規則測試
+- 權限拒絕案例與邊界案例仍可補強，例如商店冷卻、優先購買權、競標並列、盲盒特殊狀態連動
 
 ### 4.4 前端
 
 - 目前尚未開始正式前端開發
-- 現有 `Japan/frontend` 內容不是本輪可靠進度基準
-- `index.html` 目前仍偏靜態示意頁，尚未形成完整產品流程
+- 現有 `Japan/frontend` 內容目前僅有 `index.html`
+- `index.html` 仍偏靜態示意頁，尚未形成完整產品流程
 
 ## 5. 建議下一步
 

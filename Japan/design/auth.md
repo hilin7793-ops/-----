@@ -1,6 +1,6 @@
 # Japan Auth Design
 
-本文件定義目前 `operatorPlayerId` 權限骨架，之後如何平順接到 PocketBase 正式身份驗證。
+本文件定義目前 `operatorPlayerId` 權限骨架，並記錄如何平順接到 PocketBase 正式身份驗證。
 
 目標不是一次做完所有 auth，而是先把：
 
@@ -18,15 +18,15 @@
 - `assertGameHostAccess`
 - `assertSelfAccess`
 
-但它們目前依賴的是 request 傳入的：
+目前正式路徑已經可以透過 auth context 驗證，但相容模式下仍可能讀到：
 
 - `operatorPlayerId`
 
 這代表：
 
 1. 後端已經有權限邊界骨架
-2. 但身份來源尚未可信
-3. 只適合開發期、內部測試期
+2. 正式身份來源已可走 `Authorization` + PocketBase `auth-refresh`
+3. `operatorPlayerId` 與 `x-auth-user-id` 僅在明確開啟的開發相容模式下保留
 
 ## 2. 目標狀態
 
@@ -139,32 +139,11 @@
 
 ## 7. 對目前骨架的替換策略
 
-目前不要立刻刪掉 `operatorPlayerId`，建議分兩階段替換。
+目前已進入過渡收斂期：
 
-### 階段 1
-
-保留 `operatorPlayerId`，同時新增 auth context。
-
-規則：
-
-- 若 request 有可信 auth context，優先用 auth context
-- 若沒有 auth context，開發模式下允許 fallback 到 `operatorPlayerId`
-
-用途：
-
-- 不會一次打壞現有 smoke test
-- 前端可逐步切到正式登入
-
-### 階段 2
-
-所有受保護 API 停止接受 `operatorPlayerId` 作為正式權限來源。
-
-只保留：
-
-- `Authorization` token
-- request context
-
-`operatorPlayerId` 只在測試工具或 dev mode 保留。
+- `Authorization` token 會優先進入正式驗證流程
+- `x-auth-user-id` 與 `operatorPlayerId` 只在明確開啟的開發相容模式下保留
+- production / strict 模式下可關閉這兩種 fallback
 
 ## 8. 後端實作建議
 
@@ -275,23 +254,24 @@ const authContext = await resolveRequestAuthContext({ request, dataAccessLayer }
 
 目前仍未完成：
 
-- PocketBase token 正式驗證
-- 使用 `Authorization` 還原真實 `authUser`
-- production 禁用 `operatorPlayerId` fallback
+- 更完整的前端登入 / 登出 / token 刷新流程
+- 更完整的 auth / permission 拒絕案例測試
+- 若要完全移除相容模式，仍需逐步清掉所有舊式 query/body 依賴
 
 ## 14. 目前的 token 驗證過渡規則
 
-目前 server 端已支援兩種 auth 來源：
+目前 server 端已支援三種 auth 來源：
 
 1. `Authorization: Bearer ...`
 2. `x-auth-user-id`
+3. `operatorPlayerId`
 
 目前行為：
 
 - 若設定 `POCKETBASE_AUTH_COLLECTION`，後端會嘗試呼叫 PocketBase `auth-refresh` 驗證 bearer token
 - 驗證成功後，會使用回傳的 auth record id 對應 `players.authUserId`
 - 若未設定 auth collection，或驗證失敗，開發期仍可用 `x-auth-user-id`
-- 若上述都無法建立玩家身份，才 fallback 到 `operatorPlayerId`
+- `operatorPlayerId` 只在明確開啟的相容模式下作為最後 fallback
 
 這表示目前已進入「可接真 token，但仍保留 dev bridge」的過渡階段。
 
@@ -310,5 +290,6 @@ const authContext = await resolveRequestAuthContext({ request, dataAccessLayer }
 
 目前已補：
 
+- `POST /auth/login`
 - `users` auth collection migration
 - `pocketbase-auth-smoke-test.js`
