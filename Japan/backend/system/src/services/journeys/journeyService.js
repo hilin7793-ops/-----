@@ -299,6 +299,65 @@ export async function getGameJourneyDashboard({
   };
 }
 
+export async function getGameJourneyManagementSummary({
+  dataAccessLayer,
+  gameId,
+  currentTime = new Date().toISOString(),
+}) {
+  const dashboardData = await getGameJourneyDashboard({
+    dataAccessLayer,
+    gameId,
+    currentTime,
+  });
+
+  const { summary, checklistSummary, exceptionJourneyList, actionQueue } = dashboardData.dashboard;
+
+  return {
+    managementSummary: {
+      gameId,
+      currentTime,
+      summary,
+      checklistSummary,
+      exceptionJourneyCount: exceptionJourneyList.length,
+      actionQueueCount: actionQueue.length,
+      lockedReservedJourneyCount: checklistSummary.lockedReservedJourneyCount,
+      incidentPendingJourneyCount: checklistSummary.incidentPendingJourneyCount,
+      dueJourneyStartCount: summary.dueToStartCount,
+      dueJourneyCompleteCount: summary.dueToCompleteCount,
+    },
+  };
+}
+
+export async function getGameJourneyActionQueueSummary({
+  dataAccessLayer,
+  gameId,
+  currentTime = new Date().toISOString(),
+}) {
+  const dashboardData = await getGameJourneyDashboard({
+    dataAccessLayer,
+    gameId,
+    currentTime,
+  });
+
+  const actionQueue = dashboardData.dashboard.actionQueue;
+  const suggestedActionCounts = actionQueue.reduce((accumulator, queueItem) => {
+    for (const actionType of queueItem.suggestedActionList) {
+      accumulator[actionType] = (accumulator[actionType] ?? 0) + 1;
+    }
+    return accumulator;
+  }, {});
+
+  return {
+    actionQueueSummary: {
+      gameId,
+      currentTime,
+      actionQueueCount: actionQueue.length,
+      suggestedActionCounts,
+      journeyIdList: actionQueue.map((item) => item.journeyId),
+    },
+  };
+}
+
 export async function validateJourneyTime({ departureTime, arrivalTime, currentTime }) {
   const departureDate = toDate(departureTime);
   const arrivalDate = toDate(arrivalTime);

@@ -276,9 +276,10 @@
 - 已有 overview/checklist/process
 - 已有旅程 dashboard、旅程待辦 action queue、例外旅程列表、旅程摘要、整局旅程列表查詢、預約旅程批次取消、旅程批次鎖定、旅程批次解鎖
 - `overview` 已整合 `journeyDashboard`，並補上 `activeAuctionCount` / `currentAuctionBidCount` 等巡檢摘要
-- 新增 `GET /games/:gameId/management-snapshot`，可一次取得 `overview + checklist + traffic incident review` 的主持人巡檢總覽
+- 新增 `GET /games/:gameId/management-snapshot`，可一次取得 `overview + checklist + traffic incident review + journey management + journey action queue summary` 的主持人巡檢總覽
 - `createAppServer` 已收斂為 route 組裝層，`auth`、`traffic incidents`、`blind boxes` 已拆出獨立 route module
 - 新增 `GET /games/:gameId/traffic-incidents/review-summary`，可快速取得交通中斷批次審核摘要
+- 新增 `GET /games/:gameId/journeys/action-queue/summary`，可快速取得旅程待辦摘要
 - 但批次管理能力仍不完整
 - 仍可再補更多巡檢、統計與批量操作
 

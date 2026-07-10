@@ -2,7 +2,7 @@ import { CollectionName } from "../../constants/collectionNames.js";
 import { AuctionStatus } from "../../constants/statuses.js";
 import { listBlindBoxes } from "../blindBoxes/blindBoxService.js";
 import { getGame, getRanking } from "../games/gameService.js";
-import { getGameJourneyDashboard } from "../journeys/journeyService.js";
+import { getGameJourneyActionQueueSummary, getGameJourneyDashboard, getGameJourneyManagementSummary } from "../journeys/journeyService.js";
 import { getGameChecklist } from "./checklistService.js";
 import { getAuctionBids, getCurrentAuction } from "../shops/auctionShopService.js";
 import { getGeneralShopItems } from "../shops/generalShopService.js";
@@ -109,12 +109,24 @@ export async function getGameManagementSnapshot({
     dataAccessLayer,
     gameId,
   });
+  const journeyManagementData = await getGameJourneyManagementSummary({
+    dataAccessLayer,
+    gameId,
+    currentTime,
+  });
+  const journeyActionQueueSummaryData = await getGameJourneyActionQueueSummary({
+    dataAccessLayer,
+    gameId,
+    currentTime,
+  });
 
   return {
     managementSnapshot: {
       overview: overviewData.overview,
       checklist: checklistData.checklist,
       trafficIncidentReview: trafficIncidentReviewData.reviewSummary,
+      journeyManagement: journeyManagementData.managementSummary,
+      journeyActionQueue: journeyActionQueueSummaryData.actionQueueSummary,
       summary: {
         playerCount: overviewData.overview.summary.playerCount,
         pendingTrafficIncidentCount: overviewData.overview.summary.pendingTrafficIncidentCount,
@@ -124,6 +136,9 @@ export async function getGameManagementSnapshot({
         dueJourneyCompleteCount: checklistData.checklist.summary.dueJourneyCompleteCount,
         resolvableAuctionCount: checklistData.checklist.summary.resolvableAuctionCount,
         trafficIncidentPendingCount: trafficIncidentReviewData.reviewSummary.pendingCount,
+        journeyExceptionCount: journeyManagementData.managementSummary.exceptionJourneyCount,
+        journeyActionQueueCount: journeyManagementData.managementSummary.actionQueueCount,
+        journeyActionTypeCounts: journeyActionQueueSummaryData.actionQueueSummary.suggestedActionCounts,
       },
       currentTime,
     },

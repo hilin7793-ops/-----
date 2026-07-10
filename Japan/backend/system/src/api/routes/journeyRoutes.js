@@ -4,6 +4,7 @@ import {
   completeJourney,
   createJourney,
   getJourney,
+  getGameJourneyActionQueueSummary,
   getPlayerCurrentJourney,
   getPlayerReservedJourney,
   listPlayerJourneys,
@@ -215,6 +216,30 @@ export function createJourneyRoutes({ dataAccessLayer }) {
               dataAccessLayer,
               gameId: params.gameId,
               playerId: params.playerId,
+            }),
+          },
+        };
+      },
+    },
+    {
+      method: "GET",
+      template: "/games/:gameId/journeys/action-queue/summary",
+      handler: async ({ params, query, authContext }) => {
+        await assertSelfAccess({
+          authContext,
+          operatorPlayerId: query.operatorPlayerId,
+          targetPlayerId: query.operatorPlayerId ?? authContext?.playerId ?? null,
+          detail: { gameId: params.gameId },
+        });
+
+        return {
+          statusCode: 200,
+          payload: {
+            success: true,
+            data: await getGameJourneyActionQueueSummary({
+              dataAccessLayer,
+              gameId: params.gameId,
+              currentTime: query.currentTime ?? new Date().toISOString(),
             }),
           },
         };
