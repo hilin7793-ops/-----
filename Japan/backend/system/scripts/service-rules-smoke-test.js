@@ -3353,6 +3353,24 @@ async function main() {
       createdAtAfter: "2026-07-10T00:00:00+08:00",
     },
   });
+  const specialStatesBySourceTypeAndConsumeOffset = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      stateType: "free_shop_refresh_count",
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: true,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
   assert.equal(Boolean(freeRefreshEffectResult.specialStateData.id), true);
   assert.equal(freeRefreshEffectResult.updatedFreeRefreshCount, 1);
   assert.equal(freeRefreshEffectResult.specialStateData.stateData.remainingCount, 1);
@@ -3360,10 +3378,17 @@ async function main() {
   assert.equal(freeRefreshEffectFromBlindBox.specialStateData.sourceBlindBoxId, hiddenBlindBoxData.id);
   assert.equal(freeRefreshEffectFromBlindBox.specialStateData.stateData.remainingCount, 1);
   assert.equal(consumedSpecialState.isConsumed, true);
+  assert.equal(consumedSpecialState.playerId, memberPlayer.id);
+  assert.equal(consumedSpecialState.stateType, "free_shop_refresh_count");
+  assert.equal(consumedSpecialState.sourceBlindBoxId, null);
   assert.equal(consumedSpecialStatesBySource.specialStateList.length, 1);
   assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.isConsumed, true);
   assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
   assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.stateType, "free_shop_refresh_count");
+  assert.equal(specialStatesBySourceTypeAndConsumeOffset.specialStateList.length, 1);
+  assert.equal(specialStatesBySourceTypeAndConsumeOffset.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(specialStatesBySourceTypeAndConsumeOffset.specialStateList[0]?.isConsumed, true);
+  assert.equal(specialStatesBySourceTypeAndConsumeOffset.specialStateList[0]?.stateType, "free_shop_refresh_count");
   const consumedSpecialStatesBySourceOffset = await getPlayerBlindBoxSpecialStates({
     dataAccessLayer,
     gameId: gameData.id,
@@ -3514,6 +3539,11 @@ async function main() {
     addPlayerMoney,
     consumePlayerBlindBoxSpecialState,
   });
+  const currentAuctionAfterResolve = await getCurrentAuction({
+    dataAccessLayer,
+    gameId: gameData.id,
+    currentTime: "2026-07-10T12:31:00+08:00",
+  });
   const destroyedAuctionTicket = await dataAccessLayer.getRecordById({
     collectionName: CollectionName.TICKETS,
     recordId: auctionTicket.id,
@@ -3581,6 +3611,7 @@ async function main() {
   assert.equal(tieResolvedAuction.bidList.map((bid) => bid.bidAmount).reduce((sum, amount) => sum + amount, 0), 400);
   assert.equal(tieResolvedAuction.bidList.some((bid) => bid.playerId === memberPlayer.id), true);
   assert.equal(tieResolvedAuction.bidList.some((bid) => bid.playerId === hostPlayer.id), true);
+  assert.equal(currentAuctionAfterResolve.currentAuction, null);
   assert.equal(destroyedAuctionTicket.status, "destroyed");
   assert.equal(hasMemberBidBefore.hasBid, false);
   assert.equal(placedMemberBid.success, true);

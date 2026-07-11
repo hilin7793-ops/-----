@@ -347,6 +347,7 @@
           <div class="actions">
             <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
             <a class="action" href="javascript:void(0)" onclick="refreshDashboard()">重新整理</a>
+            <a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">完整導覽</a>
             <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview()">查看總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">管理總覽</a>
@@ -357,6 +358,18 @@
             <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadGeneralShop()">商店清單</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadCurrentAuction()">目前拍賣</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">賽後回顧</a>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 16px;">
+          <h3>流程捷徑</h3>
+          <div class="mini-list">
+            <div class="mini-item"><span>1. 驗證與權限</span><span><a class="action" href="javascript:void(0)" onclick="loadAuthSession(); loadAccessProfile()">進入</a></span></div>
+            <div class="mini-item"><span>2. 總覽與商店</span><span><a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview(); loadGeneralShop(); loadCurrentAuction(); loadManagementSnapshot(); loadChecklist()">進入</a></span></div>
+            <div class="mini-item"><span>3. 旅程與車票</span><span><a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys(); loadJourneyDashboard(); loadJourneySummary(); loadJourneyActionQueueSummary()">進入</a></span></div>
+            <div class="mini-item"><span>4. 管理與審核</span><span><a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot(); loadChecklist(); loadTrafficIncidentReviewSummary(); loadTrafficIncidentList(); loadJourneyDashboard(); loadJourneySummary()">進入</a></span></div>
+            <div class="mini-item"><span>5. 可見性與回顧</span><span><a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview(); loadPublicRecordsPreview(); loadPublicRecordsPreview('blind_box'); loadOverview()">進入</a></span></div>
+            <div class="mini-item"><span>6. 完整導覽</span><span><a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">進入</a></span></div>
           </div>
         </div>
 
@@ -409,6 +422,13 @@
             <div style="margin-top: 16px;">
               <h3 style="margin-bottom: 10px;">API 回應</h3>
               <pre id="api-output">尚未載入資料。</pre>
+            </div>
+            <div style="margin-top: 16px;">
+              <h3 style="margin-bottom: 10px;">完整導覽摘要</h3>
+              <pre id="full-tour-output">尚未執行完整導覽。</pre>
+              <div class="mini-list" id="full-tour-step-list" style="margin-top: 12px;">
+                <div class="mini-item"><span>巡覽步驟</span><span>尚未載入</span></div>
+              </div>
             </div>
             <p class="footer-note">
               目前這份頁面先保留最小可用骨架。下一步若要正式化，可以把各卡片接到 `GET /auth/session`、
@@ -490,6 +510,7 @@
                 <span>
                   <a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys()">旅程</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys()">目前/保留</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">公開旅程</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadGeneralShop()">商店</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadCurrentAuction()">拍賣</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">可見性</a>
@@ -1492,6 +1513,34 @@
     async function loadJourneys() {
       const gameId = getGameId();
       const playerId = document.getElementById("player-id").value.trim();
+      const stepLabels = {
+        auth: "驗證",
+        access: "權限",
+        snapshot: "巡檢快照",
+        overview: "總覽",
+        shop: "商店",
+        auction: "拍賣",
+        journeys: "旅程",
+        visibility: "可見性",
+        management: "管理",
+        checklist: "待辦",
+        "traffic-review": "交通審核摘要",
+        "traffic-list": "交通清單",
+      };
+      const stepDescriptions = {
+        auth: "檢查登入狀態與 auth session。",
+        access: "檢查可觀察、可審核與 self 權限。",
+        snapshot: "同步管理巡檢、總覽與待辦壓力。",
+        overview: "讀取遊戲、商店、拍賣與旅程總覽。",
+        shop: "讀取一般商店清單與商品狀態。",
+        auction: "讀取目前拍賣與票券評級。",
+        journeys: "讀取玩家旅程、目前與保留旅程。",
+        visibility: "讀取公開旅程與賽後 review。",
+        management: "讀取管理快照與巡檢摘要。",
+        checklist: "讀取管理待辦清單。",
+        "traffic-review": "讀取交通中斷審核摘要。",
+        "traffic-list": "讀取交通中斷列表。",
+      };
       if (!gameId || !playerId) {
         setOutput({ error: "請先輸入 Game ID 與 Player ID" });
         return;
@@ -1520,13 +1569,21 @@
           fetchJson(`/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
           fetchJson(`/games/${gameId}/players/${playerId}/journeys/reserved?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
         ]);
+        const [journeyDashboardPayload, journeySummaryPayload] = await Promise.all([
+          fetchJson(`/games/${gameId}/journeys/dashboard?currentTime=${encodeURIComponent(new Date().toISOString())}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/journeys/summary?currentTime=${encodeURIComponent(new Date().toISOString())}`).catch((error) => ({ error: error.message })),
+        ]);
 
         const payload = journeyPayload;
         const journeyList = payload.data?.journeyList ?? [];
         const currentJourney = currentJourneyPayload?.data?.currentJourney ?? null;
         const reservedJourney = reservedJourneyPayload?.data?.reservedJourney ?? null;
+        const journeyDashboard = journeyDashboardPayload?.data?.dashboard ?? null;
+        const journeySummary = journeySummaryPayload?.data?.summary ?? null;
         document.getElementById("journey-entry").textContent = journeyList.length > 0 ? `Journeys ${journeyList.length}` : "Journey Empty";
-        document.getElementById("journey-details").textContent = `${journeyList.length} 筆`;
+        document.getElementById("journey-details").textContent = journeySummary
+          ? `${journeySummary.totalJourneyCount ?? journeyList.length} 筆 / ${journeySummary.dueToStartCount ?? 0} 到點`
+          : `${journeyList.length} 筆`;
         document.getElementById("overview-journey-count").textContent = String(journeyList.length);
         document.getElementById("game-summary").textContent = `Player ${playerId} journeys loaded`;
         document.getElementById("current-journey-details").textContent = currentJourney
@@ -1555,6 +1612,25 @@
           arrivalBefore ? `arrivalBefore:${arrivalBefore}` : null,
           limit ? `limit:${limit}` : null,
         ].filter(Boolean).join(" | ") || "journey filter default";
+        document.getElementById("management-preview-summary").textContent = journeyDashboard
+          ? `旅程看板 ${journeyDashboard.summary?.totalJourneyCount ?? 0} 筆 / ${journeyDashboard.checklistSummary?.dueJourneyCompleteCount ?? 0} 到終點`
+          : document.getElementById("management-preview-summary").textContent;
+        document.getElementById("management-preview-action-queue").textContent = journeyDashboard
+          ? `${journeyDashboard.actionQueue?.length ?? 0} 筆`
+          : document.getElementById("management-preview-action-queue").textContent;
+        document.getElementById("management-preview-action-list").textContent = journeyDashboard?.actionQueue?.length
+          ? journeyDashboard.actionQueue.slice(0, 3).map((item) => {
+              const actionCount = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.length : 0;
+              return `${item?.journeyId ?? "-"}:${actionCount} 項`;
+            }).join(" | ")
+          : document.getElementById("management-preview-action-list").textContent;
+        document.getElementById("management-preview-action-detail").textContent = journeyDashboard?.actionQueue?.length
+          ? journeyDashboard.actionQueue.slice(0, 2).map((item) => {
+              const actionList = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.join(",") : "none";
+              const reasonList = Array.isArray(item?.exceptionReasonList) ? item.exceptionReasonList.join(",") : "none";
+              return `${item?.journeyId ?? "-"}|${item?.status ?? "unknown"}|${actionList}|${reasonList}`;
+            }).join(" || ")
+          : document.getElementById("management-preview-action-detail").textContent;
         document.getElementById("journey-entry").textContent = journeyList.length > 0 ? `Journeys ${journeyList.length}` : "Journey Empty";
         updateSidebarStatus();
         setOutput({
@@ -1563,6 +1639,8 @@
             journeys: journeyPayload,
             currentJourney: currentJourneyPayload,
             reservedJourney: reservedJourneyPayload,
+            journeyDashboard: journeyDashboardPayload,
+            journeySummary: journeySummaryPayload,
           },
         });
       } catch (error) {
@@ -1798,6 +1876,81 @@
         setOutput(summary);
       } catch (error) {
         setOutput({ error: error.message, summary });
+      }
+    }
+
+    async function loadFullConsoleTour() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      const playerId = document.getElementById("player-id").value.trim();
+
+      try {
+        const steps = [];
+
+        await loadAuthSession();
+        steps.push("auth");
+        await loadAccessProfile();
+        steps.push("access");
+
+        setSection("overview");
+        await refreshDashboard();
+        steps.push("snapshot");
+        await loadOverview();
+        steps.push("overview");
+
+        setSection("shops");
+        await loadGeneralShop();
+        steps.push("shop");
+        await loadCurrentAuction();
+        steps.push("auction");
+
+        if (playerId) {
+          setSection("journeys");
+          await loadJourneys();
+          steps.push("journeys");
+          setSection("visibility");
+          await loadVisibilityPreview();
+          steps.push("visibility");
+        }
+
+        setSection("management");
+        await loadManagementSnapshot();
+        steps.push("management");
+        await loadChecklist();
+        steps.push("checklist");
+        await loadTrafficIncidentReviewSummary();
+        steps.push("traffic-review");
+        await loadTrafficIncidentList();
+        steps.push("traffic-list");
+
+        setOutput({
+          type: "console/full-tour",
+          payload: {
+            gameId,
+            playerId: playerId || null,
+            steps,
+          },
+        });
+        document.getElementById("full-tour-output").textContent = [
+          `Game: ${gameId}`,
+          `Player: ${playerId || "-"}`,
+          `Steps: ${steps.join(" -> ")}`,
+        ].join("\n");
+        document.getElementById("full-tour-step-list").innerHTML = steps.length
+          ? steps.map((step) => {
+              const label = stepLabels[step] ?? step;
+              const description = stepDescriptions[step] ?? "";
+              return `<div class="mini-item"><span>${label}${description ? ` - ${description}` : ""}</span><span>OK</span></div>`;
+            }).join("")
+          : '<div class="mini-item"><span>巡覽步驟</span><span>空</span></div>';
+      } catch (error) {
+        document.getElementById("full-tour-output").textContent = `完整導覽失敗：${error.message}`;
+        document.getElementById("full-tour-step-list").innerHTML = `<div class="mini-item"><span>巡覽結果</span><span>失敗</span></div>`;
+        setOutput({ type: "console/full-tour", error: error.message });
       }
     }
   </script>

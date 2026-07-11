@@ -437,6 +437,8 @@
 - 已以 assert 再確認 service 層的 general shop items priorityAccess 輸出與 auction bids 時間區間
 - 已以 assert 再確認 service 層的 auction bids playerId / createdAt_before offset 分頁驗證
 - 已以 assert 再確認 service 層的 canCreateAuctionRound 與 current auction 輸出
+- 已以 assert 再確認 service 層的 free shop refresh 特殊狀態建立、消耗與 sourceBlindBoxId / isConsumed 回查閉環
+- 已以 assert 再確認 service 層的 free shop refresh 特殊狀態查詢在 stateType / sourceBlindBoxId / isConsumed / offset 下的複合邊界
 - 已以 assert 再確認 service 層的 journeys 排序與 offset 分頁
 - 已以 assert 再確認 service 層的 player journeys 條件查詢與分頁
 - 已以 assert 再確認 service 層的 player journeys offset 分頁與排序
@@ -600,7 +602,7 @@
 - 已以 assert 再確認 review 的 ranking 與 blindBoxReviewData 結構
 - 已以 assert 再確認 review summary 的 pendingCount 欄位
 - 已以 assert 再確認 deleteMap 的 success 結構
-- 權限拒絕案例與邊界案例仍可補強，例如競標並列、盲盒特殊狀態連動，以及更多跨流程的組合驗證
+- 權限拒絕案例與邊界案例仍可補強，例如更多跨流程的組合驗證與前端正式產品串接
 
 ### 4.4 前端
 
@@ -624,6 +626,9 @@
 - 現有 `Japan/frontend` 已新增 management checklist process 入口，可直接觸發巡檢處理並回灌 management snapshot
 - 現有 `Japan/frontend` 已新增 management 旅程批次取消 / 鎖定 / 解鎖入口，可直接觸發旅程管理操作並回灌 snapshot
 - 現有 `Japan/frontend` 已新增旅程看板 / 例外旅程 / 旅程摘要 / 待辦摘要入口
+- 現有 `Japan/frontend` 的旅程頁已補上 dashboard / summary 同步，讓列表頁更接近管理面板
+- 現有 `Japan/frontend` 的旅程頁也已補上 action queue 前幾筆顯示
+- 現有 `Japan/frontend` 的旅程頁已補上公開旅程快捷入口
 - 現有 `Japan/frontend` 已新增 management 交通中斷批次審核入口，可直接觸發 review batch 並回灌 snapshot
 - 現有 `Japan/frontend` 已把管理批次鎖定 / 解鎖 / 交通審核改成可輸入 id 與說明的實際操作介面
 - 現有 `Japan/frontend` 已新增 management 交通中斷 review summary 入口，可直接回灌審核統計摘要
@@ -683,6 +688,19 @@
 - 現有 `Japan/frontend` 也已可在 `management-snapshot` 中看到交通中斷審核摘要
 - 現有 `Japan/frontend` 也已可直接顯示管理巡檢摘要
 - 現有 `Japan/frontend` 也已可在旅程摘要中看到目前旅程與保留旅程的實際條目
+- 現有 `Japan/frontend` 已新增完整控制台導覽入口，可一次串接 auth / access / overview / shop / auction / journey / visibility
+- 現有 `Japan/frontend` 的完整控制台導覽已改為順序切換 overview / shop / journey / visibility / management
+- 現有 `Japan/frontend` 已新增首頁流程捷徑列，可依序進入驗證、總覽、旅程、管理與可見性
+- 現有 `Japan/frontend` 的首頁流程捷徑已補上管理清單、交通審核摘要與公開紀錄清單的同步載入
+- 現有 `Japan/frontend` 的首頁流程捷徑已補上旅程看板、旅程摘要與待辦摘要的同步載入
+- 現有 `Japan/frontend` 的首頁流程捷徑已補上總覽、商店與管理快照的同步載入
+- 現有 `Japan/frontend` 的首頁流程捷徑已補上管理旅程摘要與可見性總覽的同步載入
+- 現有 `Japan/frontend` 的首頁流程捷徑已補上完整導覽入口，能直接進入全流程巡覽
+- 現有 `Japan/frontend` 的完整導覽已改成順序流程，並納入管理的 checklist / traffic review / traffic list
+- 現有 `Japan/frontend` 已新增完整導覽摘要面板，可直接顯示巡覽步驟結果
+- 現有 `Japan/frontend` 的完整導覽摘要已補上逐步狀態清單
+- 現有 `Japan/frontend` 的完整導覽摘要已補成中文步驟名稱，較接近正式報表
+- 現有 `Japan/frontend` 的完整導覽摘要已補上每一步的區塊說明
 - 後續仍需把旅程、商店、拍賣與管理操作頁面接成完整產品流程，補齊編輯、操作與狀態流轉頁面，才算真正完成前端
 
 ## 5. 建議下一步
