@@ -93,6 +93,59 @@ async function main() {
     authContext: { playerId: outsiderPlayer.id, source: "test" },
     targetPlayerId: hostPlayer.id,
   });
+  const anonymousAccess = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "anonymous" },
+    targetPlayerId: hostPlayer.id,
+  });
+  const originalDisableOperatorFallback = process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  const originalAuthStrict = process.env.JAPAN_AUTH_STRICT;
+  const originalOperatorFallback = process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = "0";
+  process.env.JAPAN_AUTH_STRICT = "0";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+  const operatorFallbackAccess = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "test" },
+    operatorPlayerId: hostPlayer.id,
+    targetPlayerId: hostPlayer.id,
+  });
+  process.env.JAPAN_AUTH_STRICT = "1";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+  const strictFallbackAccess = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "test" },
+    operatorPlayerId: hostPlayer.id,
+    targetPlayerId: hostPlayer.id,
+  });
+  if (originalAuthStrict === undefined) {
+    delete process.env.JAPAN_AUTH_STRICT;
+  } else {
+    process.env.JAPAN_AUTH_STRICT = originalAuthStrict;
+  }
+  if (originalOperatorFallback === undefined) {
+    delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  } else {
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalOperatorFallback;
+  }
+  if (originalDisableOperatorFallback === undefined) {
+    delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  } else {
+    process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = originalDisableOperatorFallback;
+  }
+  if (originalAuthStrict === undefined) {
+    delete process.env.JAPAN_AUTH_STRICT;
+  } else {
+    process.env.JAPAN_AUTH_STRICT = originalAuthStrict;
+  }
+  if (originalOperatorFallback === undefined) {
+    delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  } else {
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalOperatorFallback;
+  }
 
   assert.equal(hostAccess.canObserveGame, true);
   assert.equal(hostAccess.canReviewGame, true);
@@ -105,6 +158,17 @@ async function main() {
   assert.equal(outsiderAccess.canObserveGame, false);
   assert.equal(outsiderAccess.canReviewGame, false);
   assert.equal(outsiderAccess.isJoinedGame, false);
+
+  assert.equal(anonymousAccess.isAuthenticated, false);
+  assert.equal(anonymousAccess.canObserveGame, false);
+  assert.equal(anonymousAccess.canReviewGame, false);
+  assert.equal(anonymousAccess.canManageGame, false);
+  assert.equal(operatorFallbackAccess.isAuthenticated, true);
+  assert.equal(operatorFallbackAccess.usedOperatorFallback, false);
+  assert.equal(operatorFallbackAccess.isHost, true);
+  assert.equal(strictFallbackAccess.isAuthenticated, false);
+  assert.equal(strictFallbackAccess.usedOperatorFallback, false);
+  assert.equal(strictFallbackAccess.isJoinedGame, false);
 
   console.log("access-control-smoke-test passed");
 }

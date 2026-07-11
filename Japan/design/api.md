@@ -25,8 +25,8 @@
 目前 API 可先用三種主要角色理解：
 
 - `public`：不需要登入即可存取
-- `player-self`：需要可解析到操作者玩家身分，正式路徑以 `authContext` 為準
-- `host`：需要可解析到主持人玩家身分，正式路徑以 `authContext` 為準
+- `player-self`：需要可解析到操作者玩家身分，正式來源以 `authContext` 為準
+- `host`：需要可解析到主持人玩家身分，正式來源以 `authContext` 為準
 
 `access` 與 review 類 API 的觀察/審查語意細分為：
 

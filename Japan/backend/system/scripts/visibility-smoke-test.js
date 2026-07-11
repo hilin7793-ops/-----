@@ -7,7 +7,7 @@ import {
   createPlayer,
   createRecord,
 } from "../src/index.js";
-import { canViewPlayerExactLocation, filterRecordDataByVisibility, getPublicJourneyInfo } from "../src/services/visibility/visibilityService.js";
+import { canViewPlayerExactLocation, canViewPlayerFullRoute, filterRecordDataByVisibility, getPublicJourneyInfo } from "../src/services/visibility/visibilityService.js";
 import { getPublicRecordsDuringGame } from "../src/services/records/recordService.js";
 import { filterBlindBoxDataByVisibility } from "../src/services/blindBoxes/blindBoxService.js";
 
@@ -181,10 +181,43 @@ async function main() {
   assert.equal(exactLocationOther.canView, false);
   assert.equal(publicJourneySelf.publicJourneyInfo?.journeyId, publicJourney.id);
   assert.equal(publicJourneyOther.publicJourneyInfo, null);
+  const fullRouteSelf = await canViewPlayerFullRoute({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: memberPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  const fullRouteOtherBeforeReview = await canViewPlayerFullRoute({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: outsiderPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  await dataAccessLayer.updateRecordById({
+    collectionName: CollectionName.GAMES,
+    recordId: gameData.id,
+    data: { status: GameStatus[2] },
+  });
+  const fullRouteOtherAfterReview = await canViewPlayerFullRoute({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: outsiderPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
+  const publicJourneyOtherAfterReview = await getPublicJourneyInfo({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: outsiderPlayer.id,
+    targetPlayerId: memberPlayer.id,
+  });
   assert.equal(filteredRecord.payload?.visibleNote, "ok");
   assert.equal(filteredRecord.payload?.currentLocationId, undefined);
   assert.equal(filteredRecord.payload?.fullRoute, undefined);
   assert.equal(filteredRecord.payload?.privateState, undefined);
+  assert.equal(fullRouteSelf.canView, true);
+  assert.equal(fullRouteOtherBeforeReview.canView, false);
+  assert.equal(fullRouteOtherAfterReview.canView, true);
+  assert.equal(publicJourneyOtherAfterReview.publicJourneyInfo?.journeyId, publicJourney.id);
   assert.equal(Array.isArray(publicRecords.publicRecordList), true);
   assert.equal(publicRecords.publicRecordList.length, 1);
   assert.equal(filteredBlindBox.effectData, undefined);

@@ -333,6 +333,13 @@
 ### 4.1 後端功能缺口
 
 - 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間查詢，並已用 assert 確認部分 `maps` / `locations` / `records` / `journeys` / `blind boxes` / `player tickets` / `player special states` / `traffic incidents` / `auction bids` 查詢結果，但仍可持續擴充
+- 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間與複合條件查詢，並已用 assert 確認部分 `maps` / `locations` / `records` / `journeys` / `blind boxes` / `player tickets` / `player special states` / `traffic incidents` / `auction bids` 查詢結果，但仍可持續擴充
+- `player records` 已再補 `recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `public records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `game records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `traffic incidents` 已再補 `journeyId + status + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `traffic incidents` 的複合查詢已再補回傳 createdAt 區間驗證
+- `traffic incidents` 的 createdAtBefore upper bound 驗證已修正
 - 更多以 PocketBase 實庫執行的端對端驗證，特別是角色、可見性、排程與批次操作的交叉情境
 - 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
 - `api-smoke-test` 已再補上 `management-snapshot` 的整合驗證
@@ -343,17 +350,26 @@
 - host/player/admin 權限矩陣已完成主要路由落點，`GET /games/:gameId/access` 也已補 `canObserveGame` / `canReviewGame`，observer / referee / admin 的說法已開始往更一致的正式語氣收斂
 - 非自有但可授權的觀察/裁判模式已可從 access profile 讀到主要旗標，但路由層還能再做更細的正式分流
 - `api.md` 與 route 層註解已再往 `authContext` 正式來源收斂，`operatorPlayerId` 只保留為相容輸入，不再被描述成正式權限來源
+- `api.md` 的 `player-self` / `host` 角色說明已改成 `authContext` 正式來源語氣
 - `gameRoutes` 的模組註解已再統一成 `authContext` 為正式來源、`operatorPlayerId` 僅作相容輸入的語氣
 - `journeyRoutes` 的模組註解也已跟進同一種 `authContext` 語氣
-- `blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 也已跟進同一種 `authContext` 語氣
+- `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 僅作 optional compatibility input 的更短語氣
+- `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 只作相容輸入的更簡短語氣
+- `blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 也已跟進同一種 `authContext` 正式來源、`operatorPlayerId` optional compatibility input 的更短語氣
 
 ### 4.3 測試缺口
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
 - 已新增 `unit-smoke-test.js`，先補上 `queryOptions` 與 `random` 純函式的獨立驗證
+- 已再補 `unit-smoke-test.js` 的 query 預設值、盲盒 review fallback 與 random 邊界驗證
+- 已再補 `unit-smoke-test.js` 的 query null / undefined 回退與盲盒 review 混合優先順序驗證
+- 已再補 `unit-smoke-test.js` 的盲盒 review override 優先順序驗證
+- 已再補 `service-rules-smoke-test.js` 的 management-snapshot summary 對齊驗證
+- 已再補 `service-rules-smoke-test.js` 的 traffic incident createdAtBefore 複合查詢驗證
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
 - 已補足可見性與 access profile 的記憶體層驗證腳本
+- 已再補 `visibility-smoke-test.js` 的 full route 與賽後可見性驗證
 - 尚未建立完整單元測試與更全面的 service 層規則測試，但已補上多個關鍵 service 規則 smoke test、條件查詢驗證與旅程建立驗證
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
 - 已以 assert 再確認 service 層旅程建立的合法 / 非合法邊界
@@ -361,11 +377,88 @@
 - 已以 assert 再確認 service 層的資金可負擔與扣款邊界
 - 已以 assert 再確認 service 層的 journey summary 與 checklist 摘要欄位
 - 已以 assert 再確認 service 層的 journeys / traffic incidents 條件查詢與分頁
+- 已以 assert 再確認 service 層的 journeys 狀態 / 交通工具 / 時間交叉查詢
+- 已以 assert 再確認 service 層的 journeys 完整區間複合查詢
 - 已以 assert 再確認 service 層的 blind box review / special states 組合查詢
 - 已以 assert 再確認 service 層的 blind box review 查詢與 player special states 查詢
+- 已以 assert 再確認 service 層的 blind box review 複合查詢條件
+- 已以 assert 再確認 service 層的 blind box review 完整複合查詢條件
 - 已以 assert 再確認 service 層的 overview 與 management-snapshot 摘要欄位
+- 已以 assert 再確認 service 層的 overview / journey management summary / action queue summary 聚合欄位
+- 已以 assert 再確認 service 層的 overview 與 management-snapshot 基礎結構欄位
 - 已以 assert 再確認 service 層的 journey management summary 與 action queue summary 聚合欄位
+- 已以 assert 再確認 service 層的 overview / managementSnapshot / checklist / journey dashboard 摘要一致性
+- 已以 assert 再確認 service 層的 journey dashboard 與 locked reserved action queue 邊界
+- 已以 assert 再確認 service 層的 host / self 權限拒絕邊界
+- 已以 assert 再確認 service 層的匿名 access profile 邊界
+- 已以 assert 再確認 service 層的未登入 host / self 權限拒絕邊界
+- 已以 assert 再確認 service 層的 strict mode operator fallback 收斂邊界
+- 已以 assert 再確認 access-control smoke test 的 operator fallback 與 strict fallback 分支
+- 已以 assert 再確認 service 層的 journey time events processing 邊界
+- 已以 assert 再確認 service 層的 traffic incident review summary 與 aggregated review data
+- 已以 assert 再確認 service 層的 traffic incident review summary 欄位對齊
+- 已以 assert 再確認 service 層的 traffic incident review summary 實際 pending / approved / rejected 計數
+- 已以 assert 再確認 service 層的 blind box review data 實際 effect log 筆數
+- 已以 assert 再確認 service 層的 general shop priority state / clear priority state
+- 已以 assert 再確認 service 層的 general shop items priorityAccess 輸出與 auction bids 時間區間
+- 已以 assert 再確認 service 層的 canCreateAuctionRound 與 current auction 輸出
+- 已以 assert 再確認 service 層的 journeys 排序與 offset 分頁
+- 已以 assert 再確認 service 層的 player journeys 條件查詢與分頁
+- 已以 assert 再確認 service 層的 openBlindBox 實際開箱流程
+- 已以 assert 再確認 service 層的 blind box batch create / delete
+- 已以 assert 再確認 service 層的 blind box batch update / delete
+- 已以 assert 再確認 service 層的 ticket time enough for journey 邊界
+- 已以 assert 再確認 service 層的 ticket rating 計算
+- 已以 assert 再確認 service 層的 ticket ownership / combination 規則
+- 已以 assert 再確認 service 層的 ticket not reserved 與 excludedJourneyId
+- 已以 assert 再確認 service 層的 ticket reserve / release lifecycle
+- 已以 assert 再確認 service 層的 ticket consume / returned lifecycle
+- 已以 assert 再確認 service 層的 player tickets 查詢、排序與分頁
+- 已以 assert 再確認 service 層的 map / location CRUD 與查詢
+- 已以 assert 再確認 service 層的 map start / goal / available transport types 讀寫
+- 已以 assert 再確認 service 層的 traffic incident approve / apply result flow
+- 已以 assert 再確認 service 層的 game start / end 與 end condition
+- 已以 assert 再確認 service 層的 time helper 規則
+- 已以 assert 再確認 service 層的 access profile 旗標
+- 已以 assert 再確認 service 層的 public journey 與 public records 可見性
+- 已以 assert 再確認 service 層的 public records / post game review 基礎欄位對齊
+- 已以 assert 再確認 service 層的 public records / post game review 歸屬欄位對齊
+- 已以 assert 再確認 service 層的 game records / public records 複合查詢條件
+- 已以 assert 再確認 service 層的 public journey info 摘要欄位
+- 已以 assert 再確認 service 層的 blind box special state 建立
+- 已以 assert 再確認 service 層的 auction award / general shop remove flow 欄位對齊
+- 已以 assert 再確認 service 層的 game journey exception list
+- 已以 assert 再確認 service 層的 public blind box info
+- 已以 assert 再確認 service 層的 public blind box / blind box list 複合查詢條件
+- 已以 assert 再確認 service 層的 blind box review 三列表結構
+- 已以 assert 再確認 service 層的 openBlindBox 回傳欄位對齊
+- 已以 assert 再確認 service 層的 blind box canOpen reason 邊界
+- 已以 assert 再確認 service 層的 map special rules 讀寫
+- 已以 assert 再確認 service 層的 scheduled event orchestration（含 gameResult）
+- 已以 assert 再確認 service 層的 record 查詢排序與分頁
+- 已以 assert 再確認 service 層的 player / game records 基礎欄位對齊
+- 已以 assert 再確認 service 層的 ticket generation rules / batch
+- 已以 assert 再確認 service 層的 player money / route / goal helper（含加扣款回讀）
+- 已以 assert 再確認 service 層的 journey cancel / complete
+- 已以 assert 再確認 service 層的 ticket destroy / auction destroy
+- 已以 assert 再確認 service 層的 general / auction shop open window
+- 已以 assert 再確認 service 層的 returned ticket time calculation 欄位對齊
+- 已以 assert 再確認 service 層的 blind box condition / money effect 回讀
+- 已以 assert 再確認 service 層的 blind box random ticket gain / loss 欄位對齊
+- 已以 assert 再確認 service 層的 next auction bid pool reward
+- 已以 assert 再確認 service 層的 free shop refresh special state sourceBlindBoxId 對照
+- 已以 assert 再確認 service 層的 player special states 來源 / 消耗 / 時間區間複合查詢
+- 已以 assert 再確認 service 層的 determineWinner
+- 已以 assert 再確認 service 層的 auction bid / duplicate bid
+- 已以 assert 再確認 service 層的 blind box canOpen 判定
+- 已以 assert 再確認 service 層的 game time events processing
+- 已以 assert 再確認 service 層的 free shop ticket effect 欄位對齊
+- 已以 assert 再確認 service 層的 free shop refresh effect 欄位對齊
+- 已以 assert 再確認 service 層的 auction shop initialize
+- 已以 assert 再確認 service 層的 general shop initialize 欄位對齊
+- 已以 assert 再確認 service 層的 shop scheduled events processing
 - 已以 assert 再確認 service 層的拍賣並列與 bid 時間區間查詢
+- 已以 assert 再確認 service 層的 auction bids offset 分頁與排序
 - 已以 assert 再確認 blind box visible / opened visibility 邊界
 - 已以 assert 再確認 blind box 開啟狀態與 review / admin visibility 一致性
 - 已以 assert 再確認 public journey 非本人不可見邊界
@@ -374,31 +467,67 @@
 - 已以 assert 再確認 exact location 與 public journey 的賽後放行
 - 已以 assert 再確認 traffic incident review summary 與 batch review
 - 已以 assert 再確認 traffic incident 提交 / 審核 / 批次審核 / review summary 核心流程
+- 已以 assert 再確認 traffic incident 單筆提交與審核欄位對齊
+- 已以 assert 再確認 traffic incident 審核回傳欄位對齊
 - 已以 assert 再確認 traffic incident review summary 的 pending / approve / reject 三種計數欄位
+- 已以 assert 再確認 traffic incident review summary 的 pendingRequestIdList 對齊
+- 已以 assert 再確認 traffic incidents 的 playerId / journeyId / status / createdAt 篩選
+- 已以 assert 再確認 traffic incidents 的 playerId + createdAtBefore 範圍篩選
+- 已以 assert 再確認 traffic incidents 的 createdAtBefore 邊界篩選
+- 已以 assert 再確認 traffic incidents 的 createdAtBefore 上界清單每筆都落在同一時間區間內
+- 已以 assert 再確認 traffic incidents 的 journeyId 交叉篩選
 - 已以 assert 再確認 anonymous access 與 operator fallback access profile
 - 已以 assert 再確認匿名 access 不可取得 observe / review / manage 權限
+- 已以 assert 再確認盲盒列表在 `visibilityMode=admin` 下會阻擋非 host
 - 已以 assert 再確認 review 聚合資料欄位
+- 已以 assert 再確認 review 聚合 blind box summary 欄位
+- 已以 assert 再確認 aggregated review summary 欄位對齊
+- 已以 assert 再確認 journey dashboard 基礎欄位對齊
 - 已以 assert 再確認管理端 dashboard 與旅程批次清理 / 鎖定 / 解鎖
 - 已以 assert 再確認旅程 exceptions 與 action queue
 - 已以 assert 再確認 public records 與 blind boxes query options
 - 已以 assert 再確認 public records 主要入口回傳結構
 - 已以 assert 再確認 public records query 的回傳筆數與主要結構
 - 已以 assert 再確認 blind boxes review 的盲盒、效果日誌與 recordList 筆數上限
+- 已以 assert 再確認 blind boxes review 的三列表 query options 與筆數上限
+- 已以 assert 再確認 blind boxes review 的三列表 upper bound query options
+- 已以 assert 再確認 blind boxes review 三列表在上界分頁下都有筆數限制
+- 已以 assert 再確認 blind boxes review 的基礎欄位對齊
+- 已以 assert 再確認 blind boxes review 的位置欄位對齊
 - 已以 assert 再確認 player tickets 與 player special states query options
+- 已以 assert 再確認 player tickets / special states / traffic incidents 篩選條件
+- 已以 assert 再確認 player tickets 的 createdAtBefore 範圍篩選
+- 已以 assert 再確認 player tickets 的 source / createdAt 區間複合查詢
+- 已以 assert 再確認 player tickets offset 分頁與排序
+- 已以 assert 再確認 player tickets / special states 基礎欄位對齊
+- 已以 assert 再確認 player special states 基礎欄位對齊
+- 已以 assert 再確認 player special states 查詢包層對齊
+- 已以 assert 再確認 player special states 的 sourceBlindBoxId / isConsumed / createdAt 篩選
+- 已以 assert 再確認 player special states 的 createdAtBefore 邊界篩選
+- 已以 assert 再確認 player special states offset 分頁與排序
+- 已以 assert 再確認 player special states 的 isConsumed 對照查詢
+- 已以 assert 再確認 player special states 的 stateType / sourceBlindBoxId / isConsumed 複合查詢
 - 已以 assert 再確認 review summary 的 traffic incident 統計欄位
 - 已以 assert 再確認 review summary 的 traffic incident 三種計數欄位
 - 已以 assert 再確認 review 資料中的 recordList 與 trafficIncidentSummary 結構
 - 已以 assert 再確認 checklist summary 的 totalJourneyCount / pendingTrafficIncidentCount / dueToStartCount
+- 已以 assert 再確認 checklist 基礎欄位對齊
 - 已以 assert 再確認 player records query 的回傳結構與分頁上限
+- 已以 assert 再確認 player records 的 recordType 與 createdAt 篩選
 - 已以 assert 再確認 special states query 的回傳結構、分頁上限與 stateType 過濾
 - 已以 assert 再確認 journeys 日期區間查詢結果
 - 已以 assert 再確認 checklist 與 processChecklist 的摘要欄位
-- 已以 assert 再確認 current auction 與 resolveAuction 回傳結構
+- 已以 assert 再確認 journey summary 與 management summary 基礎欄位對齊
+- 已以 assert 再確認 managementSnapshot 基礎欄位對齊
+- 已以 assert 再確認 current auction 與 resolveAuction 回傳結構（含 totalBidAmount / blindBoxRewards）
 - 已以 assert 再確認 current auction 的 ticket / ticketRating 與 resolveAuction 的 winnerPlayerId
 - 已以 assert 再確認 player tickets 與 special states 的來源條件
 - 已以 assert 再確認 player tickets 列表、分頁與 shop_purchase 篩選
 - 已以 assert 再確認 player records 與 game records 的 visibility 差異
 - 已以 assert 再確認 player records 與 game records 的列表結構
+- 已以 assert 再確認 game records 的 recordType 篩選
+- 已以 assert 再確認 game records / public records 的 recordType 與 createdAt 上界篩選
+- 已以 assert 再確認 game records 與 public records offset 分頁
 - 已以 assert 再確認 journey 批次操作的 resultList 結構
 - 已以 assert 再確認單一旅程的 start / publicJourney / complete 回傳狀態
 - 已以 assert 再確認 currentJourney / publicJourney 與旅程 id 的一致性
@@ -429,18 +558,40 @@
 - 現有 `Japan/frontend` 也已可直接讀取一般商店清單與目前拍賣
 - 現有 `Japan/frontend` 已再補上管理巡檢摘要區，可直接顯示 `checklist`、`review summary` 與 `journeyDashboard` 重點數字
 - 現有 `Japan/frontend` 已能把 `management-snapshot` 與 `overview` 的主要數字同步映到畫面上，包含待審交通、待辦旅程、review summary 與旅程總數
+- 現有 `Japan/frontend` 已把 `management-snapshot` 的摘要數字回灌到首頁 quick list，讓首頁數字和巡檢視角一致
+- 現有 `Japan/frontend` 已再補上管理巡檢總覽數字區，可直接顯示玩家、商店與盲盒概況
+- 現有 `Japan/frontend` 已將管理巡檢總覽補上拍賣概況
+- 現有 `Japan/frontend` 已讓側欄入口會隨 overview / snapshot / shop / journey 載入而改變
+- 現有 `Japan/frontend` 已讓 checklist 也會回灌首頁管理摘要與側欄入口
+- 現有 `Japan/frontend` 已讓 auth / access 也會回灌首頁導覽與可見性狀態
+- 現有 `Japan/frontend` 已讓側欄切換時右側標題也會同步更新
+- 現有 `Japan/frontend` 已讓側欄狀態會跟著 auth / access / snapshot / overview / shop / journey 載入同步更新
+- 現有 `Japan/frontend` 已讓 section 切換時頂部卡片狀態也會同步更新
+- 現有 `Japan/frontend` 已新增可見性與 Review 入口，可直接看公開旅程與賽後 review
+- 現有 `Japan/frontend` 已新增管理總覽與旅程 / 商店操作入口，能直接載入主要控制台資料
+- 現有 `Japan/frontend` 已新增首頁賽後回顧快捷入口，可直接載入 review
+- 現有 `Japan/frontend` 已新增首頁查看總覽入口，可直接載入 overview
+- 現有 `Japan/frontend` 已再補上 review summary 核心數字區，可直接顯示待審、已核與已退數字
+- 現有 `Japan/frontend` 已再補上管理健康度顯示，可快速判斷管理壓力
+- 現有 `Japan/frontend` 已整理 overview 管理區塊的顯示一致性
+- 現有 `Japan/frontend` 已整理 overview 資料更新的縮排與一致性
+- 現有 `Japan/frontend` 已整理 overview 區塊縮排，讓顯示結構更一致
+- 現有 `Japan/frontend` 已再把 overview 與 management-preview 的欄位更新縮排統一，讓管理摘要與總覽同步更容易維護
 - 現有 `Japan/frontend` 的首頁快速摘要也已補上待審交通與待辦旅程，讓管理巡檢重點更直接可見
 - 現有 `Japan/frontend` 的首頁快速摘要也已補上審核待辦與旅程待辦，讓管理入口更接近可用狀態
 - 現有 `Japan/frontend` 的管理摘要也已補上交通待審與旅程待辦，能更直接對應 snapshot 的管理壓力點
 - 現有 `Japan/frontend` 的管理摘要也已補上待審清單筆數與動作類型數，方便快速看出管理壓力來源
 - 現有 `Japan/frontend` 的管理摘要已把動作類型數的推導統一成共用 helper，避免 `management-snapshot` 與 `overview` 顯示來源不一致
 - 現有 `Japan/frontend` 的管理摘要也已補上待辦內容清單，能直接看見前幾筆旅程待辦而不只是數字
+- 現有 `Japan/frontend` 的管理摘要也已補上待辦明細，能直接看見旅程 id、狀態、建議動作與例外原因
+- 現有 `Japan/frontend` 的商店與拍賣摘要也已補上拍賣出價數與總額，能直接看出拍賣壓力
 - 現有 `Japan/frontend` 也已開始顯示商店與拍賣摘要
 - 現有 `Japan/frontend` 也已可直接顯示商店與拍賣預覽清單
 - 現有 `Japan/frontend` 的側欄入口已可直接切到商店與拍賣資料載入
 - 現有 `Japan/frontend` 也已可直接讀取玩家旅程列表
 - 現有 `Japan/frontend` 也已可直接讀取目前旅程與保留旅程詳情
 - 現有 `Japan/frontend` 也已可直接顯示旅程預覽清單
+- 現有 `Japan/frontend` 的旅程預覽已把 current / reserved 與列表狀態一起顯示
 - 現有 `Japan/frontend` 也已可直接讀取 `checklist`
 - 現有 `Japan/frontend` 也已可在 `management-snapshot` 中看到交通中斷審核摘要
 - 現有 `Japan/frontend` 也已可直接顯示管理巡檢摘要

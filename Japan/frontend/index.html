@@ -329,6 +329,7 @@
         <button class="nav-item" onclick="setSection('journeys'); loadJourneys()">旅程與車票</button>
         <button class="nav-item" onclick="setSection('shops'); loadGeneralShop(); loadCurrentAuction()">商店與拍賣</button>
         <button class="nav-item" onclick="setSection('management'); loadManagementSnapshot()">管理與審核</button>
+        <button class="nav-item" onclick="setSection('visibility'); loadVisibilityPreview()">可見性與 Review</button>
 
         <div class="sidebar-footer">
           <div class="chip">API Base: `http://127.0.0.1:8788`</div>
@@ -343,14 +344,16 @@
             <h2>控制台入口</h2>
             <p class="subtle">先把首頁、商店、旅程、管理與審核入口收斂，後續可逐步接上 API 與即時狀態。</p>
           </div>
-        <div class="actions">
+          <div class="actions">
             <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
             <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
+            <a class="action" href="javascript:void(0)" onclick="loadOverview()">查看總覽</a>
             <a class="action" href="javascript:void(0)" onclick="loadManagementSnapshot()">管理總覽</a>
             <a class="action" href="javascript:void(0)" onclick="loadChecklist()">檢查待辦</a>
             <a class="action" href="javascript:void(0)" onclick="loadJourneys()">載入旅程</a>
             <a class="action" href="javascript:void(0)" onclick="loadGeneralShop()">商店清單</a>
             <a class="action" href="javascript:void(0)" onclick="loadCurrentAuction()">目前拍賣</a>
+            <a class="action" href="javascript:void(0)" onclick="loadVisibilityPreview()">賽後回顧</a>
           </div>
         </div>
 
@@ -445,6 +448,8 @@
             <div class="mini-list" id="shop-details" style="margin-top: 16px;">
               <div class="mini-item"><span>一般商店</span><span id="shop-details-count">0</span></div>
               <div class="mini-item"><span>目前拍賣</span><span id="auction-details">未載入</span></div>
+              <div class="mini-item"><span>拍賣出價</span><span id="auction-bid-count">未載入</span></div>
+              <div class="mini-item"><span>出價總額</span><span id="auction-total-amount">未載入</span></div>
               <div class="mini-item"><span>優先權</span><span id="priority-details">未載入</span></div>
               <div class="mini-item"><span>玩家旅程</span><span id="journey-details">未載入</span></div>
               <div class="mini-item"><span>待審交通</span><span id="traffic-review-details">未載入</span></div>
@@ -465,15 +470,19 @@
             </div>
             <div class="mini-list" id="management-preview" style="margin-top: 16px;">
               <div class="mini-item"><span>巡檢摘要</span><span id="management-preview-summary">未載入</span></div>
+              <div class="mini-item"><span>總覽數字</span><span id="management-preview-overview">未載入</span></div>
               <div class="mini-item"><span>待審交通</span><span id="management-preview-incidents">未載入</span></div>
               <div class="mini-item"><span>管理清單</span><span id="management-preview-checklist">未載入</span></div>
               <div class="mini-item"><span>審核摘要</span><span id="management-preview-review">未載入</span></div>
+              <div class="mini-item"><span>Review 核心</span><span id="management-preview-review-core">未載入</span></div>
+              <div class="mini-item"><span>管理健康</span><span id="management-preview-health">未載入</span></div>
               <div class="mini-item"><span>旅程總數</span><span id="management-preview-journeys">未載入</span></div>
               <div class="mini-item"><span>交通待審</span><span id="management-preview-traffic-pending">未載入</span></div>
               <div class="mini-item"><span>旅程待辦</span><span id="management-preview-action-queue">未載入</span></div>
               <div class="mini-item"><span>待審清單</span><span id="management-preview-pending-list">未載入</span></div>
               <div class="mini-item"><span>動作類型</span><span id="management-preview-action-types">未載入</span></div>
               <div class="mini-item"><span>待辦內容</span><span id="management-preview-action-list">未載入</span></div>
+              <div class="mini-item"><span>待辦明細</span><span id="management-preview-action-detail">未載入</span></div>
             </div>
           </div>
         </div>
@@ -495,13 +504,52 @@
         journeys: "旅程與車票",
         shops: "商店與拍賣",
         management: "管理與審核",
+        visibility: "可見性與 Review",
+      };
+      const sectionStatus = {
+        overview: {
+          game: "Ready",
+          shop: "Open",
+          admin: "Host",
+          visibility: "OK",
+        },
+        journeys: {
+          game: "Journey Ready",
+          shop: "Journey",
+          admin: "Journey",
+          visibility: "Journey",
+        },
+        shops: {
+          game: "Shop Ready",
+          shop: "Shop",
+          admin: "Shop",
+          visibility: "Shop",
+        },
+        management: {
+          game: "Admin Ready",
+          shop: "Admin",
+          admin: "Admin",
+          visibility: "Admin",
+        },
+        visibility: {
+          game: "Review Ready",
+          shop: "Review",
+          admin: "Review",
+          visibility: "Review",
+        },
       };
 
       document.getElementById("section-title").textContent = titles[section] ?? "總覽儀表板";
+      document.getElementById("right-panel-title").textContent = titles[section] ?? "主要入口";
+      document.getElementById("game-status").textContent = sectionStatus[section]?.game ?? "Ready";
+      document.getElementById("shop-status").textContent = sectionStatus[section]?.shop ?? "Open";
+      document.getElementById("admin-status").textContent = sectionStatus[section]?.admin ?? "Host";
+      document.getElementById("visibility-status").textContent = sectionStatus[section]?.visibility ?? "OK";
       document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"));
       if (window.event?.currentTarget) {
         window.event.currentTarget.classList.add("active");
       }
+      updateSidebarStatus();
     }
 
     function getBaseUrl() {
@@ -519,6 +567,26 @@
 
     function updatePill(id, text) {
       document.getElementById(id).textContent = text;
+    }
+
+    function updateSidebarStatus() {
+      const authText = state.authSession?.authMode ?? "未登入";
+      const accessText = state.accessProfile?.canManageGame
+        ? "可管理"
+        : state.accessProfile?.canObserveGame
+          ? "可觀察"
+          : "待授權";
+      const snapshotText = state.managementSnapshot?.snapshot ? "巡檢已載入" : "巡檢未載入";
+      const sectionText = document.getElementById("section-title")?.textContent ?? "總覽儀表板";
+
+      document.querySelectorAll(".sidebar-footer .chip").forEach((chip) => {
+        const currentText = chip.textContent ?? "";
+        if (currentText.startsWith("Auth:")) {
+          chip.textContent = `Auth: ${authText}`;
+        } else if (currentText.startsWith("Status:")) {
+          chip.textContent = `Status: ${sectionText} / ${accessText} / ${snapshotText}`;
+        }
+      });
     }
 
     function getJourneyActionTypeCount(snapshot) {
@@ -547,6 +615,21 @@
       }).join(" | ");
     }
 
+    function formatJourneyActionQueueDetail(snapshot) {
+      const actionQueue = Array.isArray(snapshot?.journeyActionQueue?.actionQueue)
+        ? snapshot.journeyActionQueue.actionQueue
+        : [];
+      if (actionQueue.length === 0) {
+        return "沒有待辦";
+      }
+
+      return actionQueue.slice(0, 2).map((item) => {
+        const actionList = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.join(",") : "none";
+        const reasonList = Array.isArray(item?.exceptionReasonList) ? item.exceptionReasonList.join(",") : "none";
+        return `${item?.journeyId ?? "-"}|${item?.status ?? "unknown"}|${actionList}|${reasonList}`;
+      }).join(" || ");
+    }
+
     async function fetchJson(path, options = {}) {
       const response = await fetch(`${getBaseUrl()}${path}`, options);
       const payload = await response.json();
@@ -561,6 +644,12 @@
         const payload = await fetchJson("/auth/session");
         state.authSession = payload.data ?? null;
         updatePill("auth-status", state.authSession?.authMode ?? "unknown");
+        document.getElementById("admin-entry").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth";
+        document.getElementById("visibility-status").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth Pending";
+        document.getElementById("visibility-summary").textContent = state.authSession?.authUserId
+          ? `User: ${state.authSession.authUserId}`
+          : "未取得 authUserId";
+        updateSidebarStatus();
         setOutput({ type: "auth/session", payload });
       } catch (error) {
         updatePill("auth-status", "error");
@@ -580,6 +669,14 @@
         const payload = await fetchJson(`/games/${gameId}/access`);
         state.accessProfile = payload.data ?? null;
         updatePill("access-status", state.accessProfile?.canObserveGame ? "可觀察" : "不可觀察");
+        document.getElementById("admin-entry").textContent = state.accessProfile?.canManageGame ? "Admin Ready" : "Admin";
+        document.getElementById("journey-entry").textContent = state.accessProfile?.canObserveGame ? "Journey Ready" : "Journey";
+        document.getElementById("shop-entry").textContent = state.accessProfile?.canObserveGame ? "Access Ready" : "Shop";
+        document.getElementById("visibility-status").textContent = state.accessProfile?.canReviewGame ? "Review OK" : "Review Pending";
+        document.getElementById("visibility-summary").textContent = state.accessProfile?.isHost
+          ? "Host access 已就緒"
+          : "等待 host / self 權限";
+        updateSidebarStatus();
         setOutput({ type: "games/access", payload });
       } catch (error) {
         updatePill("access-status", "error");
@@ -602,6 +699,9 @@
         document.getElementById("management-preview-summary").textContent = snapshot?.checklist?.summary
           ? `待審 ${snapshot.checklist.summary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${snapshot.checklist.summary.dueReservedJourneyCount ?? 0}`
           : "已載入 snapshot";
+        document.getElementById("management-preview-overview").textContent = snapshot?.overview?.summary
+          ? `玩家 ${snapshot.overview.summary.playerCount ?? 0} / 商店 ${snapshot.overview.summary.generalShopItemCount ?? 0} / 盲盒 ${snapshot.overview.summary.blindBoxCount ?? 0}`
+          : "已載入 overview";
         document.getElementById("management-preview-incidents").textContent = String(snapshot?.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
         document.getElementById("management-preview-traffic-pending").textContent = String(snapshot?.trafficIncidentReview?.pendingCount ?? 0);
         document.getElementById("management-preview-action-queue").textContent = String(snapshot?.journeyActionQueue?.actionQueue?.length ?? 0);
@@ -610,6 +710,27 @@
           : "0 筆";
         document.getElementById("management-preview-action-types").textContent = `${getJourneyActionTypeCount(snapshot)} 種`;
         document.getElementById("management-preview-action-list").textContent = formatJourneyActionQueue(snapshot);
+        document.getElementById("management-preview-action-detail").textContent = formatJourneyActionQueueDetail(snapshot);
+        document.getElementById("overview-admin-count").textContent = String(snapshot?.overview?.summary?.playerResultList?.length ?? 0);
+        document.getElementById("overview-journey-count").textContent = String(snapshot?.overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
+        document.getElementById("overview-traffic-count").textContent = String(snapshot?.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+        document.getElementById("overview-journey-pending-count").textContent = String(snapshot?.checklist?.summary?.dueReservedJourneyCount ?? 0);
+        document.getElementById("overview-review-count").textContent = String(snapshot?.overview?.summary?.recordList?.length ?? 0);
+        document.getElementById("overview-action-queue-count").textContent = String(snapshot?.journeyActionQueue?.actionQueue?.length ?? 0);
+        document.getElementById("journey-details").textContent = `${snapshot?.overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0} 筆`;
+        document.getElementById("traffic-review-details").textContent = String(snapshot?.trafficIncidentReview?.pendingCount ?? 0);
+        document.getElementById("current-journey-details").textContent = String(snapshot?.checklist?.summary?.dueJourneyStartCount ?? 0);
+        document.getElementById("reserved-journey-details").textContent = String(snapshot?.checklist?.summary?.dueJourneyCompleteCount ?? 0);
+        document.getElementById("journey-preview-count").textContent = `${snapshot?.journeyActionQueue?.journeyIdList?.length ?? 0} 筆`;
+        document.getElementById("journey-preview-items").textContent = snapshot?.journeyActionQueue?.journeyIdList?.length
+          ? snapshot.journeyActionQueue.journeyIdList.slice(0, 3).join(" | ")
+          : "無待辦旅程";
+        document.getElementById("admin-entry").textContent = snapshot?.checklist?.summary ? "Admin Ready" : "Admin";
+        document.getElementById("journey-entry").textContent = snapshot?.journeyActionQueue?.actionQueue?.length
+          ? `Journey ${snapshot.journeyActionQueue.actionQueue.length}`
+          : "Journey";
+        document.getElementById("shop-entry").textContent = snapshot?.overview?.currentAuction ? "Auction Live" : "Shop";
+        updateSidebarStatus();
         updatePill("snapshot-status", "loaded");
         setOutput({ type: "games/management-snapshot", payload });
       } catch (error) {
@@ -632,6 +753,10 @@
         document.getElementById("admin-summary").textContent = checklist?.summary
           ? `待審交通中斷 ${checklist.summary.pendingTrafficIncidentRequestCount ?? 0} / 到點旅程 ${checklist.summary.dueReservedJourneyCount ?? 0}`
           : "已載入 checklist";
+        document.getElementById("admin-entry").textContent = checklist ? "Checklist Ready" : "Admin";
+        document.getElementById("overview-traffic-count").textContent = String(checklist?.summary?.pendingTrafficIncidentCount ?? checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
+        document.getElementById("overview-journey-pending-count").textContent = String(checklist?.summary?.dueReservedJourneyCount ?? 0);
+        updateSidebarStatus();
         updatePill("snapshot-status", checklist ? "checklist" : "loaded");
         setOutput({ type: "games/checklist", payload });
       } catch (error) {
@@ -664,10 +789,10 @@
         document.getElementById("overview-auction-state").textContent = overview?.currentAuction ? "進行中" : "待命";
         document.getElementById("overview-admin-count").textContent = String(overview?.summary?.playerResultList?.length ?? 0);
         document.getElementById("overview-journey-count").textContent = String(overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
-          document.getElementById("overview-traffic-count").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
-          document.getElementById("overview-journey-pending-count").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
-          document.getElementById("overview-review-count").textContent = String(overview?.summary?.recordList?.length ?? 0);
-          document.getElementById("overview-action-queue-count").textContent = String(overview?.journeyDashboard?.actionQueue?.length ?? 0);
+        document.getElementById("overview-traffic-count").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
+        document.getElementById("overview-journey-pending-count").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
+        document.getElementById("overview-review-count").textContent = String(overview?.summary?.recordList?.length ?? 0);
+        document.getElementById("overview-action-queue-count").textContent = String(overview?.journeyDashboard?.actionQueue?.length ?? 0);
         document.getElementById("shop-details-count").textContent = String(overview?.generalShopItemList?.length ?? 0);
         document.getElementById("auction-details").textContent = overview?.currentAuction?.ticket?.ratingGrade ?? "未載入";
         document.getElementById("priority-details").textContent = overview?.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
@@ -677,6 +802,12 @@
         document.getElementById("traffic-review-details").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
         document.getElementById("current-journey-details").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
         document.getElementById("reserved-journey-details").textContent = String(overview?.journeyDashboard?.summary?.dueToCompleteCount ?? 0);
+        document.getElementById("admin-entry").textContent = overview?.summary ? "Overview Ready" : "Admin";
+        document.getElementById("journey-entry").textContent = overview?.journeyDashboard?.summary?.totalJourneyCount
+          ? `Journey ${overview.journeyDashboard.summary.totalJourneyCount}`
+          : "Journey";
+        document.getElementById("shop-entry").textContent = overview?.currentAuction ? "Auction Live" : "Shop";
+        updateSidebarStatus();
         setOutput({ type: "games/overview", payload });
       } catch (error) {
         setOutput({ type: "games/overview", error: error.message });
@@ -698,6 +829,8 @@
         document.getElementById("overview-shop-count").textContent = String(shopTicketList.length);
         document.getElementById("shop-details-count").textContent = String(shopTicketList.length);
         document.getElementById("priority-details").textContent = payload.data?.priorityState?.prioritySource ?? "none";
+        document.getElementById("shop-entry").textContent = shopTicketList.length > 0 ? "Shop Live" : "Shop Empty";
+        updateSidebarStatus();
         document.getElementById("shop-preview-count").textContent = `${shopTicketList.slice(0, 5).length} 筆`;
         document.getElementById("shop-preview-items").textContent = shopTicketList
           .slice(0, 5)
@@ -721,11 +854,15 @@
         const currentAuction = payload.data?.currentAuction ?? null;
         document.getElementById("auction-entry").textContent = currentAuction ? "Auction Live" : "Auction Idle";
         document.getElementById("auction-details").textContent = currentAuction?.ticketRating?.ratingGrade ?? "未載入";
+        document.getElementById("auction-bid-count").textContent = String(currentAuction?.bidCount ?? 0);
+        document.getElementById("auction-total-amount").textContent = String(currentAuction?.totalBidAmount ?? 0);
         document.getElementById("shop-status").textContent = currentAuction ? "Auction Live" : "Shop Ready";
         document.getElementById("shop-summary").textContent = currentAuction
-          ? `目前拍賣 ${currentAuction.ticketRating?.ratingGrade ?? "-"} 級`
+          ? `目前拍賣 ${currentAuction.ticketRating?.ratingGrade ?? "-"} 級 / ${currentAuction.bidCount ?? 0} 筆出價`
           : "目前沒有進行中的拍賣";
         document.getElementById("overview-auction-state").textContent = currentAuction ? "進行中" : "待命";
+        document.getElementById("shop-entry").textContent = currentAuction ? "Auction Live" : "Shop Ready";
+        updateSidebarStatus();
         document.getElementById("auction-preview-count").textContent = currentAuction ? "1 筆" : "0 筆";
         document.getElementById("auction-preview-ticket").textContent = currentAuction
           ? `${currentAuction.ticket?.id ?? "-"}:${currentAuction.ticketRating?.ratingGrade ?? currentAuction.ticketRating?.ratingType ?? "unknown"}`
@@ -765,11 +902,18 @@
         document.getElementById("reserved-journey-details").textContent = reservedJourney
           ? `${reservedJourney.id ?? "reserved"} / ${reservedJourney.status ?? "unknown"}`
           : "無保留旅程";
+        document.getElementById("overview-journey-pending-count").textContent = String(
+          Number(currentJourney ? 1 : 0) + Number(reservedJourney ? 1 : 0),
+        );
+        document.getElementById("management-preview-journeys").textContent = `${journeyList.length} 總旅程`;
         document.getElementById("journey-preview-count").textContent = `${journeyList.slice(0, 5).length} 筆`;
-        document.getElementById("journey-preview-items").textContent = journeyList
-          .slice(0, 5)
-          .map((journey) => `${journey.id ?? "-"}:${journey.status ?? "unknown"}`)
-          .join(" | ") || "無旅程";
+        document.getElementById("journey-preview-items").textContent = [
+          currentJourney ? `current:${currentJourney.id ?? "-"}:${currentJourney.status ?? "unknown"}` : null,
+          reservedJourney ? `reserved:${reservedJourney.id ?? "-"}:${reservedJourney.status ?? "unknown"}` : null,
+          ...journeyList.slice(0, 3).map((journey) => `${journey.id ?? "-"}:${journey.status ?? "unknown"}`),
+        ].filter(Boolean).join(" | ") || "無旅程";
+        document.getElementById("journey-entry").textContent = journeyList.length > 0 ? `Journeys ${journeyList.length}` : "Journey Empty";
+        updateSidebarStatus();
         setOutput({
           type: "games/players/journeys",
           payload: {
@@ -780,6 +924,52 @@
         });
       } catch (error) {
         setOutput({ type: "games/players/journeys", error: error.message });
+      }
+    }
+
+    async function loadVisibilityPreview() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        const [publicJourneyPayload, reviewPayload] = await Promise.all([
+          fetchJson(`/games/${gameId}/players/${playerId}/public-journey?requestingPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/review?visibilityMode=post_game_review&operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+        ]);
+
+        const publicJourneyInfo = publicJourneyPayload?.data?.publicJourneyInfo ?? null;
+        const reviewData = reviewPayload?.data?.reviewData ?? null;
+        document.getElementById("visibility-status").textContent = publicJourneyInfo ? "Public OK" : "Public Hidden";
+        document.getElementById("visibility-summary").textContent = reviewData
+          ? `Review ${reviewData.recordList?.length ?? 0} 筆 / 旅程 ${publicJourneyInfo ? "可見" : "隱藏"}`
+          : "已載入可見性資料";
+        document.getElementById("game-status").textContent = publicJourneyInfo ? "Visibility Ready" : "Visibility Hidden";
+        document.getElementById("game-summary").textContent = publicJourneyInfo
+          ? `Public Journey: ${publicJourneyInfo.journeyId ?? "-"}`
+          : "沒有可見的公開旅程";
+        document.getElementById("admin-status").textContent = reviewData ? "Review Ready" : "Review Pending";
+        document.getElementById("admin-summary").textContent = reviewData
+          ? `Review records ${reviewData.recordList?.length ?? 0} 筆`
+          : "賽後 review 尚未載入";
+        document.getElementById("journey-entry").textContent = publicJourneyInfo ? "Journey Visible" : "Journey Hidden";
+        document.getElementById("shop-entry").textContent = reviewData ? "Review Visible" : "Shop";
+        document.getElementById("overview-review-count").textContent = String(reviewData?.recordList?.length ?? 0);
+        document.getElementById("current-journey-details").textContent = publicJourneyInfo?.journeyId ?? "無公開旅程";
+        document.getElementById("reserved-journey-details").textContent = reviewData?.winnerPlayerId ?? "無 winner";
+        updateSidebarStatus();
+        setOutput({
+          type: "visibility/review",
+          payload: {
+            publicJourney: publicJourneyPayload,
+            review: reviewPayload,
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "visibility/review", error: error.message });
       }
     }
 
@@ -829,6 +1019,9 @@
           document.getElementById("management-preview-summary").textContent = checklistSummary
             ? `待審 ${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} / 旅程 ${checklistSummary.dueReservedJourneyCount ?? 0}`
             : "已取得管理巡檢總覽";
+          document.getElementById("management-preview-overview").textContent = overviewSummary
+            ? `玩家 ${overviewSummary.playerCount ?? 0} / 商店 ${overviewSummary.generalShopItemCount ?? 0} / 盲盒 ${overviewSummary.blindBoxCount ?? 0} / 拍賣 ${overviewSummary.currentAuctionBidCount ?? 0}`
+            : "已取得 overview";
           document.getElementById("management-preview-incidents").textContent = String(snapshotPayload.data.snapshot.checklist?.pendingTrafficIncidentRequestList?.length ?? 0);
           document.getElementById("management-preview-traffic-pending").textContent = String(snapshotPayload.data.snapshot.trafficIncidentReview?.pendingCount ?? 0);
           document.getElementById("management-preview-action-queue").textContent = String(snapshotPayload.data.snapshot.journeyActionQueue?.actionQueue?.length ?? 0);
@@ -837,12 +1030,26 @@
             : "0 筆";
           document.getElementById("management-preview-action-types").textContent = `${getJourneyActionTypeCount(snapshotPayload.data.snapshot)} 種`;
           document.getElementById("management-preview-action-list").textContent = formatJourneyActionQueue(snapshotPayload.data.snapshot);
+          document.getElementById("management-preview-action-detail").textContent = formatJourneyActionQueueDetail(snapshotPayload.data.snapshot);
           document.getElementById("management-preview-checklist").textContent = checklistSummary
             ? `${checklistSummary.pendingTrafficIncidentRequestCount ?? 0} 待審 / ${checklistSummary.dueReservedJourneyCount ?? 0} 旅程`
             : "已取得 checklist";
           document.getElementById("management-preview-review").textContent = overviewSummary
             ? `${overviewSummary.recordList?.length ?? 0} 筆 / ${overviewSummary.trafficIncidentSummary?.pendingCount ?? 0} 待審`
             : "已取得 review summary";
+          document.getElementById("management-preview-review-core").textContent = overviewSummary
+            ? `${overviewSummary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overviewSummary.trafficIncidentSummary?.approveCount ?? 0} 已核 / ${overviewSummary.trafficIncidentSummary?.rejectCount ?? 0} 已退`
+            : "已取得 review summary";
+          const managementPressure = [
+            checklistSummary?.pendingTrafficIncidentRequestCount ?? 0,
+            overviewSummary?.trafficIncidentSummary?.pendingCount ?? 0,
+            overviewSummary?.journeyDashboard?.actionQueue?.length ?? 0,
+          ].reduce((sum, value) => sum + value, 0);
+          document.getElementById("management-preview-health").textContent = managementPressure >= 6
+            ? `高壓 ${managementPressure}`
+            : managementPressure >= 3
+              ? `中壓 ${managementPressure}`
+              : `輕量 ${managementPressure}`;
           document.getElementById("management-preview-journeys").textContent = overviewSummary
             ? `${overviewSummary.journeyDashboard?.summary?.totalJourneyCount ?? 0} 總旅程`
             : "已取得旅程統計";
@@ -867,6 +1074,7 @@
           document.getElementById("admin-summary").textContent = overview.summary
             ? `玩家 ${overview.ranking?.length ?? 0} 人 / 盲盒 ${overview.blindBoxList?.length ?? 0} 筆`
             : document.getElementById("admin-summary").textContent;
+          document.getElementById("management-preview-overview").textContent = `玩家 ${overview.playerList?.length ?? 0} / 商店 ${overview.generalShopItemList?.length ?? 0} / 盲盒 ${overview.blindBoxList?.length ?? 0} / 拍賣 ${overview.currentAuction ? 1 : 0}`;
           document.getElementById("overview-shop-count").textContent = String(overview.generalShopItemList?.length ?? 0);
           document.getElementById("overview-auction-state").textContent = overview.currentAuction ? "進行中" : "待命";
           document.getElementById("overview-admin-count").textContent = String(overview.summary?.playerResultList?.length ?? 0);
@@ -876,6 +1084,8 @@
           document.getElementById("overview-review-count").textContent = String(overview.summary?.recordList?.length ?? 0);
           document.getElementById("overview-action-queue-count").textContent = String(overview.journeyDashboard?.actionQueue?.length ?? 0);
           document.getElementById("auction-details").textContent = overview.currentAuction?.ticket?.ratingGrade ?? "未載入";
+          document.getElementById("auction-bid-count").textContent = String(overview.currentAuction?.bidCount ?? 0);
+          document.getElementById("auction-total-amount").textContent = String(overview.currentAuction?.totalBidAmount ?? 0);
           document.getElementById("priority-details").textContent = overview.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
             ? "有優先購買權"
             : "無優先購買權";
@@ -896,6 +1106,19 @@
           document.getElementById("management-preview-review").textContent = overview.summary
             ? `${overview.summary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overview.summary.trafficIncidentSummary?.approveCount ?? 0} 已核`
             : document.getElementById("management-preview-review").textContent;
+          document.getElementById("management-preview-review-core").textContent = overview.summary
+            ? `${overview.summary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overview.summary.trafficIncidentSummary?.approveCount ?? 0} 已核 / ${overview.summary.trafficIncidentSummary?.rejectCount ?? 0} 已退`
+            : document.getElementById("management-preview-review-core").textContent;
+          const managementPressure = [
+            overview.summary?.pendingTrafficIncidentCount ?? 0,
+            overview.summary?.trafficIncidentSummary?.pendingCount ?? 0,
+            overview.journeyDashboard?.actionQueue?.length ?? 0,
+          ].reduce((sum, value) => sum + value, 0);
+          document.getElementById("management-preview-health").textContent = managementPressure >= 6
+            ? `高壓 ${managementPressure}`
+            : managementPressure >= 3
+              ? `中壓 ${managementPressure}`
+              : `輕量 ${managementPressure}`;
           document.getElementById("management-preview-journeys").textContent = overview.journeyDashboard?.summary
             ? `${overview.journeyDashboard.summary.totalJourneyCount ?? 0} 總旅程`
             : document.getElementById("management-preview-journeys").textContent;
@@ -917,6 +1140,13 @@
                 return `${item?.journeyId ?? "-"}:${actionCount} 項`;
               }).join(" | ")
             : "0 筆";
+          document.getElementById("management-preview-action-detail").textContent = overview.journeyDashboard?.actionQueue?.length
+            ? overview.journeyDashboard.actionQueue.slice(0, 2).map((item) => {
+                const actionList = Array.isArray(item?.suggestedActionList) ? item.suggestedActionList.join(",") : "none";
+                const reasonList = Array.isArray(item?.exceptionReasonList) ? item.exceptionReasonList.join(",") : "none";
+                return `${item?.journeyId ?? "-"}|${item?.status ?? "unknown"}|${actionList}|${reasonList}`;
+              }).join(" || ")
+            : "沒有待辦";
         }
 
         setOutput(summary);
