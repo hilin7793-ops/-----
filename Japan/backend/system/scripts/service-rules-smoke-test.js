@@ -63,6 +63,8 @@ import {
   getGameJourneyManagementSummary,
   getGameJourneyActionQueueSummary,
   processJourneyTimeEvents,
+  lockJourneyBatch,
+  unlockJourneyBatch,
   canViewPublicJourney,
   validateCreateJourney,
   validateJourneyTime,
@@ -172,6 +174,23 @@ async function main() {
       metadata: {},
     },
   });
+  const mapLocationsByType = await listLocations({
+    dataAccessLayer,
+    mapId: mapData.id,
+    filterOptions: {
+      locationType: "city",
+    },
+    queryOptions: {
+      sortBy: "name",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 1,
+    },
+  });
+  assert.equal(Array.isArray(mapLocationsByType.locationList), true);
+  assert.equal(mapLocationsByType.locationList.length, 1);
+  assert.equal(mapLocationsByType.locationList[0]?.locationType, "city");
+  assert.equal(mapLocationsByType.locationList[0]?.mapId, mapData.id);
 
   const gameData = await createGame({
     dataAccessLayer,
@@ -292,6 +311,34 @@ async function main() {
     authContext: null,
     targetPlayerId: memberPlayer.id,
   });
+  const originalDisableOperatorFallback = process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  const originalAuthStrict = process.env.JAPAN_AUTH_STRICT;
+  const originalOperatorFallback = process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = "0";
+  process.env.JAPAN_AUTH_STRICT = "0";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+  const operatorFallbackAccessProfile = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "test", usedOperatorFallback: true },
+    operatorPlayerId: hostPlayer.id,
+    targetPlayerId: hostPlayer.id,
+  });
+  if (originalAuthStrict === undefined) {
+    delete process.env.JAPAN_AUTH_STRICT;
+  } else {
+    process.env.JAPAN_AUTH_STRICT = originalAuthStrict;
+  }
+  if (originalOperatorFallback === undefined) {
+    delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  } else {
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalOperatorFallback;
+  }
+  if (originalDisableOperatorFallback === undefined) {
+    delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  } else {
+    process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = originalDisableOperatorFallback;
+  }
   assert.equal(hostAccessProfile.canObserveGame, true);
   assert.equal(hostAccessProfile.canReviewGame, true);
   assert.equal(hostAccessProfile.canManageGame, true);
@@ -301,6 +348,10 @@ async function main() {
   assert.equal(memberAccessProfile.canAccessTargetPlayerSelfData, true);
   assert.equal(anonymousAccessProfile.canObserveGame, false);
   assert.equal(anonymousAccessProfile.canReviewGame, false);
+  assert.equal(operatorFallbackAccessProfile.isAuthenticated, true);
+  assert.equal(operatorFallbackAccessProfile.usedOperatorFallback, true);
+  assert.equal(operatorFallbackAccessProfile.canAccessTargetPlayerSelfData, true);
+  assert.equal(operatorFallbackAccessProfile.isTargetPlayer, true);
 
   const createdMap = await createMap({
     dataAccessLayer,
@@ -365,6 +416,21 @@ async function main() {
   });
   assert.equal(listMapsResult.mapList.length >= 1, true);
   assert.equal(listMapsResult.mapList[0]?.id, createdMap.id);
+  const listMapsOffset = await listMaps({
+    dataAccessLayer,
+    filterOptions: {
+      countryOrRegion: "Taiwan",
+    },
+    queryOptions: {
+      sortBy: "name",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 1,
+    },
+  });
+  assert.equal(Array.isArray(listMapsOffset.mapList), true);
+  assert.equal(listMapsOffset.mapList.length, 1);
+  assert.equal(listMapsOffset.mapList[0]?.countryOrRegion, "Taiwan");
 
   const addedLocation = await addLocation({
     dataAccessLayer,
@@ -569,6 +635,27 @@ async function main() {
   assert.equal(journeyListByFullCompositeFilters.journeyList.length, 1);
   assert.equal(journeyListByFullCompositeFilters.journeyList[0]?.status, "reserved");
   assert.equal(journeyListByFullCompositeFilters.journeyList[0]?.transportType, "walking");
+  const journeyListByPlayerCompositeFilters = await listGameJourneys({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      status: "reserved",
+      transportType: "walking",
+      departureAfter: "2026-07-10T10:30:00+08:00",
+      arrivalBefore: "2026-07-10T12:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "departureTime",
+      sortDirection: "desc",
+      limit: 10,
+    },
+  });
+  assert.equal(Array.isArray(journeyListByPlayerCompositeFilters.journeyList), true);
+  assert.equal(journeyListByPlayerCompositeFilters.journeyList.length, 1);
+  assert.equal(journeyListByPlayerCompositeFilters.journeyList[0]?.playerId, memberPlayer.id);
+  assert.equal(journeyListByPlayerCompositeFilters.journeyList[0]?.status, "reserved");
+  assert.equal(journeyListByPlayerCompositeFilters.journeyList[0]?.transportType, "walking");
   const journeyListWithUpperBound = await listGameJourneys({
     dataAccessLayer,
     gameId: gameData.id,
@@ -633,6 +720,40 @@ async function main() {
   assert.equal(Array.isArray(playerJourneyListWithArrivalLowerBound.journeyList), true);
   assert.equal(playerJourneyListWithArrivalLowerBound.journeyList.length >= 1, true);
   assert.equal(playerJourneyListWithArrivalLowerBound.journeyList[0]?.arrivalTime >= "2026-07-10T11:45:00+08:00", true);
+  const playerJourneyListOffset = await listPlayerJourneys({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    queryOptions: {
+      sortBy: "departureTime",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 1,
+    },
+  });
+  assert.equal(Array.isArray(playerJourneyListOffset.journeyList), true);
+  assert.equal(playerJourneyListOffset.journeyList.length, 1);
+  assert.equal(playerJourneyListOffset.journeyList[0]?.status, "completed");
+  const playerJourneyListCompositeOffset = await listPlayerJourneys({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      departureAfter: "2026-07-10T10:30:00+08:00",
+      arrivalBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "departureTime",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(playerJourneyListCompositeOffset.journeyList), true);
+  assert.equal(playerJourneyListCompositeOffset.journeyList.length, 1);
+  assert.equal(playerJourneyListCompositeOffset.journeyList[0]?.status, "reserved");
+  assert.equal(playerJourneyListCompositeOffset.journeyList[0]?.departureTime >= "2026-07-10T10:30:00+08:00", true);
+  assert.equal(playerJourneyListCompositeOffset.journeyList[0]?.arrivalTime <= "2026-07-10T12:00:00+08:00", true);
 
   const incidentRequest = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.TRAFFIC_INCIDENT_REQUESTS,
@@ -796,6 +917,21 @@ async function main() {
   assert.equal(blindBoxReviewWithUpperBound.blindBoxReviewData.blindBoxEffectLogList.length <= 2, true);
   assert.equal(blindBoxReviewWithUpperBound.blindBoxReviewData.recordList.length >= 1, true);
   assert.equal(blindBoxReviewWithUpperBound.blindBoxReviewData.recordList.length <= 2, true);
+  const blindBoxReviewOffset = await getBlindBoxReviewData({
+    dataAccessLayer,
+    gameId: gameData.id,
+    queryOptions: {
+      blindBoxList: { sortBy: "openedAt", sortDirection: "desc", limit: 1, offset: 1 },
+      blindBoxEffectLogList: { sortBy: "createdAt", sortDirection: "desc", limit: 1, offset: 1 },
+      recordList: { sortBy: "createdAt", sortDirection: "desc", limit: 1, offset: 1 },
+    },
+  });
+  assert.equal(Array.isArray(blindBoxReviewOffset.blindBoxReviewData.blindBoxList), true);
+  assert.equal(Array.isArray(blindBoxReviewOffset.blindBoxReviewData.blindBoxEffectLogList), true);
+  assert.equal(Array.isArray(blindBoxReviewOffset.blindBoxReviewData.recordList), true);
+  assert.equal(blindBoxReviewOffset.blindBoxReviewData.blindBoxList.length, 1);
+  assert.equal(blindBoxReviewOffset.blindBoxReviewData.blindBoxEffectLogList.length, 1);
+  assert.equal(blindBoxReviewOffset.blindBoxReviewData.recordList.length, 1);
   const blindBoxReviewFilteredData = await getBlindBoxReviewData({
     dataAccessLayer,
     gameId: gameData.id,
@@ -978,6 +1114,25 @@ async function main() {
   assert.equal(publicBlindBoxListByCompositeFilters.blindBoxList.length >= 1, true);
   assert.equal(publicBlindBoxListByCompositeFilters.blindBoxList[0]?.openedStatus, true);
   assert.equal(publicBlindBoxListByCompositeFilters.blindBoxList[0]?.locationId, startLocation.id);
+  const publicBlindBoxListCompositeOffset = await listBlindBoxes({
+    dataAccessLayer,
+    gameId: gameData.id,
+    visibilityMode: "player",
+    filterOptions: {
+      openedStatus: true,
+      locationId: startLocation.id,
+    },
+    queryOptions: {
+      sortBy: "openedAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(publicBlindBoxListCompositeOffset.blindBoxList), true);
+  assert.equal(publicBlindBoxListCompositeOffset.blindBoxList.length, 1);
+  assert.equal(publicBlindBoxListCompositeOffset.blindBoxList[0]?.openedStatus, true);
+  assert.equal(publicBlindBoxListCompositeOffset.blindBoxList[0]?.locationId, startLocation.id);
   let blindBoxAdminVisibilityBlocked = null;
   try {
     await listBlindBoxes({
@@ -1159,6 +1314,34 @@ async function main() {
     journeyDashboard.dashboard.actionQueue.find((item) => item.journeyId === lockedReservedJourneyData.id)?.suggestedActionList.includes("unlock_journey"),
     true,
   );
+  const lockedJourneyBatch = await lockJourneyBatch({
+    dataAccessLayer,
+    gameId: gameData.id,
+    journeyIdList: [lockedReservedJourneyData.id],
+    reason: "service_rules_smoke",
+    lockedBy: hostPlayer.id,
+  });
+  assert.equal(lockedJourneyBatch.success, true);
+  assert.equal(lockedJourneyBatch.lockedCount, 1);
+  assert.equal(lockedJourneyBatch.resultList.length, 1);
+  assert.equal(lockedJourneyBatch.resultList[0]?.journeyId, lockedReservedJourneyData.id);
+  assert.equal(lockedJourneyBatch.resultList[0]?.playerId, memberPlayer.id);
+  assert.equal(lockedJourneyBatch.resultList[0]?.isLocked, true);
+  assert.equal(lockedJourneyBatch.resultList[0]?.lockedBy, hostPlayer.id);
+  const unlockedJourneyBatch = await unlockJourneyBatch({
+    dataAccessLayer,
+    gameId: gameData.id,
+    journeyIdList: [lockedReservedJourneyData.id],
+    reason: "service_rules_smoke",
+    unlockedBy: hostPlayer.id,
+  });
+  assert.equal(unlockedJourneyBatch.success, true);
+  assert.equal(unlockedJourneyBatch.unlockedCount, 1);
+  assert.equal(unlockedJourneyBatch.resultList.length, 1);
+  assert.equal(unlockedJourneyBatch.resultList[0]?.journeyId, lockedReservedJourneyData.id);
+  assert.equal(unlockedJourneyBatch.resultList[0]?.playerId, memberPlayer.id);
+  assert.equal(unlockedJourneyBatch.resultList[0]?.isLocked, false);
+  assert.equal(unlockedJourneyBatch.resultList[0]?.unlockedBy, hostPlayer.id);
 
   const journeyExceptionList = await getGameJourneyExceptionList({
     dataAccessLayer,
@@ -1179,6 +1362,10 @@ async function main() {
   assert.equal(
     journeyExceptionList.exceptionJourneyList.some((journey) => journey.exceptionReasonList.includes("due_to_complete")),
     true,
+  );
+  assert.equal(
+    journeyExceptionList.exceptionJourneyList.length,
+    journeyDashboard.dashboard.exceptionJourneyList.length,
   );
 
   const journeyActionQueueSummary = await getGameJourneyActionQueueSummary({
@@ -1212,6 +1399,7 @@ async function main() {
   assert.equal(checklist.checklist.summary.dueJourneyCompleteCount, 1);
   assert.equal(checklist.checklist.summary.resolvableAuctionCount, 0);
   assert.equal(checklist.checklist.summary.game.id, gameData.id);
+  assert.equal(checklist.checklist.summary.gameId, gameData.id);
 
   const overview = await getGameOverview({
     dataAccessLayer,
@@ -1275,6 +1463,7 @@ async function main() {
   assert.equal(managementSnapshot.managementSnapshot.summary.dueJourneyCompleteCount, 1);
   assert.equal(managementSnapshot.managementSnapshot.summary.trafficIncidentPendingCount, 1);
   assert.equal(managementSnapshot.managementSnapshot.summary.journeyActionQueueCount >= 0, true);
+  assert.equal(managementSnapshot.managementSnapshot.summary.gameId, gameData.id);
   assert.equal(
     managementSnapshot.managementSnapshot.summary.playerCount,
     managementSnapshot.managementSnapshot.overview.playerList.length,
@@ -1306,6 +1495,10 @@ async function main() {
   assert.equal(
     managementSnapshot.managementSnapshot.overview.summary.pendingTrafficIncidentCount,
     managementSnapshot.managementSnapshot.summary.pendingTrafficIncidentCount,
+  );
+  assert.equal(
+    managementSnapshot.managementSnapshot.overview.summary.gameId,
+    managementSnapshot.managementSnapshot.summary.gameId,
   );
 
   const initializedAuctionShop = await initializeAuctionShop({
@@ -1690,6 +1883,77 @@ async function main() {
   assert.equal(trafficIncidentRequestsByJourneyAndTime.requestList[0]?.status, "pending");
   assert.equal(trafficIncidentRequestsByJourneyAndTime.requestList[0]?.createdAt >= "2026-07-10T11:00:00+08:00", true);
   assert.equal(trafficIncidentRequestsByJourneyAndTime.requestList[0]?.createdAt <= "2026-07-10T11:40:00+08:00", true);
+  const trafficIncidentRequestsComposite = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: currentJourneyData.id,
+    status: "pending",
+    filterOptions: {
+      createdAtAfter: "2026-07-10T11:00:00+08:00",
+      createdAtBefore: "2026-07-10T11:40:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+    },
+  });
+  assert.equal(Array.isArray(trafficIncidentRequestsComposite.requestList), true);
+  assert.equal(trafficIncidentRequestsComposite.requestList.length, 1);
+  assert.equal(trafficIncidentRequestsComposite.requestList[0]?.playerId, memberPlayer.id);
+  assert.equal(trafficIncidentRequestsComposite.requestList[0]?.journeyId, currentJourneyData.id);
+  assert.equal(trafficIncidentRequestsComposite.requestList[0]?.status, "pending");
+  assert.equal(trafficIncidentRequestsComposite.requestList[0]?.createdAt >= "2026-07-10T11:00:00+08:00", true);
+  assert.equal(trafficIncidentRequestsComposite.requestList[0]?.createdAt <= "2026-07-10T11:40:00+08:00", true);
+  const trafficIncidentRequestsCompositeOffset = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: currentJourneyData.id,
+    status: "pending",
+    filterOptions: {
+      createdAtAfter: "2026-07-10T11:00:00+08:00",
+      createdAtBefore: "2026-07-10T11:40:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(trafficIncidentRequestsCompositeOffset.requestList), true);
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList.length, 1);
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList[0]?.playerId, memberPlayer.id);
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList[0]?.journeyId, currentJourneyData.id);
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList[0]?.status, "pending");
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList[0]?.createdAt >= "2026-07-10T11:00:00+08:00", true);
+  assert.equal(trafficIncidentRequestsCompositeOffset.requestList[0]?.createdAt <= "2026-07-10T11:40:00+08:00", true);
+  const trafficIncidentRequestsJourneyCompositeOffset = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: currentJourneyData.id,
+    status: "pending",
+    filterOptions: {
+      createdAtAfter: "2026-07-10T11:00:00+08:00",
+      createdAtBefore: "2026-07-10T11:40:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(trafficIncidentRequestsJourneyCompositeOffset.requestList), true);
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList.length, 1);
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList[0]?.playerId, memberPlayer.id);
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList[0]?.journeyId, currentJourneyData.id);
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList[0]?.status, "pending");
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList[0]?.createdAt >= "2026-07-10T11:00:00+08:00", true);
+  assert.equal(trafficIncidentRequestsJourneyCompositeOffset.requestList[0]?.createdAt <= "2026-07-10T11:40:00+08:00", true);
   const trafficIncidentRequestsByJourney = await listTrafficIncidentRequests({
     dataAccessLayer,
     gameId: gameData.id,
@@ -1714,6 +1978,9 @@ async function main() {
   assert.equal(approvedTrafficIncident.updatedJourney.status, "completed");
   assert.equal(approvedJourneyAfterTraffic.status, "completed");
   assert.equal(approvedJourneyAfterTraffic.toLocationId, startLocation.id);
+  assert.equal(approvedJourneyAfterTraffic.currentLocationId, startLocation.id);
+  assert.equal(approvedJourneyAfterTraffic.completedAt, "2026-07-10T10:20:00+08:00");
+  assert.equal(Boolean(approvedJourneyAfterTraffic.publicJourneyStatus ?? "completed"), true);
   assert.equal(hasReachedGoalCheck.hasReachedGoal, true);
 
   const checkEndConditionBeforeArrival = await checkGameEndCondition({
@@ -1789,9 +2056,13 @@ async function main() {
   assert.equal(Array.isArray(processAllScheduledEventsResult.journeyResult.processedJourneyEvents), true);
   assert.equal(processAllScheduledEventsResult.gameResult.endedGame?.status, "ended");
   assert.equal(Array.isArray(processAllScheduledEventsResult.gameResult.arrivalUpdates), true);
+  assert.equal(processAllScheduledEventsResult.gameResult.endedGame?.id, gameData.id);
+  assert.equal(processAllScheduledEventsResult.gameResult.arrivalUpdates.every((update) => update.gameId === gameData.id), true);
   assert.equal(Array.isArray(processGameChecklistActionsResult.processResult.journeyResult.processedJourneyEvents), true);
   assert.equal(Array.isArray(processGameChecklistActionsResult.checklistBefore.pendingTrafficIncidentRequestList), true);
   assert.equal(Array.isArray(processGameChecklistActionsResult.checklistAfter.pendingTrafficIncidentRequestList), true);
+  assert.equal(processGameChecklistActionsResult.checklistBefore.game.id, gameData.id);
+  assert.equal(processGameChecklistActionsResult.checklistAfter.game.id, gameData.id);
 
   const endedGameData = await endGame({
     dataAccessLayer,
@@ -2013,6 +2284,18 @@ async function main() {
       visibleNote: "ok",
     },
   });
+  const blindBoxRecordData = await createRecord({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    recordType: "blind_box",
+    action: "open",
+    payload: {
+      blindBoxId: hiddenBlindBoxData.id,
+      openedStatus: true,
+      visibleNote: "blind-box-ok",
+    },
+  });
 
   const filteredRecord = await filterRecordDataByVisibility({
     dataAccessLayer,
@@ -2049,17 +2332,105 @@ async function main() {
       limit: 1,
     },
   });
+  const playerRecordsOffset = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "post_game_review",
+    filterOptions: {
+      recordType: "journey",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 1,
+    },
+  });
   assert.equal(Array.isArray(playerRecordsDuringGame.recordList), true);
   assert.equal(Array.isArray(playerRecordsReview.recordList), true);
+  assert.equal(Array.isArray(playerRecordsOffset.recordList), true);
   assert.equal(playerRecordsDuringGame.recordList.length >= 1, true);
   assert.equal(playerRecordsReview.recordList.length, 1);
+  assert.equal(playerRecordsOffset.recordList.length, 1);
   assert.equal(playerRecordsDuringGame.recordList[0]?.recordType, "journey");
   assert.equal(playerRecordsReview.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(playerRecordsOffset.recordList[0]?.recordType, "journey");
   assert.equal(playerRecordsReview.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
   assert.equal(playerRecordsReview.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
   assert.equal(playerRecordsDuringGame.recordList[0]?.payload?.currentLocationId, undefined);
   assert.equal(playerRecordsReview.recordList[0]?.payload?.currentLocationId, "secret-location");
   assert.equal(playerRecordsReview.recordList[0]?.recordType, "journey");
+  const playerRecordsCompositeOffset = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "post_game_review",
+    filterOptions: {
+      recordType: "journey",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(playerRecordsCompositeOffset.recordList), true);
+  assert.equal(playerRecordsCompositeOffset.recordList.length, 1);
+  assert.equal(playerRecordsCompositeOffset.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(playerRecordsCompositeOffset.recordList[0]?.recordType, "journey");
+  assert.equal(playerRecordsCompositeOffset.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(playerRecordsCompositeOffset.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
+  assert.equal(playerRecordsOffset.recordList[0]?.playerId, memberPlayer.id);
+  const playerBlindBoxRecords = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "post_game_review",
+    filterOptions: {
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+    },
+  });
+  assert.equal(Array.isArray(playerBlindBoxRecords.recordList), true);
+  assert.equal(playerBlindBoxRecords.recordList.length, 1);
+  assert.equal(playerBlindBoxRecords.recordList[0]?.recordType, "blind_box");
+  assert.equal(playerBlindBoxRecords.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(playerBlindBoxRecords.recordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  assert.equal(playerBlindBoxRecords.recordList[0]?.payload?.visibleNote, "blind-box-ok");
+  const playerBlindBoxRecordsOffset = await getPlayerRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    visibilityMode: "post_game_review",
+    filterOptions: {
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(playerBlindBoxRecordsOffset.recordList), true);
+  assert.equal(playerBlindBoxRecordsOffset.recordList.length, 1);
+  assert.equal(playerBlindBoxRecordsOffset.recordList[0]?.recordType, "blind_box");
+  assert.equal(playerBlindBoxRecordsOffset.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(playerBlindBoxRecordsOffset.recordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  assert.equal(playerBlindBoxRecordsOffset.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(playerBlindBoxRecordsOffset.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
 
   const gameRecordsDuringGame = await getGameRecords({
     dataAccessLayer,
@@ -2097,6 +2468,72 @@ async function main() {
   assert.equal(gameRecordsDuringGame.recordList[0]?.payload?.currentLocationId, undefined);
   assert.equal(gameRecordsReview.recordList[0]?.payload?.currentLocationId, "secret-location");
   assert.equal(gameRecordsReview.recordList[0]?.recordType, "journey");
+  const gameBlindBoxRecords = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+    },
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(gameBlindBoxRecords.recordList), true);
+  assert.equal(gameBlindBoxRecords.recordList.length, 1);
+  assert.equal(gameBlindBoxRecords.recordList[0]?.recordType, "blind_box");
+  assert.equal(gameBlindBoxRecords.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(gameBlindBoxRecords.recordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  const gameBlindBoxRecordsComposite = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(gameBlindBoxRecordsComposite.recordList), true);
+  assert.equal(gameBlindBoxRecordsComposite.recordList.length, 1);
+  assert.equal(gameBlindBoxRecordsComposite.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(gameBlindBoxRecordsComposite.recordList[0]?.recordType, "blind_box");
+  assert.equal(gameBlindBoxRecordsComposite.recordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  const gameBlindBoxRecordsOffset = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(gameBlindBoxRecordsOffset.recordList), true);
+  assert.equal(gameBlindBoxRecordsOffset.recordList.length, 1);
+  assert.equal(gameBlindBoxRecordsOffset.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(gameBlindBoxRecordsOffset.recordList[0]?.recordType, "blind_box");
+  assert.equal(gameBlindBoxRecordsOffset.recordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  assert.equal(gameBlindBoxRecordsOffset.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(gameBlindBoxRecordsOffset.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
   const gameRecordsByCompositeFilters = await getGameRecords({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2119,6 +2556,29 @@ async function main() {
   assert.equal(gameRecordsByCompositeFilters.recordList[0]?.recordType, "journey");
   assert.equal(gameRecordsByCompositeFilters.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
   assert.equal(gameRecordsByCompositeFilters.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
+  const gameRecordsCompositeOffset = await getGameRecords({
+    dataAccessLayer,
+    gameId: gameData.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "journey",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+    visibilityMode: "post_game_review",
+  });
+  assert.equal(Array.isArray(gameRecordsCompositeOffset.recordList), true);
+  assert.equal(gameRecordsCompositeOffset.recordList.length, 1);
+  assert.equal(gameRecordsCompositeOffset.recordList[0]?.playerId, memberPlayer.id);
+  assert.equal(gameRecordsCompositeOffset.recordList[0]?.recordType, "journey");
+  assert.equal(gameRecordsCompositeOffset.recordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(gameRecordsCompositeOffset.recordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
   const gameRecordsOffset = await getGameRecords({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2200,6 +2660,99 @@ async function main() {
   assert.equal(publicRecordsByCompositeFilters.publicRecordList[0]?.recordType, "journey");
   assert.equal(publicRecordsByCompositeFilters.publicRecordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
   assert.equal(publicRecordsByCompositeFilters.publicRecordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
+  const publicRecordsCompositeOffset = await getPublicRecordsDuringGame({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "journey",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(publicRecordsCompositeOffset.publicRecordList), true);
+  assert.equal(publicRecordsCompositeOffset.publicRecordList.length, 1);
+  assert.equal(publicRecordsCompositeOffset.publicRecordList[0]?.playerId, memberPlayer.id);
+  assert.equal(publicRecordsCompositeOffset.publicRecordList[0]?.recordType, "journey");
+  assert.equal(publicRecordsCompositeOffset.publicRecordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(publicRecordsCompositeOffset.publicRecordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
+  const publicBlindBoxRecordData = await createRecord({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    recordType: "blind_box",
+    action: "open",
+    payload: {
+      blindBoxId: hiddenBlindBoxData.id,
+      openedStatus: true,
+      visibleNote: "public-blind-box-ok",
+    },
+  });
+  const publicBlindBoxRecords = await getPublicRecordsDuringGame({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(publicBlindBoxRecords.publicRecordList), true);
+  assert.equal(publicBlindBoxRecords.publicRecordList.length, 1);
+  assert.equal(publicBlindBoxRecords.publicRecordList[0]?.playerId, memberPlayer.id);
+  assert.equal(publicBlindBoxRecords.publicRecordList[0]?.recordType, "blind_box");
+  assert.equal(publicBlindBoxRecords.publicRecordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  assert.equal(publicBlindBoxRecords.publicRecordList[0]?.payload?.visibleNote, "public-blind-box-ok");
+  const publicBlindBoxRecordsOffset = await getPublicRecordsDuringGame({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: hostPlayer.id,
+    filterOptions: {
+      playerId: memberPlayer.id,
+      recordType: "blind_box",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T12:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(publicBlindBoxRecordsOffset.publicRecordList), true);
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList.length, 1);
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList[0]?.playerId, memberPlayer.id);
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList[0]?.recordType, "blind_box");
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList[0]?.payload?.blindBoxId, hiddenBlindBoxData.id);
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(publicBlindBoxRecordsOffset.publicRecordList[0]?.createdAt <= "2026-07-10T12:00:00+08:00", true);
+  const postGameReviewBlindBoxData = await getPostGameReviewData({
+    dataAccessLayer,
+    gameId: gameData.id,
+  });
+  assert.equal(Array.isArray(postGameReviewBlindBoxData.reviewData.recordList), true);
+  assert.equal(postGameReviewBlindBoxData.reviewData.recordList.length >= 1, true);
+  assert.equal(postGameReviewBlindBoxData.reviewData.recordList.some((record) => record.recordType === "blind_box"), true);
+  assert.equal(
+    postGameReviewBlindBoxData.reviewData.recordList.some((record) => record.payload?.blindBoxId === hiddenBlindBoxData.id),
+    true,
+  );
   const publicRecordsOffset = await getPublicRecordsDuringGame({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2466,6 +3019,51 @@ async function main() {
   assert.equal(Array.isArray(playerTicketsComposite.ticketList), true);
   assert.equal(playerTicketsComposite.ticketList.length >= 1, true);
   assert.equal(playerTicketsComposite.ticketList.every((ticket) => ticket.source === "shop_purchase"), true);
+  const playerTicketsCompositeByTicket = await getPlayerTickets({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      ticketId: ownedTicket.id,
+      source: "shop_purchase",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 10,
+    },
+  });
+  assert.equal(Array.isArray(playerTicketsCompositeByTicket.ticketList), true);
+  assert.equal(playerTicketsCompositeByTicket.ticketList.length, 1);
+  assert.equal(playerTicketsCompositeByTicket.ticketList[0]?.ticketId, ownedTicket.id);
+  assert.equal(playerTicketsCompositeByTicket.ticketList[0]?.source, "shop_purchase");
+  assert.equal(playerTicketsCompositeByTicket.ticketList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(playerTicketsCompositeByTicket.ticketList[0]?.createdAt <= "2026-07-10T10:00:00+08:00", true);
+  const playerTicketsCompositeByTicketOffset = await getPlayerTickets({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      ticketId: ownedTicket.id,
+      source: "shop_purchase",
+      createdAtAfter: "2026-07-10T00:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:00:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(playerTicketsCompositeByTicketOffset.ticketList), true);
+  assert.equal(playerTicketsCompositeByTicketOffset.ticketList.length, 1);
+  assert.equal(playerTicketsCompositeByTicketOffset.ticketList[0]?.ticketId, ownedTicket.id);
+  assert.equal(playerTicketsCompositeByTicketOffset.ticketList[0]?.source, "shop_purchase");
+  assert.equal(playerTicketsCompositeByTicketOffset.ticketList[0]?.createdAt >= "2026-07-10T00:00:00+08:00", true);
+  assert.equal(playerTicketsCompositeByTicketOffset.ticketList[0]?.createdAt <= "2026-07-10T10:00:00+08:00", true);
   const playerTicketsWithOffset = await getPlayerTickets({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2578,9 +3176,17 @@ async function main() {
       stateType: "free_shop_refresh_count",
       createdAtBefore: "2026-07-10T10:30:00+08:00",
     },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 1,
+    },
   });
   assert.equal(Array.isArray(specialStatesOffset.specialStateList), true);
-  assert.equal(specialStatesOffset.specialStateList.length, 2);
+  assert.equal(specialStatesOffset.specialStateList.length, 1);
+  assert.equal(specialStatesOffset.specialStateList[0]?.stateType, "free_shop_refresh_count");
+  assert.equal(specialStatesOffset.specialStateList[0]?.createdAt <= "2026-07-10T10:30:00+08:00", true);
   const specialStatesByType = await getPlayerBlindBoxSpecialStates({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2623,6 +3229,73 @@ async function main() {
   assert.equal(specialStatesBySourceAndConsume.specialStateList[0]?.isConsumed, false);
   assert.equal(specialStatesBySourceAndConsume.specialStateList[0]?.createdAt >= "2026-07-10T10:00:00+08:00", true);
   assert.equal(specialStatesBySourceAndConsume.specialStateList[0]?.createdAt <= "2026-07-10T10:30:00+08:00", true);
+  const specialStatesBySourceAndConsumeCompositeOffset = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      stateType: "free_shop_refresh_count",
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: false,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(specialStatesBySourceAndConsumeCompositeOffset.specialStateList), true);
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList.length, 1);
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList[0]?.isConsumed, false);
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList[0]?.stateType, "free_shop_refresh_count");
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList[0]?.createdAt >= "2026-07-10T10:00:00+08:00", true);
+  assert.equal(specialStatesBySourceAndConsumeCompositeOffset.specialStateList[0]?.createdAt <= "2026-07-10T10:30:00+08:00", true);
+  const specialStatesBySourceAndConsumeOffsetAfter = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: false,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(specialStatesBySourceAndConsumeOffsetAfter.specialStateList), true);
+  assert.equal(specialStatesBySourceAndConsumeOffsetAfter.specialStateList.length, 1);
+  assert.equal(specialStatesBySourceAndConsumeOffsetAfter.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(specialStatesBySourceAndConsumeOffsetAfter.specialStateList[0]?.isConsumed, false);
+  const specialStatesBySourceAndConsumeOffset = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: false,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(specialStatesBySourceAndConsumeOffset.specialStateList), true);
+  assert.equal(specialStatesBySourceAndConsumeOffset.specialStateList.length, 1);
+  assert.equal(specialStatesBySourceAndConsumeOffset.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(specialStatesBySourceAndConsumeOffset.specialStateList[0]?.isConsumed, false);
 
   const freeRefreshEffectResult = await executeFreeShopRefreshEffect({
     dataAccessLayer,
@@ -2645,6 +3318,17 @@ async function main() {
     playerId: memberPlayer.id,
     stateId: specialStateToConsume.id,
     reason: "service_rules_smoke",
+  });
+  const consumedSpecialStatesBySource = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: true,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
   });
   const addedSpecialState = await addPlayerBlindBoxSpecialState({
     dataAccessLayer,
@@ -2676,11 +3360,39 @@ async function main() {
   assert.equal(freeRefreshEffectFromBlindBox.specialStateData.sourceBlindBoxId, hiddenBlindBoxData.id);
   assert.equal(freeRefreshEffectFromBlindBox.specialStateData.stateData.remainingCount, 1);
   assert.equal(consumedSpecialState.isConsumed, true);
+  assert.equal(consumedSpecialStatesBySource.specialStateList.length, 1);
+  assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.isConsumed, true);
+  assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(consumedSpecialStatesBySource.specialStateList[0]?.stateType, "free_shop_refresh_count");
+  const consumedSpecialStatesBySourceOffset = await getPlayerBlindBoxSpecialStates({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    filterOptions: {
+      sourceBlindBoxId: hiddenBlindBoxData.id,
+      isConsumed: true,
+      createdAtAfter: "2026-07-10T10:00:00+08:00",
+      createdAtBefore: "2026-07-10T10:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(consumedSpecialStatesBySourceOffset.specialStateList), true);
+  assert.equal(consumedSpecialStatesBySourceOffset.specialStateList.length, 1);
+  assert.equal(consumedSpecialStatesBySourceOffset.specialStateList[0]?.isConsumed, true);
+  assert.equal(consumedSpecialStatesBySourceOffset.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(consumedSpecialStatesBySourceOffset.specialStateList[0]?.stateType, "free_shop_refresh_count");
   assert.equal(addedSpecialState.isConsumed, false);
   assert.equal(addedSpecialState.sourceBlindBoxId, hiddenBlindBoxData.id);
   assert.equal(nextAuctionBidPoolEffectResult.playerSpecialState.stateType, "next_auction_bid_pool_reward");
   assert.equal(nextAuctionBidPoolEffectResult.playerSpecialState.sourceBlindBoxId, hiddenBlindBoxData.id);
   assert.equal(nextAuctionBidPoolEffectResult.playerSpecialState.isConsumed, false);
+  assert.equal(freeRefreshEffectFromBlindBox.specialStateData.stateType, "free_shop_refresh_count");
+  assert.equal(freeRefreshEffectFromBlindBox.specialStateData.isConsumed, false);
   assert.equal(consumedSpecialStates.specialStateList.length, 1);
   assert.equal(consumedSpecialStates.specialStateList[0]?.isConsumed, true);
   const specialStatesBySource = await getPlayerBlindBoxSpecialStates({
@@ -2694,6 +3406,7 @@ async function main() {
   });
   assert.equal(specialStatesBySource.specialStateList.length, 1);
   assert.equal(specialStatesBySource.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
+  assert.equal(specialStatesBySource.specialStateList[0]?.stateType, "next_auction_bid_pool_reward");
   const specialStatesConsumedView = await getPlayerBlindBoxSpecialStates({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2717,6 +3430,7 @@ async function main() {
   assert.equal(specialStatesWithoutConsumed.specialStateList.length, 1);
   assert.equal(specialStatesWithoutConsumed.specialStateList[0]?.stateType, "next_auction_bid_pool_reward");
   assert.equal(specialStatesWithoutConsumed.specialStateList[0]?.isConsumed, false);
+  assert.equal(specialStatesWithoutConsumed.specialStateList[0]?.sourceBlindBoxId, hiddenBlindBoxData.id);
 
   const auctionTicket = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.TICKETS,
@@ -2861,6 +3575,12 @@ async function main() {
   assert.equal(tieResolvedAuction.totalBidAmount, 400);
   assert.equal(Array.isArray(tieResolvedAuction.blindBoxRewards), true);
   assert.equal(tieResolvedAuction.blindBoxRewards.length, 0);
+  assert.equal(tieResolvedAuction.bidList.length, 2);
+  assert.equal(tieResolvedAuction.bidList.every((bid) => bid.bidAmount === 200), true);
+  assert.equal(tieResolvedAuction.bidList.every((bid) => bid.playerId === memberPlayer.id || bid.playerId === hostPlayer.id), true);
+  assert.equal(tieResolvedAuction.bidList.map((bid) => bid.bidAmount).reduce((sum, amount) => sum + amount, 0), 400);
+  assert.equal(tieResolvedAuction.bidList.some((bid) => bid.playerId === memberPlayer.id), true);
+  assert.equal(tieResolvedAuction.bidList.some((bid) => bid.playerId === hostPlayer.id), true);
   assert.equal(destroyedAuctionTicket.status, "destroyed");
   assert.equal(hasMemberBidBefore.hasBid, false);
   assert.equal(placedMemberBid.success, true);
@@ -2888,6 +3608,23 @@ async function main() {
   assert.equal(Array.isArray(filteredAuctionBidsByPlayer.bidList), true);
   assert.equal(filteredAuctionBidsByPlayer.bidList.length, 1);
   assert.equal(filteredAuctionBidsByPlayer.bidList[0]?.playerId, hostPlayer.id);
+  const filteredAuctionBidsByPlayerOffset = await getAuctionBids({
+    dataAccessLayer,
+    auctionId: auctionRecord.id,
+    filterOptions: {
+      playerId: hostPlayer.id,
+      createdAtBefore: "2026-07-10T12:30:00+08:00",
+    },
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "desc",
+      limit: 1,
+      offset: 0,
+    },
+  });
+  assert.equal(Array.isArray(filteredAuctionBidsByPlayerOffset.bidList), true);
+  assert.equal(filteredAuctionBidsByPlayerOffset.bidList.length, 1);
+  assert.equal(filteredAuctionBidsByPlayerOffset.bidList[0]?.playerId, hostPlayer.id);
   const auctionBidsWithOffset = await getAuctionBids({
     dataAccessLayer,
     auctionId: auctionRecord.id,
@@ -3201,6 +3938,26 @@ async function main() {
     }),
     true,
   );
+  const trafficIncidentRequestsBeforeUpperBoundOffset = await listTrafficIncidentRequests({
+    dataAccessLayer,
+    gameId: gameData.id,
+    createdAtBefore: "2026-07-10T12:05:00+08:00",
+    queryOptions: {
+      sortBy: "createdAt",
+      sortDirection: "asc",
+      limit: 1,
+      offset: 1,
+    },
+  });
+  assert.equal(Array.isArray(trafficIncidentRequestsBeforeUpperBoundOffset.requestList), true);
+  assert.equal(trafficIncidentRequestsBeforeUpperBoundOffset.requestList.length, 1);
+  assert.equal(trafficIncidentRequestsBeforeUpperBoundOffset.requestList[0]?.gameId, gameData.id);
+  assert.equal(
+    trafficIncidentRequestsBeforeUpperBoundOffset.requestList.every((request) => {
+      return request.createdAt >= "2026-07-10T12:00:00+08:00" && request.createdAt <= "2026-07-10T12:05:00+08:00";
+    }),
+    true,
+  );
 
   await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.RECORDS,
@@ -3249,6 +4006,13 @@ async function main() {
   assert.equal(trafficIncidentReviewSummary.reviewSummary.pendingRequestIdList[0], "incident-pending");
   assert.equal(trafficIncidentReviewSummary.reviewSummary.gameId, gameData.id);
   assert.equal(trafficIncidentReviewSummary.reviewSummary.pendingRequestIdList.includes("incident-pending"), true);
+  assert.equal(trafficIncidentReviewSummary.reviewSummary.pendingRequestIdList.every((requestId) => requestId.startsWith("incident-")), true);
+  assert.equal(
+    trafficIncidentReviewSummary.reviewSummary.pendingRequestIdList.every((requestId) => {
+      return requestId === "incident-pending";
+    }),
+    true,
+  );
 
   const aggregatedGameReviewData = await getAggregatedGameReviewData({
     dataAccessLayer,
@@ -3270,6 +4034,7 @@ async function main() {
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.submitCount, 1);
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.approveCount, 1);
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.rejectCount, 1);
+  assert.equal(trafficIncidentReviewSummary.reviewSummary.pendingCount, aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.submitCount);
 
   console.log("journeyTimeCheck", timeCheck.isValid);
   console.log("invalidJourneyTimeCheck", invalidTimeCheck.isValid);

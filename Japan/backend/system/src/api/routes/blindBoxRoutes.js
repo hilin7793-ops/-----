@@ -39,7 +39,6 @@ function parseBooleanQueryValue(value) {
 }
 
 // Authorization in this module is centered on `authContext`.
-// `operatorPlayerId` remains only as optional compatibility input.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
   return [
     {

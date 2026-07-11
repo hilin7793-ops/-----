@@ -1585,5 +1585,6 @@ if money > 1000 then money = 1000 else money *= 10
 - 第一輪競標同時開始，並於 06:10 結束
 
 # 十七、開發語言和底層數據庫結構
+
 - 前端、後端使用javascript
 - 數據庫使用pocketbase

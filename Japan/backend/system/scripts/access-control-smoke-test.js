@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { createServiceContext } from "../src/api/createServiceContext.js";
-import { CollectionName, createGame, createPlayer, getGameAccessProfile, joinGame } from "../src/index.js";
+import {
+  CollectionName,
+  createGame,
+  createPlayer,
+  getGameAccessProfile,
+  joinGame,
+  assertGameHostAccess,
+  assertSelfAccess,
+} from "../src/index.js";
+import { listBlindBoxes } from "../src/services/blindBoxes/blindBoxService.js";
 
 async function main() {
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
@@ -112,6 +121,16 @@ async function main() {
     operatorPlayerId: hostPlayer.id,
     targetPlayerId: hostPlayer.id,
   });
+  process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = "1";
+  process.env.JAPAN_AUTH_STRICT = "0";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+  const disabledOperatorFallbackAccess = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "test" },
+    operatorPlayerId: hostPlayer.id,
+    targetPlayerId: hostPlayer.id,
+  });
   process.env.JAPAN_AUTH_STRICT = "1";
   process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
   const strictFallbackAccess = await getGameAccessProfile({
@@ -150,25 +169,67 @@ async function main() {
   assert.equal(hostAccess.canObserveGame, true);
   assert.equal(hostAccess.canReviewGame, true);
   assert.equal(hostAccess.canManageGame, true);
+  assert.equal(hostAccess.canAccessTargetPlayerSelfData, true);
+  assert.equal(hostAccess.isTargetPlayer, true);
 
   assert.equal(memberAccess.canObserveGame, true);
   assert.equal(memberAccess.canReviewGame, true);
   assert.equal(memberAccess.canManageGame, false);
+  assert.equal(memberAccess.canAccessTargetPlayerSelfData, true);
+  assert.equal(memberAccess.isTargetPlayer, true);
 
   assert.equal(outsiderAccess.canObserveGame, false);
   assert.equal(outsiderAccess.canReviewGame, false);
   assert.equal(outsiderAccess.isJoinedGame, false);
+  assert.equal(outsiderAccess.canAccessTargetPlayerSelfData, false);
+  assert.equal(outsiderAccess.isTargetPlayer, false);
 
   assert.equal(anonymousAccess.isAuthenticated, false);
   assert.equal(anonymousAccess.canObserveGame, false);
   assert.equal(anonymousAccess.canReviewGame, false);
   assert.equal(anonymousAccess.canManageGame, false);
+  assert.equal(anonymousAccess.canAccessTargetPlayerSelfData, false);
+  assert.equal(anonymousAccess.isTargetPlayer, false);
   assert.equal(operatorFallbackAccess.isAuthenticated, true);
   assert.equal(operatorFallbackAccess.usedOperatorFallback, false);
   assert.equal(operatorFallbackAccess.isHost, true);
+  assert.equal(operatorFallbackAccess.canAccessTargetPlayerSelfData, true);
+  assert.equal(operatorFallbackAccess.isTargetPlayer, true);
+  assert.equal(disabledOperatorFallbackAccess.isAuthenticated, false);
+  assert.equal(disabledOperatorFallbackAccess.usedOperatorFallback, false);
+  assert.equal(disabledOperatorFallbackAccess.authMode, "anonymous");
+  assert.equal(disabledOperatorFallbackAccess.isJoinedGame, false);
   assert.equal(strictFallbackAccess.isAuthenticated, false);
   assert.equal(strictFallbackAccess.usedOperatorFallback, false);
   assert.equal(strictFallbackAccess.isJoinedGame, false);
+
+  await assert.rejects(
+    () => assertGameHostAccess({
+      dataAccessLayer,
+      gameId: gameData.id,
+      authContext: { playerId: memberPlayer.id, source: "test" },
+    }),
+    (error) => error?.code === "FORBIDDEN",
+  );
+
+  await assert.rejects(
+    () => assertSelfAccess({
+      authContext: { playerId: memberPlayer.id, source: "test" },
+      targetPlayerId: hostPlayer.id,
+      detail: { scope: "player journey" },
+    }),
+    (error) => error?.code === "FORBIDDEN",
+  );
+
+  await assert.rejects(
+    () => listBlindBoxes({
+      dataAccessLayer,
+      gameId: gameData.id,
+      requesterId: outsiderPlayer.id,
+      visibilityMode: "admin",
+    }),
+    (error) => error?.code === "FORBIDDEN",
+  );
 
   console.log("access-control-smoke-test passed");
 }

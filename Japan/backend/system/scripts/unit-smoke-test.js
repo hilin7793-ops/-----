@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 
 import { buildBlindBoxReviewQueryOptions, buildQueryOptions } from "../src/api/queryOptions.js";
+import { failure, success } from "../src/utils/result.js";
+import { TransportType, normalizeTransportType } from "../src/constants/transportTypes.js";
 import { pickWeightedItem, randomNormal, randomSteppedNormal, snapToStep } from "../src/utils/random.js";
 
 function run() {
@@ -49,6 +51,17 @@ function run() {
   assert.equal(mixedQueryOptions.limit, null);
   assert.equal(mixedQueryOptions.offset, null);
 
+  const overrideQueryOptions = buildQueryOptions({
+    sortBy: "departureTime",
+    sortDirection: "desc",
+    limit: "11",
+    offset: "12",
+  });
+  assert.equal(overrideQueryOptions.sortBy, "departureTime");
+  assert.equal(overrideQueryOptions.sortDirection, "desc");
+  assert.equal(overrideQueryOptions.limit, "11");
+  assert.equal(overrideQueryOptions.offset, "12");
+
   const fallbackBlindBoxQueryOptions = buildBlindBoxReviewQueryOptions({
     sortDirection: "desc",
     limit: "9",
@@ -84,6 +97,14 @@ function run() {
   assert.equal(mixedBlindBoxQueryOptions.recordList.limit, "4");
   assert.equal(mixedBlindBoxQueryOptions.recordList.offset, 0);
 
+  const emptyBlindBoxQueryOptions = buildBlindBoxReviewQueryOptions({});
+  assert.equal(emptyBlindBoxQueryOptions.blindBoxList.sortBy, null);
+  assert.equal(emptyBlindBoxQueryOptions.blindBoxList.sortDirection, "asc");
+  assert.equal(emptyBlindBoxQueryOptions.blindBoxList.limit, null);
+  assert.equal(emptyBlindBoxQueryOptions.blindBoxList.offset, 0);
+  assert.equal(emptyBlindBoxQueryOptions.blindBoxEffectLogList.sortBy, null);
+  assert.equal(emptyBlindBoxQueryOptions.recordList.sortBy, null);
+
   const overrideBlindBoxQueryOptions = buildBlindBoxReviewQueryOptions({
     sortBy: "createdAt",
     sortDirection: "asc",
@@ -114,6 +135,22 @@ function run() {
   assert.equal(overrideBlindBoxQueryOptions.recordList.sortDirection, "desc");
   assert.equal(overrideBlindBoxQueryOptions.recordList.limit, "4");
   assert.equal(overrideBlindBoxQueryOptions.recordList.offset, "8");
+
+  const successPayload = success({ ok: true });
+  assert.equal(successPayload.success, true);
+  assert.deepEqual(successPayload.data, { ok: true });
+
+  const failurePayload = failure("FORBIDDEN", "denied", { reason: "host only" });
+  assert.equal(failurePayload.success, false);
+  assert.equal(failurePayload.errorCode, "FORBIDDEN");
+  assert.equal(failurePayload.message, "denied");
+  assert.deepEqual(failurePayload.detail, { reason: "host only" });
+
+  assert.equal(normalizeTransportType("shinkansen"), TransportType.SHINKANSEN);
+  assert.equal(normalizeTransportType("新幹線"), TransportType.SHINKANSEN);
+  assert.equal(normalizeTransportType("  taxi  "), TransportType.TAXI);
+  assert.equal(normalizeTransportType("unknown"), null);
+  assert.equal(normalizeTransportType(null), null);
 
   const normalValue = randomNormal({
     average: 10,

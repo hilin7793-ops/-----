@@ -1040,25 +1040,25 @@ Request body:
 
 用途：手動啟動旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入，正式驗證以 `authContext` 為準。
+Request body 可含 `operatorPlayerId` 作為相容輸入。
 
 ### `POST /journeys/:journeyId/complete`
 
 用途：手動完成旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入，正式驗證以 `authContext` 為準。
+Request body 可含 `operatorPlayerId` 作為相容輸入。
 
 ### `POST /journeys/:journeyId/cancel`
 
 用途：取消旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入，正式驗證以 `authContext` 為準。
+Request body 可含 `operatorPlayerId` 作為相容輸入。
 
 ### `PATCH /journeys/:journeyId`
 
 用途：更新旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入，正式驗證以 `authContext` 為準。
+Request body 可含 `operatorPlayerId` 作為相容輸入。
 
 ### `GET /journeys/:journeyId`
 
@@ -1070,7 +1070,7 @@ Request body 可含 `operatorPlayerId` 作為相容輸入，正式驗證以 `aut
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入；正式驗證以 `authContext` 為準
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1082,7 +1082,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入；正式驗證以 `authContext` 為準
+- `operatorPlayerId`，可選，相容輸入
 
 ### `GET /games/:gameId/players/:playerId/journeys/reserved`
 
@@ -1090,7 +1090,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入；正式驗證以 `authContext` 為準
+- `operatorPlayerId`，可選，相容輸入
 
 ## Traffic Incidents
 
@@ -1100,7 +1100,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入；正式驗證以 `authContext` 為準
+- `operatorPlayerId`，可選，相容輸入
 - `playerId`
 - `journeyId`
 - `status`

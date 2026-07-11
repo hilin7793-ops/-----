@@ -6,7 +6,6 @@ import {
 } from "../../index.js";
 
 // Authorization in this module is centered on `authContext`.
-// `operatorPlayerId` remains only as optional compatibility input.
 export function createPlayerRoutes({ dataAccessLayer }) {
   return [
     {
