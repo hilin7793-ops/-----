@@ -229,6 +229,10 @@
 - `Japan/backend/system/scripts/visibility-smoke-test.js` 可通過
 - `Japan/backend/system/scripts/service-rules-smoke-test.js` 可通過
 - `Japan/backend/system/scripts/unit-smoke-test.js` 可通過，並補上時間判斷與權重抽樣等純函式覆蓋
+- `Japan/backend/system/scripts/unit-smoke-test.js` 也補上一般商店與拍賣開窗判斷覆蓋
+- `Japan/backend/system/scripts/unit-smoke-test.js` 也補上旅程時間與交通返還票券時間覆蓋
+- `Japan/backend/system/scripts/unit-smoke-test.js` 也補上票券組合與票券可用時間覆蓋
+- `Japan/backend/system/scripts/unit-smoke-test.js` 也補上票券 ownership 與預約衝突覆蓋
 - 已驗證：
   - 核心遊戲流程
   - 公開/玩家/主持人列表 API 的 query options 串接
@@ -375,6 +379,7 @@
 - `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 只作相容輸入的更簡短語氣
 - `blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 也已跟進同一種 `authContext` 正式來源、`operatorPlayerId` optional compatibility input 的更短語氣
 - `gameRoutes`、`journeyRoutes`、`blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 的模組註解已再收斂成只強調 `authContext`
+- `requestAuthService` 的 dev auth user fallback / operator fallback / strict 收斂已補上 smoke test 驗證
 
 ### 4.3 測試缺口
 
@@ -385,6 +390,42 @@
 - 已再補 `unit-smoke-test.js` 的 queryOptions 完整覆蓋與盲盒 review 空值驗證
 - 已再補 `unit-smoke-test.js` 的盲盒 review override 優先順序驗證
 - 已再補 `unit-smoke-test.js` 的 `success / failure` 回傳格式與 `normalizeTransportType` 正規化驗證
+- 已再補 `unit-smoke-test.js` 的 `determineWinner` 純規則驗證，涵蓋一般與平手 winner 判定
+- 已再補 `unit-smoke-test.js` 的 `canCreateAuctionRound` 純規則驗證，涵蓋開窗與已有拍賣限制
+- 已再補 `unit-smoke-test.js` 的 `validateBlindBoxSetup` 純規則驗證，涵蓋有效設定與多種無效邊界
+- 已再補 `unit-smoke-test.js` 的 `validateBlindBoxEffect` 純規則驗證，涵蓋 money / conditional 與無效效應
+- 已再補 `unit-smoke-test.js` 的 `canOpenBlindBox` 純規則驗證，涵蓋位置、開啟狀態與開局前限制
+- 已再補 `unit-smoke-test.js` 的 `validateCreateJourney` 純規則驗證，涵蓋首程起點與 walking 建立
+- 已再補 `unit-smoke-test.js` 的 `validateUpdateJourney` 純規則驗證，涵蓋接續旅程與可編輯邊界
+- 已再補 `unit-smoke-test.js` 的 `validateCreateJourney` 票券版驗證，涵蓋 taxi / ownership 與票券合法性
+- 已再補 `unit-smoke-test.js` 的 `validateWalkingJourney` / `validateTaxiJourney` 純規則驗證，涵蓋 walking / taxi 基本邊界
+- 已再補 `unit-smoke-test.js` 的 `validateJourneyConnection` 純規則驗證，涵蓋首程、接續與 reserved 邊界
+- 已再補 `unit-smoke-test.js` 的 `validateTicketOwnership` / `validateTicketNotReserved` 純規則驗證，涵蓋 ownership 與 reservation 邊界
+- 已再補 `unit-smoke-test.js` 的 `validateTicketCombination` 純規則驗證，涵蓋 universal、混票、transport mismatch 與 unknown transport
+- 已再補 `unit-smoke-test.js` 的 `validateJourneyTime` 純規則驗證，涵蓋時間倒序與相等邊界
+- 已再補 `unit-smoke-test.js` 的 `validateTicketTimeEnoughForJourney` 純規則驗證，涵蓋剛好足夠與不足邊界
+- 已再補 `unit-smoke-test.js` 的 `isAuctionShopOpenForNewAuction` / `isGeneralShopOpen` 非法時間輸入驗證
+- 已再補 `unit-smoke-test.js` 的 `validateBlindBoxSetup` 遊戲狀態邊界驗證
+- 已再補 `unit-smoke-test.js` 的 `calculateReturnedTicketTime` 精確分鐘與無效時間邊界驗證
+- 已再補 `unit-smoke-test.js` 的 `createJourney` 成功輸出與 metadata 保留驗證
+- 已再補 `unit-smoke-test.js` 的 `updateJourney` 成功輸出與 metadata 合併驗證
+- 已再補 `unit-smoke-test.js` 的 `cancelJourney` 成功輸出與 cancelled 狀態驗證
+- 已再補 `unit-smoke-test.js` 的 `completeJourney` 成功輸出與 completed 狀態驗證
+- 已再補 `unit-smoke-test.js` 的 `startJourney` 成功輸出與 started 狀態驗證
+- 已再補 `unit-smoke-test.js` 的 `processJourneyTimeEvents` 混合 started / completed 事件驗證
+- 已再補 `unit-smoke-test.js` 的 `processGameTimeEvents` arrival update 驗證
+- 已再補 `unit-smoke-test.js` 的 `checkGameEndCondition` / `endGame` 結束條件與結果驗證
+- 已再補 `unit-smoke-test.js` 的 `recordPlayerArrival` arrival 狀態與金額驗證
+- 已再補 `unit-smoke-test.js` 的 `determineWinner` 無人到達與平手邊界驗證
+- 已再補 `unit-smoke-test.js` 的 `getRanking` 排名順序與欄位驗證
+- 已再補 `unit-smoke-test.js` 的 `validateTrafficIncidentRequest` 正常與缺證據驗證
+- 已再補 `unit-smoke-test.js` 的 `validateTrafficIncidentRequest` 重複 pending 申請驗證
+- 已再補 `unit-smoke-test.js` 的 `approveTrafficIncidentRequest` / `rejectTrafficIncidentRequest` 審核成功流程驗證
+- 已再補 `unit-smoke-test.js` 的 `approveTrafficIncidentRequest` / `rejectTrafficIncidentRequest` 非 pending 拒絕驗證
+- 已再補 `unit-smoke-test.js` 的 `resolveRequestAuthContext` dev fallback / operator fallback / strict 驗證
+- 已再補 `unit-smoke-test.js` 的 `reviewTrafficIncidentRequestsBatch` 批次審核與 invalid decision 驗證
+- 已再補 `unit-smoke-test.js` 的 `getTrafficIncidentRequest` / `listTrafficIncidentRequests` 查詢與時間區間驗證
+- 已再補 `unit-smoke-test.js` 的 `getTrafficIncidentReviewSummary` 統計驗證
 - 已再補 `service-rules-smoke-test.js` 的 management-snapshot summary 對齊驗證
 - 已再補 `service-rules-smoke-test.js` 的 checklist 與 managementSnapshot summary gameId 對齊驗證
 - 已再補 `service-rules-smoke-test.js` 的 overview 與 managementSnapshot summary gameId 對齊驗證
@@ -397,6 +438,7 @@
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
 - 已補足可見性與 access profile 的記憶體層驗證腳本
+- 已確認 `unit-smoke-test.js` 仍可通過，純函式與核心規則驗證保持穩定
 - 已再補 `visibility-smoke-test.js` 的 full route 與賽後可見性驗證
 - 尚未建立完整單元測試與更全面的 service 層規則測試，但已補上多個關鍵 service 規則 smoke test、條件查詢驗證與旅程建立驗證
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
@@ -625,8 +667,27 @@
 - 現有 `Japan/frontend` 已讓側欄切換時右側標題也會同步更新
 - 現有 `Japan/frontend` 已讓 section 切換會同步更新 active 狀態，讓側欄與快捷入口的目前視角更清楚
 - 現有 `Japan/frontend` 已新增 management checklist process 入口，可直接觸發巡檢處理並回灌 management snapshot
+- 現有 `Japan/frontend` 已新增遊戲開始 / 結束入口，可直接送出 `POST /games/:gameId/start` 與 `POST /games/:gameId/end`
 - 現有 `Japan/frontend` 已新增 management 旅程批次取消 / 鎖定 / 解鎖入口，可直接觸發旅程管理操作並回灌 snapshot
 - 現有 `Japan/frontend` 已新增旅程看板 / 例外旅程 / 旅程摘要 / 待辦摘要入口
+- 現有 `Japan/frontend` 已新增票券 / 特殊狀態載入入口，可直接讀取 `players/:playerId/tickets` 與 `special-states`
+- 現有 `Japan/frontend` 已讓票券 / 特殊狀態載入可帶來源與建立時間區間條件
+- 現有 `Japan/frontend` 已新增玩家紀錄載入入口，可直接讀取 `players/:playerId/records`
+- 現有 `Japan/frontend` 已讓玩家紀錄載入可帶建立時間區間條件
+- 現有 `Japan/frontend` 已讓公開紀錄載入可帶 requestingPlayerId 與建立時間條件
+- 現有 `Japan/frontend` 已補上可見性摘要區，分開顯示公開紀錄與玩家紀錄
+- 現有 `Japan/frontend` 已把可見性摘要區整理成共用 helper，避免不同載入動作互相覆蓋
+- 現有 `Japan/frontend` 已補上公開紀錄 / 玩家紀錄的快速切換按鈕
+- 現有 `Japan/frontend` 已補上票券 / 狀態與回顧的快速切換按鈕
+- 現有 `Japan/frontend` 已把可見性摘要區擴充為公開紀錄、玩家紀錄與票券/狀態三格
+- 現有 `Japan/frontend` 已把完整導覽納入公開紀錄、玩家資產與玩家紀錄步驟
+- 現有 `Japan/frontend` 已讓完整導覽的可見性摘要顯示公開玩家與玩家紀錄類型
+- 現有 `Japan/frontend` 已補上完整導覽新步驟的說明標籤與對應摘要
+- 現有 `Japan/frontend` 已讓切到可見性區時自動載入公開紀錄、玩家資產與玩家紀錄
+- 現有 `Japan/frontend` 已讓主要分頁切換時自動載入對應資料，減少手動重整與漏載
+- 現有 `Japan/frontend` 已新增交通中斷提交入口，可直接送出 `POST /games/:gameId/traffic-incidents`
+- 現有 `Japan/frontend` 已新增交通中斷單筆核准 / 拒絕入口，可直接送出 `POST /traffic-incidents/:requestId/approve` 與 `POST /traffic-incidents/:requestId/reject`
+- 現有 `Japan/frontend` 已新增旅程啟動 / 完成入口，可直接送出 `POST /journeys/:journeyId/start` 與 `POST /journeys/:journeyId/complete`
 - 現有 `Japan/frontend` 的旅程頁已補上 dashboard / summary 同步，讓列表頁更接近管理面板
 - 現有 `Japan/frontend` 的旅程頁也已補上 action queue 前幾筆顯示
 - 現有 `Japan/frontend` 的旅程頁已補上公開旅程快捷入口
@@ -644,6 +705,7 @@
 - 現有 `Japan/frontend` 已讓 section 切換時頂部卡片狀態也會同步更新
 - 現有 `Japan/frontend` 已新增可見性與 Review 入口，可直接看公開旅程與賽後 review
 - 現有 `Japan/frontend` 已新增管理總覽與旅程 / 商店操作入口，能直接載入主要控制台資料
+- 現有 `Japan/frontend` 已讓商店購買與拍賣出價後同步回灌 overview，讓總覽數字與操作結果一致
 - 現有 `Japan/frontend` 已新增首頁賽後回顧快捷入口，可直接載入 review
 - 現有 `Japan/frontend` 已讓首頁賽後回顧入口先切到 visibility section 再載入 review
 - 現有 `Japan/frontend` 已新增首頁查看總覽入口，可直接載入 overview
@@ -729,6 +791,8 @@
 - 現有 `Japan/frontend` 已補上商店初始化入口，可直接送出 `POST /games/:gameId/general-shop/initialize`
 - 現有 `Japan/frontend` 已補上交通中斷批次審核按鈕與管理巡檢重新整理入口
 - 現有 `Japan/frontend` 已補上商店優先權來源與窗口的可視化摘要
+- 現有 `Japan/frontend` 已補上管理壓力來源拆分摘要，可直接看交通 / 待辦 / 旅程待辦
+- 現有 `Japan/frontend` 已把管理壓力拆分做成共用 helper，讓巡檢 / 待辦 / 總覽入口同步更新
 - 後續仍需把旅程、商店、拍賣與管理操作頁面接成完整產品流程，補齊編輯、操作與狀態流轉頁面，才算真正完成前端
 
 ## 5. 建議下一步
