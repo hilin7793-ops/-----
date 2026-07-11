@@ -227,6 +227,89 @@
       color: var(--muted);
     }
 
+    .mini-item.tour-row {
+      display: grid;
+      grid-template-columns: minmax(110px, 1.1fr) 80px minmax(0, 1.7fr);
+      align-items: center;
+    }
+
+    .mini-item.tour-header {
+      color: var(--text);
+      font-weight: 700;
+      background: rgba(246, 200, 95, 0.08);
+      border-color: rgba(246, 200, 95, 0.28);
+    }
+
+    .tour-status-ok {
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+
+    .tour-status-fail {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .tour-status-empty {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .tour-highlight {
+      box-shadow: inset 0 0 0 1px rgba(246, 200, 95, 0.48);
+      background: rgba(246, 200, 95, 0.08);
+    }
+
+    .tour-detail {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.12);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .tour-toggle {
+      justify-self: end;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .tour-toggle:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .preview-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preview-tab {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .preview-tab.active {
+      border-color: rgba(110, 231, 183, 0.45);
+      background: rgba(110, 231, 183, 0.14);
+    }
+
     .row {
       display: flex;
       justify-content: space-between;
@@ -426,8 +509,31 @@
             <div style="margin-top: 16px;">
               <h3 style="margin-bottom: 10px;">完整導覽摘要</h3>
               <pre id="full-tour-output">尚未執行完整導覽。</pre>
+              <div class="actions" style="margin: 8px 0 0; justify-content: flex-start;">
+                <button type="button" class="action" onclick="toggleAllTourDetails(true)">全部展開</button>
+                <button type="button" class="action" onclick="toggleAllTourDetails(false)">全部收合</button>
+                <button type="button" class="action" onclick="copyFullTourReport('markdown')">複製 Markdown</button>
+                <button type="button" class="action" onclick="copyFullTourReport('json')">複製 JSON</button>
+                <button type="button" class="action" onclick="downloadFullTourReport('markdown')">下載 Markdown</button>
+                <button type="button" class="action" onclick="downloadFullTourReport('json')">下載 JSON</button>
+              </div>
+              <div class="preview-tabs" style="margin-top: 12px;">
+                <button type="button" class="preview-tab active" id="full-tour-preview-tab-markdown" onclick="setFullTourPreviewTab('markdown')">Markdown 預覽</button>
+                <button type="button" class="preview-tab" id="full-tour-preview-tab-json" onclick="setFullTourPreviewTab('json')">JSON 預覽</button>
+              </div>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: 1fr auto;">
+                <input id="full-tour-search" type="text" placeholder="搜尋步驟名稱" oninput="filterFullTourSteps()">
+                <button type="button" class="action" onclick="clearFullTourSearch()">清除搜尋</button>
+              </div>
+              <div class="subtle" id="full-tour-search-meta" style="margin-top: 4px;">命中：全部步驟</div>
+              <textarea id="full-tour-preview" rows="6" readonly style="width: 100%; resize: vertical;">尚未產生可預覽內容。</textarea>
+              <div class="subtle" id="full-tour-preview-meta" style="margin-top: 8px;">模式：Markdown / 更新：尚未更新</div>
               <div class="mini-list" id="full-tour-step-list" style="margin-top: 12px;">
-                <div class="mini-item"><span>巡覽步驟</span><span>尚未載入</span></div>
+                <div class="mini-item tour-row tour-header">
+                  <span>步驟</span>
+                  <span>狀態</span>
+                  <span>說明</span>
+                </div>
               </div>
             </div>
             <p class="footer-note">
@@ -503,6 +609,7 @@
             <div class="api-form" style="margin-top: 12px;">
               <input id="management-traffic-review-note" type="text" placeholder="Traffic Review Note">
               <input id="management-traffic-reject-reason" type="text" placeholder="Traffic Reject Reason">
+              <button type="button" onclick="reviewTrafficIncidentsBatch()">交通批次審核</button>
             </div>
             <div class="mini-list" id="detail-actions" style="margin-top: 16px;">
               <div class="mini-item">
@@ -552,12 +659,34 @@
               <input id="journey-list-arrival-after" type="text" placeholder="Journey Arrival After">
               <input id="journey-list-arrival-before" type="text" placeholder="Journey Arrival Before">
             </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="journey-edit-journey-id" type="text" placeholder="Journey ID">
+              <input id="journey-edit-player-id" type="text" placeholder="Player ID">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="journey-edit-from-location-id" type="text" placeholder="From Location ID">
+              <input id="journey-edit-to-location-id" type="text" placeholder="To Location ID">
+              <input id="journey-edit-transport-type" type="text" placeholder="Transport Type">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="journey-edit-ticket-id-list" type="text" placeholder="Ticket IDs, comma separated">
+              <input id="journey-edit-departure-time" type="text" placeholder="Departure Time">
+              <input id="journey-edit-arrival-time" type="text" placeholder="Arrival Time">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="journey-edit-metadata" type="text" placeholder="Metadata JSON">
+              <button type="button" onclick="updateJourneyFromConsole()">更新旅程</button>
+              <button type="button" onclick="createJourneyFromConsole()">建立旅程</button>
+              <button type="button" onclick="cancelJourneyFromConsole()">取消旅程</button>
+            </div>
             <div class="mini-list" id="shop-details" style="margin-top: 16px;">
               <div class="mini-item"><span>一般商店</span><span id="shop-details-count">0</span></div>
               <div class="mini-item"><span>目前拍賣</span><span id="auction-details">未載入</span></div>
               <div class="mini-item"><span>拍賣出價</span><span id="auction-bid-count">未載入</span></div>
               <div class="mini-item"><span>出價總額</span><span id="auction-total-amount">未載入</span></div>
               <div class="mini-item"><span>優先權</span><span id="priority-details">未載入</span></div>
+              <div class="mini-item"><span>優先來源</span><span id="priority-source-details">未載入</span></div>
+              <div class="mini-item"><span>優先窗口</span><span id="priority-window-details">未載入</span></div>
               <div class="mini-item"><span>玩家旅程</span><span id="journey-details">未載入</span></div>
               <div class="mini-item"><span>待審交通</span><span id="traffic-review-details">未載入</span></div>
               <div class="mini-item"><span>目前旅程</span><span id="current-journey-details">未載入</span></div>
@@ -568,8 +697,30 @@
               <input id="shop-purchase-shop-item-id" type="text" placeholder="Shop Item ID">
             </div>
             <div class="api-form" style="margin-top: 12px;">
+              <input id="shop-refresh-player-id" type="text" placeholder="Refresh Player ID">
+              <input id="shop-refresh-type" type="text" value="manual" placeholder="Refresh Type">
+              <input id="shop-refresh-player-count" type="text" placeholder="Player Count">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="shop-refresh-map-id" type="text" placeholder="Refresh Map ID">
+              <button type="button" onclick="refreshShopFromConsole()">刷新商店</button>
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="shop-init-map-id" type="text" placeholder="Initialize Map ID">
+              <button type="button" onclick="initializeShopFromConsole()">初始化商店</button>
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
               <input id="auction-bid-player-id" type="text" placeholder="Bid Player ID">
               <input id="auction-bid-amount" type="text" placeholder="Bid Amount">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="auction-round-map-id" type="text" placeholder="Auction Map ID">
+              <input id="auction-round-start-time" type="text" placeholder="Auction Start Time">
+              <input id="auction-round-end-time" type="text" placeholder="Auction End Time">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="auction-round-transport-types" type="text" placeholder="Transport Types, comma separated">
+              <button type="button" onclick="createAuctionRoundFromConsole()">建立拍賣回合</button>
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <button type="button" onclick="purchaseShopTicket()">購買商店票券</button>
@@ -597,6 +748,7 @@
               <div class="mini-item"><span>審核摘要</span><span id="management-preview-review">未載入</span></div>
               <div class="mini-item"><span>Review 核心</span><span id="management-preview-review-core">未載入</span></div>
               <div class="mini-item"><span>管理健康</span><span id="management-preview-health">未載入</span></div>
+              <div class="mini-item"><span>壓力拆分</span><span id="management-preview-pressure-breakdown">未載入</span></div>
               <div class="mini-item"><span>旅程總數</span><span id="management-preview-journeys">未載入</span></div>
               <div class="mini-item"><span>交通待審</span><span id="management-preview-traffic-pending">未載入</span></div>
               <div class="mini-item"><span>旅程待辦</span><span id="management-preview-action-queue">未載入</span></div>
@@ -604,6 +756,11 @@
               <div class="mini-item"><span>動作類型</span><span id="management-preview-action-types">未載入</span></div>
               <div class="mini-item"><span>待辦內容</span><span id="management-preview-action-list">未載入</span></div>
               <div class="mini-item"><span>待辦明細</span><span id="management-preview-action-detail">未載入</span></div>
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <button type="button" onclick="loadManagementSnapshot()">重新整理巡檢</button>
+              <button type="button" onclick="loadChecklist()">重新整理待辦</button>
+              <button type="button" onclick="loadTrafficIncidentReviewSummary()">重新整理交通摘要</button>
             </div>
           </div>
         </div>
@@ -618,7 +775,19 @@
       managementSnapshot: null,
       currentAuctionId: null,
       lastResponse: null,
+      fullTourDetailMap: {},
+      fullTourPreviewFormat: "markdown",
+      fullTourPreviewUpdatedAt: null,
     };
+
+    function getSavedFullTourPreviewFormat() {
+      const savedFormat = localStorage.getItem("japan.fullTourPreviewFormat");
+      return savedFormat === "json" ? "json" : "markdown";
+    }
+
+    function saveFullTourPreviewFormat(format) {
+      localStorage.setItem("japan.fullTourPreviewFormat", format === "json" ? "json" : "markdown");
+    }
 
     function setSection(section, event) {
       const titles = {
@@ -709,6 +878,187 @@
           chip.textContent = `Status: ${sectionText} / ${accessText} / ${snapshotText}`;
         }
       });
+    }
+
+    function toggleTourDetail(step) {
+      const detail = document.getElementById(`full-tour-detail-${step}`);
+      const button = document.getElementById(`full-tour-toggle-${step}`);
+      if (!detail || !button) {
+        return;
+      }
+
+      const isOpen = detail.style.display === "block";
+      detail.style.display = isOpen ? "none" : "block";
+      button.textContent = isOpen ? "展開" : "收合";
+    }
+
+    function toggleAllTourDetails(shouldOpen) {
+      Object.keys(state.fullTourDetailMap ?? {}).forEach((step) => {
+        const detail = document.getElementById(`full-tour-detail-${step}`);
+        const button = document.getElementById(`full-tour-toggle-${step}`);
+        if (!detail || !button) {
+          return;
+        }
+        detail.style.display = shouldOpen ? "block" : "none";
+        button.textContent = shouldOpen ? "收合" : "展開";
+      });
+    }
+
+    function filterFullTourSteps() {
+      const searchValue = document.getElementById("full-tour-search")?.value.trim().toLowerCase() || "";
+      const rows = Array.from(document.querySelectorAll("#full-tour-step-list .mini-item.tour-row")).slice(1);
+      let matchCount = 0;
+      rows.forEach((row) => {
+        const text = row.dataset.searchText || row.textContent?.toLowerCase() || "";
+        const isMatch = text.includes(searchValue);
+        if (isMatch) {
+          matchCount += 1;
+        }
+        row.style.display = isMatch ? "" : "none";
+        row.classList.toggle("tour-highlight", Boolean(searchValue) && isMatch);
+        const labelEl = row.querySelector("[data-role='label']");
+        const summaryEl = row.querySelector("[data-role='summary']");
+        if (labelEl && summaryEl) {
+          const labelText = row.dataset.label || labelEl.textContent || "";
+          const summaryText = row.dataset.summary || summaryEl.textContent || "";
+          labelEl.innerHTML = highlightTourText(labelText, searchValue);
+          summaryEl.innerHTML = highlightTourText(summaryText, searchValue);
+        }
+      });
+      const meta = document.getElementById("full-tour-search-meta");
+      if (meta) {
+        meta.textContent = searchValue
+          ? `命中：${matchCount} / ${rows.length} 筆`
+          : `命中：全部步驟（${rows.length} 筆）`;
+      }
+    }
+
+    function clearFullTourSearch() {
+      const search = document.getElementById("full-tour-search");
+      if (search) {
+        search.value = "";
+      }
+      filterFullTourSteps();
+    }
+
+    function escapeTourText(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function highlightTourText(text, searchValue) {
+      const safeText = escapeTourText(text);
+      if (!searchValue) {
+        return safeText;
+      }
+      const escapedQuery = searchValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`(${escapedQuery})`, "ig");
+      return safeText.replace(pattern, "<mark>$1</mark>");
+    }
+
+    function getFullTourReportData() {
+      const title = document.getElementById("full-tour-output")?.textContent?.trim() || "尚未執行完整導覽。";
+      const steps = Array.from(document.querySelectorAll("#full-tour-step-list .mini-item.tour-row"))
+        .slice(1)
+        .map((row) => {
+          const [label, status, summary] = Array.from(row.querySelectorAll("span")).map((span) => span.textContent?.trim() || "");
+          return { label, status, summary };
+        })
+        .filter((step) => step.label || step.status || step.summary);
+      return { title, steps };
+    }
+
+    function formatFullTourReport(format) {
+      const report = getFullTourReportData();
+      if (format === "json") {
+        return JSON.stringify(report, null, 2);
+      }
+
+      const lines = [report.title, ""];
+      report.steps.forEach((step) => {
+        lines.push(`- ${step.label} | ${step.status} | ${step.summary}`);
+      });
+      return lines.join("\n");
+    }
+
+    function renderFullTourPreview(format = "markdown") {
+      const preview = document.getElementById("full-tour-preview");
+      const previewMeta = document.getElementById("full-tour-preview-meta");
+      if (!preview) {
+        return;
+      }
+      state.fullTourPreviewFormat = format;
+      saveFullTourPreviewFormat(format);
+      const markdownTab = document.getElementById("full-tour-preview-tab-markdown");
+      const jsonTab = document.getElementById("full-tour-preview-tab-json");
+      if (markdownTab && jsonTab) {
+        markdownTab.classList.toggle("active", format === "markdown");
+        jsonTab.classList.toggle("active", format === "json");
+      }
+      preview.value = formatFullTourReport(format);
+      preview.scrollTop = 0;
+      state.fullTourPreviewUpdatedAt = new Date().toISOString();
+      if (previewMeta) {
+        previewMeta.textContent = `模式：${format === "json" ? "JSON" : "Markdown"} / 更新：${state.fullTourPreviewUpdatedAt}`;
+      }
+      const firstStep = Object.keys(state.fullTourDetailMap ?? {})[0];
+      if (firstStep) {
+        const firstDetail = document.getElementById(`full-tour-detail-${firstStep}`);
+        const firstButton = document.getElementById(`full-tour-toggle-${firstStep}`);
+        if (firstDetail && firstButton) {
+          firstDetail.style.display = "block";
+          firstButton.textContent = "收合";
+        }
+      }
+      filterFullTourSteps();
+      setOutput({ type: "console/full-tour/preview", payload: { format, length: preview.value.length } });
+    }
+
+    function syncFullTourPreview() {
+      renderFullTourPreview(state.fullTourPreviewFormat || "markdown");
+    }
+
+    function setFullTourPreviewTab(format = "markdown") {
+      renderFullTourPreview(format);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      state.fullTourPreviewFormat = getSavedFullTourPreviewFormat();
+      syncFullTourPreview();
+      renderFullTourPreview(state.fullTourPreviewFormat);
+    });
+
+    async function copyFullTourReport(format = "markdown") {
+      const text = formatFullTourReport(format);
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setOutput({ type: "console/full-tour/copy", payload: { copied: true, format, length: text.length } });
+      } catch (error) {
+        setOutput({ type: "console/full-tour/copy", error: error.message, format });
+      }
+    }
+
+    function downloadFullTourReport(format = "markdown") {
+      const text = formatFullTourReport(format);
+      const extension = format === "json" ? "json" : "md";
+      const blob = new Blob([text], { type: format === "json" ? "application/json" : "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const gameId = getGameId() || "unknown-game";
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+      link.href = url;
+      link.download = `full-tour-${gameId}-${stamp}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setOutput({ type: "console/full-tour/download", payload: { downloaded: true, format, extension } });
     }
 
     function getJourneyActionTypeCount(snapshot) {
@@ -1024,6 +1374,132 @@
       }
     }
 
+    async function updateJourneyFromConsole() {
+      try {
+        const gameId = getGameId();
+        const journeyId = document.getElementById("journey-edit-journey-id")?.value.trim();
+        const playerId = document.getElementById("journey-edit-player-id")?.value.trim();
+        const fromLocationId = document.getElementById("journey-edit-from-location-id")?.value.trim();
+        const toLocationId = document.getElementById("journey-edit-to-location-id")?.value.trim();
+        const transportType = document.getElementById("journey-edit-transport-type")?.value.trim();
+        const ticketIdList = document.getElementById("journey-edit-ticket-id-list")?.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean) ?? [];
+        const departureTime = document.getElementById("journey-edit-departure-time")?.value.trim();
+        const arrivalTime = document.getElementById("journey-edit-arrival-time")?.value.trim();
+        const metadataText = document.getElementById("journey-edit-metadata")?.value.trim();
+        const metadata = metadataText ? JSON.parse(metadataText) : {};
+
+        if (!gameId || !journeyId || !playerId) {
+          setOutput({ error: "請先輸入 Game ID / Journey ID / Player ID" });
+          return;
+        }
+
+        const payload = await fetchJson(`/journeys/${journeyId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId,
+            playerId,
+            journeyId,
+            fromLocationId,
+            toLocationId,
+            transportType,
+            ticketIdList,
+            departureTime,
+            arrivalTime,
+            metadata,
+            currentTime: new Date().toISOString(),
+            operatorPlayerId: playerId,
+          }),
+        });
+        setOutput({ type: "journeys/update", payload });
+        await loadJourneys();
+        await loadManagementSnapshot();
+      } catch (error) {
+        setOutput({ type: "journeys/update", error: error.message });
+      }
+    }
+
+    async function createJourneyFromConsole() {
+      try {
+        const gameId = getGameId();
+        const playerId = document.getElementById("journey-edit-player-id")?.value.trim();
+        const fromLocationId = document.getElementById("journey-edit-from-location-id")?.value.trim();
+        const toLocationId = document.getElementById("journey-edit-to-location-id")?.value.trim();
+        const transportType = document.getElementById("journey-edit-transport-type")?.value.trim();
+        const ticketIdList = document.getElementById("journey-edit-ticket-id-list")?.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean) ?? [];
+        const departureTime = document.getElementById("journey-edit-departure-time")?.value.trim();
+        const arrivalTime = document.getElementById("journey-edit-arrival-time")?.value.trim();
+        const metadataText = document.getElementById("journey-edit-metadata")?.value.trim();
+        const metadata = metadataText ? JSON.parse(metadataText) : {};
+
+        if (!gameId || !playerId) {
+          setOutput({ error: "請先輸入 Game ID / Player ID" });
+          return;
+        }
+
+        const payload = await fetchJson("/journeys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId,
+            playerId,
+            fromLocationId,
+            toLocationId,
+            transportType,
+            ticketIdList,
+            departureTime,
+            arrivalTime,
+            metadata,
+            currentTime: new Date().toISOString(),
+            operatorPlayerId: playerId,
+          }),
+        });
+        setOutput({ type: "journeys/create", payload });
+        await loadJourneys();
+        await loadManagementSnapshot();
+      } catch (error) {
+        setOutput({ type: "journeys/create", error: error.message });
+      }
+    }
+
+    async function cancelJourneyFromConsole() {
+      try {
+        const gameId = getGameId();
+        const journeyId = document.getElementById("journey-edit-journey-id")?.value.trim();
+        const playerId = document.getElementById("journey-edit-player-id")?.value.trim();
+        const reason = document.getElementById("journey-edit-metadata")?.value.trim() || "frontend-console";
+
+        if (!gameId || !journeyId || !playerId) {
+          setOutput({ error: "請先輸入 Game ID / Journey ID / Player ID" });
+          return;
+        }
+
+        const payload = await fetchJson(`/journeys/${journeyId}/cancel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameId,
+            playerId,
+            journeyId,
+            reason,
+            currentTime: new Date().toISOString(),
+            operatorPlayerId: playerId,
+          }),
+        });
+        setOutput({ type: "journeys/cancel", payload });
+        await loadJourneys();
+        await loadManagementSnapshot();
+      } catch (error) {
+        setOutput({ type: "journeys/cancel", error: error.message });
+      }
+    }
+
     async function loadJourneyDashboard() {
       const gameId = getGameId();
       if (!gameId) {
@@ -1290,6 +1766,10 @@
         document.getElementById("priority-details").textContent = overview?.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
           ? "有優先購買權"
           : "無優先購買權";
+        document.getElementById("priority-source-details").textContent = overview?.generalShopItemList?.find((item) => item.priorityAccess?.prioritySource)?.priorityAccess?.prioritySource ?? "none";
+        document.getElementById("priority-window-details").textContent = overview?.generalShopItemList?.find((item) => item.priorityAccess?.priorityEndsAt)
+          ? `${overview.generalShopItemList.find((item) => item.priorityAccess?.priorityStartedAt)?.priorityAccess?.priorityStartedAt ?? "-"} ~ ${overview.generalShopItemList.find((item) => item.priorityAccess?.priorityEndsAt)?.priorityAccess?.priorityEndsAt ?? "-"}`
+          : "none";
         document.getElementById("journey-details").textContent = String(overview?.journeyDashboard?.summary?.totalJourneyCount ?? 0);
         document.getElementById("traffic-review-details").textContent = String(overview?.trafficIncidentRequestList?.length ?? 0);
         document.getElementById("current-journey-details").textContent = String(overview?.journeyDashboard?.summary?.dueToStartCount ?? 0);
@@ -1321,6 +1801,10 @@
         document.getElementById("overview-shop-count").textContent = String(shopTicketList.length);
         document.getElementById("shop-details-count").textContent = String(shopTicketList.length);
         document.getElementById("priority-details").textContent = payload.data?.priorityState?.prioritySource ?? "none";
+        document.getElementById("priority-source-details").textContent = payload.data?.priorityState?.prioritySource ?? "none";
+        document.getElementById("priority-window-details").textContent = payload.data?.priorityState?.priorityStartedAt
+          ? `${payload.data.priorityState.priorityStartedAt ?? "-"} ~ ${payload.data.priorityState.priorityEndsAt ?? "-"}`
+          : "none";
         document.getElementById("shop-entry").textContent = shopTicketList.length > 0 ? "Shop Live" : "Shop Empty";
         updateSidebarStatus();
         document.getElementById("shop-preview-count").textContent = `${shopTicketList.slice(0, 5).length} 筆`;
@@ -1367,6 +1851,78 @@
         await loadGeneralShop();
       } catch (error) {
         setOutput({ type: "games/general-shop/purchase", error: error.message });
+      }
+    }
+
+    async function refreshShopFromConsole() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const playerId = document.getElementById("shop-refresh-player-id")?.value.trim();
+        const refreshType = document.getElementById("shop-refresh-type")?.value.trim() || "manual";
+        const playerCount = Number(document.getElementById("shop-refresh-player-count")?.value.trim() || "0");
+        const mapId = document.getElementById("shop-refresh-map-id")?.value.trim() || document.getElementById("map-id")?.value.trim();
+        if (!playerId || !mapId || !Number.isFinite(playerCount) || playerCount < 0) {
+          setOutput({ error: "請先輸入 Refresh Player ID / Map ID / Player Count" });
+          return;
+        }
+
+        const payload = await fetchJson(`/games/${gameId}/general-shop/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            currentTime: new Date().toISOString(),
+            playerId,
+            refreshType,
+            playerCount,
+            mapId,
+            availableTransportTypes: [],
+            operatorPlayerId: playerId,
+          }),
+        });
+        document.getElementById("shop-status").textContent = "Shop Refreshed";
+        document.getElementById("shop-summary").textContent = `刷新商店 ${refreshType}`;
+        setOutput({ type: "games/general-shop/refresh", payload });
+        await loadGeneralShop();
+        await loadOverview();
+      } catch (error) {
+        setOutput({ type: "games/general-shop/refresh", error: error.message });
+      }
+    }
+
+    async function initializeShopFromConsole() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const mapId = document.getElementById("shop-init-map-id")?.value.trim() || document.getElementById("map-id")?.value.trim();
+        if (!mapId) {
+          setOutput({ error: "請先輸入 Initialize Map ID" });
+          return;
+        }
+
+        const payload = await fetchJson(`/games/${gameId}/general-shop/initialize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mapId,
+            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+          }),
+        });
+        document.getElementById("shop-status").textContent = "Shop Initialized";
+        document.getElementById("shop-summary").textContent = `初始化商店 ${mapId}`;
+        setOutput({ type: "games/general-shop/initialize", payload });
+        await loadGeneralShop();
+        await loadOverview();
+      } catch (error) {
+        setOutput({ type: "games/general-shop/initialize", error: error.message });
       }
     }
 
@@ -1433,6 +1989,47 @@
         await loadCurrentAuction();
       } catch (error) {
         setOutput({ type: "games/auction-shop/initialize", error: error.message });
+      }
+    }
+
+    async function createAuctionRoundFromConsole() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const mapId = document.getElementById("auction-round-map-id")?.value.trim() || document.getElementById("map-id")?.value.trim();
+        const startTime = document.getElementById("auction-round-start-time")?.value.trim() || new Date().toISOString();
+        const endTime = document.getElementById("auction-round-end-time")?.value.trim();
+        const availableTransportTypes = document.getElementById("auction-round-transport-types")?.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        if (!mapId || !endTime || availableTransportTypes.length === 0) {
+          setOutput({ error: "請先輸入 Auction Map ID / End Time / Transport Types" });
+          return;
+        }
+
+        const payload = await fetchJson(`/games/${gameId}/auction-shop/rounds`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mapId,
+            startTime,
+            endTime,
+            availableTransportTypes,
+            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+          }),
+        });
+        document.getElementById("shop-status").textContent = "Auction Round Created";
+        document.getElementById("shop-summary").textContent = `建立拍賣回合 ${payload.data?.id ?? ""}`;
+        setOutput({ type: "games/auction-shop/rounds", payload });
+        await loadCurrentAuction();
+      } catch (error) {
+        setOutput({ type: "games/auction-shop/rounds", error: error.message });
       }
     }
 
@@ -1541,6 +2138,21 @@
         "traffic-review": "讀取交通中斷審核摘要。",
         "traffic-list": "讀取交通中斷列表。",
       };
+      const stepDetailMap = {
+        auth: "對應 `/auth/session`，確認 authMode、authVerified 與 authUserId。",
+        access: "對應 `/games/:gameId/access`，確認 canObserveGame、canReviewGame 與 fallback flags。",
+        snapshot: "對應 `/games/:gameId/management-snapshot`，同步 checklist、overview 與 journeyActionQueue。",
+        overview: "對應 `/games/:gameId/overview`，同步遊戲、商店、拍賣與旅程摘要。",
+        shop: "對應 `/games/:gameId/general-shop/items`，確認一般商店項目與優先購買權。",
+        auction: "對應 `/games/:gameId/auction-shop/current`，確認 current auction、ticket 與 bid 統計。",
+        journeys: "對應 `/games/:gameId/players/:playerId/journeys` 與 current/reserved 旅程。",
+        visibility: "對應 `/games/:gameId/players/:playerId/public-journey` 與 review。",
+        management: "對應 management snapshot 的管理視角摘要與警示。",
+        checklist: "對應 `/games/:gameId/checklist`，顯示待辦項目與處理結果。",
+        "traffic-review": "對應 `/games/:gameId/traffic-incidents/review-summary`。",
+        "traffic-list": "對應 `/games/:gameId/traffic-incidents`，列出交通中斷請求。",
+      };
+      const readSummary = (id, fallback = "-") => document.getElementById(id)?.textContent?.trim() || fallback;
       if (!gameId || !playerId) {
         setOutput({ error: "請先輸入 Game ID 與 Player ID" });
         return;
@@ -1813,6 +2425,10 @@
           document.getElementById("priority-details").textContent = overview.generalShopItemList?.some((item) => item.priorityAccess?.isPriorityItem)
             ? "有優先購買權"
             : "無優先購買權";
+          document.getElementById("priority-source-details").textContent = overview.generalShopItemList?.find((item) => item.priorityAccess?.prioritySource)?.priorityAccess?.prioritySource ?? "none";
+          document.getElementById("priority-window-details").textContent = overview.generalShopItemList?.find((item) => item.priorityAccess?.priorityEndsAt)
+            ? `${overview.generalShopItemList.find((item) => item.priorityAccess?.priorityStartedAt)?.priorityAccess?.priorityStartedAt ?? "-"} ~ ${overview.generalShopItemList.find((item) => item.priorityAccess?.priorityEndsAt)?.priorityAccess?.priorityEndsAt ?? "-"}`
+            : "none";
           document.getElementById("shop-preview-count").textContent = `${overview.generalShopItemList?.slice(0, 5).length ?? 0} 筆`;
           document.getElementById("shop-preview-items").textContent = overview.generalShopItemList?.slice(0, 5)
             .map((item) => `${item.ticket?.id ?? item.id ?? "-"}:${item.ticket?.ratingGrade ?? item.ticket?.ratingType ?? "unknown"}`)
@@ -1927,6 +2543,21 @@
         await loadTrafficIncidentList();
         steps.push("traffic-list");
 
+        state.fullTourDetailMap = {
+          auth: `Auth 狀態：${readSummary("auth-status")} / ${readSummary("game-summary")}`,
+          access: `Access 狀態：${readSummary("access-status")} / ${readSummary("visibility-summary")}`,
+          snapshot: `Snapshot：${readSummary("management-preview-summary")} / ${readSummary("management-preview-overview")}`,
+          overview: `Overview：${readSummary("game-summary")} / ${readSummary("shop-summary")}`,
+          shop: `Shop：${readSummary("shop-summary")} / 商店預覽 ${readSummary("shop-preview-count")}`,
+          auction: `Auction：${readSummary("auction-details")} / ${readSummary("auction-bid-count")} / ${readSummary("auction-total-amount")}`,
+          journeys: `Journeys：${readSummary("journey-details")} / 目前 ${readSummary("current-journey-details")} / 保留 ${readSummary("reserved-journey-details")}`,
+          visibility: `Visibility：${readSummary("visibility-summary")} / Review ${readSummary("overview-review-count")}`,
+          management: `Management：${readSummary("management-preview-summary")} / ${readSummary("management-preview-health")}`,
+          checklist: `Checklist：${readSummary("management-preview-checklist")}`,
+          "traffic-review": `Traffic review：${readSummary("management-preview-review-core")} / ${readSummary("traffic-review-details")}`,
+          "traffic-list": `Traffic list：${readSummary("traffic-review-details")} / ${readSummary("management-preview-pending-list")}`,
+        };
+
         setOutput({
           type: "console/full-tour",
           payload: {
@@ -1944,12 +2575,25 @@
           ? steps.map((step) => {
               const label = stepLabels[step] ?? step;
               const description = stepDescriptions[step] ?? "";
-              return `<div class="mini-item"><span>${label}${description ? ` - ${description}` : ""}</span><span>OK</span></div>`;
+              const detail = state.fullTourDetailMap?.[step] ?? stepDetailMap[step] ?? "";
+              return `
+                <div class="mini-item tour-row" data-label="${escapeTourText(label)}" data-summary="${escapeTourText(description)}" data-search-text="${escapeTourText(`${label} ${description} ${detail}`.toLowerCase())}">
+                  <span data-role="label">${label}</span>
+                  <span class="tour-status-ok">OK</span>
+                  <span data-role="summary">${description}</span>
+                  <button type="button" class="tour-toggle" id="full-tour-toggle-${step}" onclick="toggleTourDetail('${step}')">展開</button>
+                  <div class="tour-detail" id="full-tour-detail-${step}">${detail}</div>
+                </div>`;
             }).join("")
-          : '<div class="mini-item"><span>巡覽步驟</span><span>空</span></div>';
+          : '<div class="mini-item tour-row"><span>巡覽步驟</span><span class="tour-status-empty">空</span><span>尚未載入</span></div>';
+        syncFullTourPreview();
       } catch (error) {
         document.getElementById("full-tour-output").textContent = `完整導覽失敗：${error.message}`;
-        document.getElementById("full-tour-step-list").innerHTML = `<div class="mini-item"><span>巡覽結果</span><span>失敗</span></div>`;
+        document.getElementById("full-tour-step-list").innerHTML = `<div class="mini-item tour-row"><span>巡覽結果</span><span class="tour-status-fail">失敗</span><span>${error.message}</span></div>`;
+        const preview = document.getElementById("full-tour-preview");
+        if (preview) {
+          preview.value = `完整導覽失敗：${error.message}`;
+        }
         setOutput({ type: "console/full-tour", error: error.message });
       }
     }

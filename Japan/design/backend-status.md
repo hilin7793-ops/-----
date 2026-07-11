@@ -228,6 +228,7 @@
 - `Japan/backend/system/scripts/access-control-smoke-test.js` 可通過
 - `Japan/backend/system/scripts/visibility-smoke-test.js` 可通過
 - `Japan/backend/system/scripts/service-rules-smoke-test.js` 可通過
+- `Japan/backend/system/scripts/unit-smoke-test.js` 可通過，並補上時間判斷與權重抽樣等純函式覆蓋
 - 已驗證：
   - 核心遊戲流程
   - 公開/玩家/主持人列表 API 的 query options 串接
@@ -701,6 +702,33 @@
 - 現有 `Japan/frontend` 的完整導覽摘要已補上逐步狀態清單
 - 現有 `Japan/frontend` 的完整導覽摘要已補成中文步驟名稱，較接近正式報表
 - 現有 `Japan/frontend` 的完整導覽摘要已補上每一步的區塊說明
+- 現有 `Japan/frontend` 的完整導覽摘要已改成步驟 / 狀態 / 說明三欄
+- 現有 `Japan/frontend` 的完整導覽摘要已補上三欄樣式與狀態色彩
+- 現有 `Japan/frontend` 的完整導覽摘要已補上可展開的步驟細節
+- 現有 `Japan/frontend` 的完整導覽摘要已補上實際載入值摘要
+- 現有 `Japan/frontend` 的完整導覽摘要已補上全部展開 / 收合控制
+- 現有 `Japan/frontend` 的完整導覽摘要已補上複製摘要功能
+- 現有 `Japan/frontend` 的完整導覽摘要已補上 Markdown / JSON 雙格式複製
+- 現有 `Japan/frontend` 的完整導覽摘要已補上 Markdown / JSON 下載
+- 現有 `Japan/frontend` 的完整導覽摘要已補上 Markdown / JSON 預覽
+- 現有 `Japan/frontend` 的完整導覽摘要已在完整導覽完成時自動刷新預覽
+- 現有 `Japan/frontend` 的完整導覽摘要已補成 Markdown / JSON 預覽分頁
+- 現有 `Japan/frontend` 的完整導覽摘要已在刷新時保留目前預覽分頁
+- 現有 `Japan/frontend` 的完整導覽摘要已記住上次預覽格式
+- 現有 `Japan/frontend` 的完整導覽摘要已顯示預覽模式與更新時間
+- 現有 `Japan/frontend` 的完整導覽摘要已在更新時捲到最新內容
+- 現有 `Japan/frontend` 的完整導覽摘要已在更新後自動展開第一筆細節
+- 現有 `Japan/frontend` 的完整導覽摘要已補上步驟搜尋與清除搜尋
+- 現有 `Japan/frontend` 的完整導覽摘要已補上搜尋命中高亮
+- 現有 `Japan/frontend` 的完整導覽摘要已在刷新時同步搜尋高亮與過濾狀態
+- 現有 `Japan/frontend` 的完整導覽摘要已補上搜尋命中筆數提示，方便快速判斷步驟過濾結果
+- 現有 `Japan/frontend` 已補上旅程編輯表單，可直接送出 `PATCH /journeys/:journeyId`
+- 現有 `Japan/frontend` 已補上旅程建立與取消入口，可直接送出 `POST /journeys` 與 `POST /journeys/:journeyId/cancel`
+- 現有 `Japan/frontend` 已補上拍賣回合建立入口，可直接送出 `POST /games/:gameId/auction-shop/rounds`
+- 現有 `Japan/frontend` 已補上商店刷新入口，可直接送出 `POST /games/:gameId/general-shop/refresh`
+- 現有 `Japan/frontend` 已補上商店初始化入口，可直接送出 `POST /games/:gameId/general-shop/initialize`
+- 現有 `Japan/frontend` 已補上交通中斷批次審核按鈕與管理巡檢重新整理入口
+- 現有 `Japan/frontend` 已補上商店優先權來源與窗口的可視化摘要
 - 後續仍需把旅程、商店、拍賣與管理操作頁面接成完整產品流程，補齊編輯、操作與狀態流轉頁面，才算真正完成前端
 
 ## 5. 建議下一步

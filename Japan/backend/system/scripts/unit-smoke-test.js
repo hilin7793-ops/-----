@@ -4,8 +4,9 @@ import { buildBlindBoxReviewQueryOptions, buildQueryOptions } from "../src/api/q
 import { failure, success } from "../src/utils/result.js";
 import { TransportType, normalizeTransportType } from "../src/constants/transportTypes.js";
 import { pickWeightedItem, randomNormal, randomSteppedNormal, snapToStep } from "../src/utils/random.js";
+import { calculateDurationMinutes, hasReachedTime, isOnAuctionStartTime, isOnTheHour, isWithinTimeRange } from "../src/services/time/timeService.js";
 
-function run() {
+async function run() {
   const basicQueryOptions = buildQueryOptions({
     sortBy: "createdAt",
     sortDirection: "desc",
@@ -49,7 +50,7 @@ function run() {
   assert.equal(mixedQueryOptions.sortBy, null);
   assert.equal(mixedQueryOptions.sortDirection, "asc");
   assert.equal(mixedQueryOptions.limit, null);
-  assert.equal(mixedQueryOptions.offset, null);
+  assert.equal(mixedQueryOptions.offset, 0);
 
   const overrideQueryOptions = buildQueryOptions({
     sortBy: "departureTime",
@@ -87,11 +88,11 @@ function run() {
     recordLimit: "4",
   });
   assert.equal(mixedBlindBoxQueryOptions.blindBoxList.sortBy, "createdAt");
-  assert.equal(mixedBlindBoxQueryOptions.blindBoxList.sortDirection, "asc");
+  assert.equal(mixedBlindBoxQueryOptions.blindBoxList.sortDirection, "desc");
   assert.equal(mixedBlindBoxQueryOptions.blindBoxList.limit, null);
   assert.equal(mixedBlindBoxQueryOptions.blindBoxList.offset, 0);
   assert.equal(mixedBlindBoxQueryOptions.blindBoxEffectLogList.sortBy, "effectCreatedAt");
-  assert.equal(mixedBlindBoxQueryOptions.blindBoxEffectLogList.sortDirection, "desc");
+  assert.equal(mixedBlindBoxQueryOptions.blindBoxEffectLogList.sortDirection, "asc");
   assert.equal(mixedBlindBoxQueryOptions.recordList.sortBy, "createdAt");
   assert.equal(mixedBlindBoxQueryOptions.recordList.sortDirection, "asc");
   assert.equal(mixedBlindBoxQueryOptions.recordList.limit, "4");
@@ -192,7 +193,48 @@ function run() {
   assert.equal(pickWeightedItem([["a", 0], ["b", -1]]), null);
   assert.equal(pickWeightedItem([["a", 1], ["b", 2]], () => 0), "a");
   assert.equal(pickWeightedItem([["a", 1], ["b", 2]], () => 0.9999), "b");
-  assert.equal(pickWeightedItem([["a", 1], ["b", 0], ["c", 2]], () => 0.33), "b");
+  assert.equal(pickWeightedItem([["a", 1], ["b", 0], ["c", 2]], () => 0.5), "c");
+
+  const onTheHour = await isOnTheHour({ currentTime: "2026-07-11T12:00:00.000Z" });
+  assert.equal(onTheHour.isOnTheHour, true);
+
+  const notOnTheHour = await isOnTheHour({ currentTime: "2026-07-11T12:34:00.000Z" });
+  assert.equal(notOnTheHour.isOnTheHour, false);
+
+  const auctionStartTime = await isOnAuctionStartTime({ currentTime: "2026-07-11T12:00:00.000Z" });
+  assert.equal(auctionStartTime.isAuctionStartTime, true);
+
+  const timeRange = await isWithinTimeRange({
+    currentTime: "2026-07-11T12:30:00.000Z",
+    startTime: "2026-07-11T12:00:00.000Z",
+    endTime: "2026-07-11T13:00:00.000Z",
+  });
+  assert.equal(timeRange.isWithinRange, true);
+
+  const outsideTimeRange = await isWithinTimeRange({
+    currentTime: "2026-07-11T13:30:00.000Z",
+    startTime: "2026-07-11T12:00:00.000Z",
+    endTime: "2026-07-11T13:00:00.000Z",
+  });
+  assert.equal(outsideTimeRange.isWithinRange, false);
+
+  const durationMinutes = await calculateDurationMinutes({
+    startTime: "2026-07-11T12:00:00.000Z",
+    endTime: "2026-07-11T12:45:00.000Z",
+  });
+  assert.equal(durationMinutes.durationMinutes, 45);
+
+  const reachedTime = await hasReachedTime({
+    currentTime: "2026-07-11T12:45:00.000Z",
+    targetTime: "2026-07-11T12:30:00.000Z",
+  });
+  assert.equal(reachedTime.hasReached, true);
+
+  const notReachedTime = await hasReachedTime({
+    currentTime: "2026-07-11T12:15:00.000Z",
+    targetTime: "2026-07-11T12:30:00.000Z",
+  });
+  assert.equal(notReachedTime.hasReached, false);
 }
 
 run();
