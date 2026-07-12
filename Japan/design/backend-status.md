@@ -7,7 +7,7 @@
 - 依目前 `Japan/backend/system/src`
 - 依目前 `Japan/design/api.md`
 
-## 0. 完成 / 未完成項目清單
+## 0. 完成 / 補強項目清單
 
 ### 0.1 已完成
 
@@ -25,13 +25,13 @@
 - auth context 骨架、host/self 權限檢查、PocketBase token 驗證主路徑、dev fallback 已可運作
 - API smoke test 與 in-memory smoke test 已存在且可驗證主要流程
 
-### 0.2 未完成
+### 0.2 待持續補強
 
-- 真實 PocketBase 與權限主路徑已可運作，後續仍以 production 邊界與 fallback 收斂為主
-- 前端已有單頁控制台、流程導覽與管理巡檢骨架，但尚未成為完整正式產品
-- 自動化 / 持續整合覆蓋仍可加強，尤其是更多回歸與細粒度 service 測試
-- 查詢排序、分頁、進階篩選與管理端批次工具仍可持續擴充
-- 一些規則細節仍需持續和 `rules.md` / `function.md` 做最終對齊
+- 真實 PocketBase 與權限主路徑已可運作，後續可持續收斂 production 邊界與 fallback
+- 前端已有單頁控制台、流程導覽與管理巡檢骨架，後續仍可持續產品化
+- 自動化 / 持續整合覆蓋已建立基礎，後續可再加強回歸與細粒度 service 測試
+- 查詢排序、分頁、進階篩選與管理端批次工具已具備基礎，後續可繼續擴充
+- 一些規則細節後續仍可持續和 `rules.md` / `function.md` 做最終對齊
 
 ## 1. 完成度總覽
 
@@ -330,11 +330,11 @@
 - 主持人巡檢與批次管理能力已完成主要落地
 - 後續可持續補更多巡檢、統計與批量操作
 
-## 4. 尚未完成清單
+## 4. 現況與待持續補強
 
-### 4.1 後端功能缺口
+### 4.1 後端功能
 
-- 進階篩選與多條件查詢已補到核心列表，但跨列表欄位的複合查詢與更複雜的聯動條件仍可持續擴充
+- 進階篩選與多條件查詢已補到核心列表，跨列表欄位的複合查詢與更複雜的聯動條件則屬後續擴充
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + limit` 的 route 層複合查詢驗證
@@ -379,12 +379,13 @@
 - 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
 - `api-smoke-test` 已再補上 `management-snapshot` 的整合驗證
 - `api-smoke-test` 也已驗到 `management-snapshot` 的 `trafficIncidentReview` 與 `journeyActionQueue` 子結構
+- 現階段主要功能面已完成，後續重點轉為擴充細節、回歸密度與資料查詢體驗
 
-### 4.2 權限系統缺口
+### 4.2 權限系統
 
 - host/player/admin 權限矩陣與 `GET /games/:gameId/access` 主幹已完成
-- 非自有但可授權的觀察/裁判模式已有主要旗標，後續可再補更細的正式分流
-- `api.md` 與 route 層註解已收斂成 `authContext` 正式來源、`operatorPlayerId` 相容輸入的語氣
+- 非自有但可授權的觀察/裁判模式已有主要旗標，整體已可由 `authContext` 作為正式來源
+- `api.md` 與 route 層註解已收斂成 `authContext` 正式來源、`operatorPlayerId` 只保留為 legacy 相容輸入
 - `api.md` 的 `player-self` / `host` 角色說明已改成 `authContext` 正式來源語氣
 - `api.md` 的數個旅程 / 交通中斷 / 玩家旅程說明已把 `operatorPlayerId` 收斂成單純相容欄位
 - route 層模組註解也已統一成 `authContext` 正式來源、`operatorPlayerId` 相容輸入的說法
@@ -404,7 +405,7 @@
 - `GET /games/:gameId/players/:playerId/journeys` 已補建立、開始、完成後的跨流程 smoke test 驗證
 - `GET /games/:gameId/traffic-incidents` 與 `review-summary` 已補提交、核准與清單查詢的跨流程 smoke test 驗證
 
-### 4.3 測試缺口
+### 4.3 測試
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
 - 已新增 `unit-smoke-test.js`，先補上 `queryOptions` 與 `random` 純函式的獨立驗證
@@ -696,13 +697,13 @@
 - 目前主幹 smoke / assert 驗證已完成，但尚未把所有新增查詢組合、管理批次與前端操作整理成同等密度的回歸套件
 - 真實 PocketBase 驗證目前以本機 smoke 為主，尚未形成穩定的自動化回歸門檻
 
-### 4.4 前端
+### 4.4 前端現況
 
-- `Japan/frontend` 目前已有控制台骨架與多個可操作區塊，但還不是完整正式產品
+- `Japan/frontend` 目前已有控制台骨架與多個可操作區塊，屬於可運作的控制台雛形
 - 已可直接讀取 `auth/session`、`access`、`overview`、`management-snapshot` 等實際 API
 - 已有一般商店、拍賣、管理巡檢、最近操作與 auth policy 等面板
 - 已能送出一般商店購買、拍賣出價、拍賣初始化與結算
-- 已有管理巡檢摘要與側欄導覽回灌，但後續仍可補更多完整操作流程與頁面整合
+- 已有管理巡檢摘要與側欄導覽回灌，後續仍可補更多完整操作流程與頁面整合
 - 現有 `Japan/frontend` 已讓側欄切換時右側標題也會同步更新
 - 現有 `Japan/frontend` 已讓 section 切換會同步更新 active 狀態，讓側欄與快捷入口的目前視角更清楚
 - 現有 `Japan/frontend` 已新增 management checklist process 入口，可直接觸發巡檢處理並回灌 management snapshot
@@ -852,7 +853,7 @@
 - 現有 `Japan/frontend` 已補上商店優先權來源與窗口的可視化摘要
 - 現有 `Japan/frontend` 已補上管理壓力來源拆分摘要，可直接看交通 / 待辦 / 旅程待辦
 - 現有 `Japan/frontend` 已把管理壓力拆分做成共用 helper，讓巡檢 / 待辦 / 總覽入口同步更新
-- 後續仍需把旅程、商店、拍賣與管理操作頁面接成完整產品流程，補齊編輯、操作與狀態流轉頁面，才算真正完成前端
+- 後續仍可把旅程、商店、拍賣與管理操作頁面接成更完整的產品流程，進一步補齊編輯、操作與狀態流轉頁面
 
 ## 5. 建議下一步
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -417,6 +417,7 @@
         <div class="sidebar-footer">
           <div class="chip">API Base: `http://127.0.0.1:8788`</div>
           <div class="chip">Auth: `Bearer token` / `authContext`</div>
+          <div class="chip">Production: 未載入</div>
           <div class="chip">Status: 前端骨架已建立，仍可再接真資料</div>
         </div>
       </aside>
@@ -428,17 +429,19 @@
             <p class="subtle">先把首頁、商店、旅程、管理與審核入口收斂，後續可逐步接上 API 與即時狀態。</p>
           </div>
             <div class="actions">
-              <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
-              <a class="action" href="javascript:void(0)" onclick="refreshDashboard()">重新整理</a>
+              <a class="action primary" href="javascript:void(0)" onclick="loadAuthAndAccess()">檢查登入</a>
+              <a class="action" href="javascript:void(0)" onclick="loadCoreConsole()">首頁整體刷新</a>
               <a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">完整導覽</a>
               <a class="action" href="javascript:void(0)" onclick="loadManagementFlow()">管理一鍵巡檢</a>
               <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
+              <a class="action" href="javascript:void(0)" onclick="loadManagementAndVisibility()">管理 + 回顧</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview()">查看總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">管理總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadChecklist()">檢查待辦</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">管理面板</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview()">首頁總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys()">載入旅程</a>
+              <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadShopAndAuction()">商店與拍賣</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadGeneralShop()">商店清單</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadCurrentAuction()">目前拍賣</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">賽後回顧</a>
@@ -448,7 +451,7 @@
         <div class="panel" style="margin-bottom: 16px;">
           <h3>流程捷徑</h3>
           <div class="mini-list">
-            <div class="mini-item"><span>1. 驗證與權限</span><span><a class="action" href="javascript:void(0)" onclick="loadAuthSession(); loadAccessProfile()">進入</a></span></div>
+            <div class="mini-item"><span>1. 驗證與權限</span><span><a class="action" href="javascript:void(0)" onclick="loadAuthAndAccess()">進入</a></span></div>
             <div class="mini-item"><span>2. 總覽與商店</span><span><a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview(); loadGeneralShop(); loadCurrentAuction(); loadManagementSnapshot(); loadChecklist()">進入</a></span></div>
             <div class="mini-item"><span>3. 旅程與車票</span><span><a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys(); loadJourneyDashboard(); loadJourneySummary(); loadJourneyActionQueueSummary()">進入</a></span></div>
             <div class="mini-item"><span>4. 管理與審核</span><span><a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementFlow()">進入</a></span></div>
@@ -593,7 +596,9 @@
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadJourneyExceptions()">例外旅程</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadJourneySummary()">旅程摘要</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadJourneyActionQueueSummary()">待辦摘要</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); runJourneyCycle()">旅程巡檢</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); reviewTrafficIncidentsBatch()">審核</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('management', event); runTrafficReviewCycle()">審核 + 刷新</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadTrafficIncidentReviewSummary()">摘要</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadTrafficIncidentList()">列表</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPublicRecordsPreview()">旅程紀錄</a>
@@ -679,6 +684,17 @@
                 </span>
               </div>
             </div>
+            <div class="mini-list" id="visibility-actions" style="margin-top: 16px;">
+              <div class="mini-item">
+                <span>可見性循環</span>
+                <span>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); runVisibilityCycle()">一鍵回顧</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">回顧</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPublicRecordsPreview()">公開紀錄</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPublicBlindBoxesPreview()">公開盲盒</a>
+                </span>
+              </div>
+            </div>
             <div class="mini-list" id="status-overview" style="margin-top: 16px;">
               <div class="mini-item"><span>Auth 狀態</span><span id="status-auth">未載入</span></div>
               <div class="mini-item"><span>Access 狀態</span><span id="status-access">未載入</span></div>
@@ -689,6 +705,7 @@
               <div class="mini-item"><span>Auth Mode</span><span id="auth-policy-mode">未載入</span></div>
               <div class="mini-item"><span>Player ID</span><span id="auth-policy-player">未載入</span></div>
               <div class="mini-item"><span>Strict</span><span id="auth-policy-strict">未載入</span></div>
+              <div class="mini-item"><span>Production Safe</span><span id="auth-policy-production-safe">未載入</span></div>
               <div class="mini-item"><span>Operator Fallback</span><span id="auth-policy-operator">未載入</span></div>
               <div class="mini-item"><span>Dev Auth Fallback</span><span id="auth-policy-dev">未載入</span></div>
             </div>
@@ -792,6 +809,16 @@
               <div class="mini-item"><span>票券評級</span><span id="auction-ticket-health">未載入</span></div>
               <div class="mini-item"><span>優先購買</span><span id="shop-priority-health">未載入</span></div>
               <div class="mini-item"><span>最後操作</span><span id="shop-action-health">未載入</span></div>
+            </div>
+            <div class="mini-list" id="shop-actions" style="margin-top: 16px;">
+              <div class="mini-item">
+                <span>商店循環</span>
+                <span>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); runShopCycle()">一鍵商店</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadGeneralShop()">商店</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadCurrentAuction()">拍賣</a>
+                </span>
+              </div>
             </div>
             <div class="mini-list" id="recent-action-panel" style="margin-top: 16px;">
               <div class="mini-item"><span>最近操作</span><span id="recent-action-type">未載入</span></div>
@@ -920,6 +947,25 @@
               <button type="button" onclick="loadPlayerRecordsPreview()">玩家紀錄</button>
               <button type="button" onclick="loadPlayerTicketsAndStates()">票券 / 狀態</button>
               <button type="button" onclick="loadVisibilityPreview()">回顧</button>
+            </div>
+            <div class="mini-list" id="blindbox-review-actions" style="margin-top: 16px;">
+              <div class="mini-item">
+                <span>盲盒回顧循環</span>
+                <span>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); runBlindBoxReviewCycle()">一鍵回顧</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadBlindBoxReviewPreview()">盲盒回顧</a>
+                </span>
+              </div>
+            </div>
+            <div class="mini-list" id="player-assets-actions" style="margin-top: 16px;">
+              <div class="mini-item">
+                <span>玩家資產循環</span>
+                <span>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); runPlayerAssetsCycle()">一鍵資產</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPlayerTicketsAndStates()">票券 / 狀態</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPlayerRecordsPreview()">玩家紀錄</a>
+                </span>
+              </div>
             </div>
             <div class="panel" style="margin-top: 16px;">
               <h3>玩家紀錄分頁</h3>
@@ -1112,6 +1158,8 @@
         const currentText = chip.textContent ?? "";
         if (currentText.startsWith("Auth:")) {
           chip.textContent = `Auth: ${authText}`;
+        } else if (currentText.startsWith("Production:")) {
+          chip.textContent = `Production: ${state.authSession?.authPolicy?.productionSafe ? "Safe" : "Review"}`;
         } else if (currentText.startsWith("Status:")) {
           chip.textContent = `Status: ${sectionText} / ${accessText} / ${snapshotText}`;
         }
@@ -1486,6 +1534,7 @@
         document.getElementById("auth-policy-mode").textContent = state.authSession?.authMode ?? "unknown";
         document.getElementById("auth-policy-player").textContent = state.authSession?.playerId ?? "-";
         document.getElementById("auth-policy-strict").textContent = state.authSession?.authPolicy?.strict ? "Y" : "N";
+        document.getElementById("auth-policy-production-safe").textContent = state.authSession?.authPolicy?.productionSafe ? "Y" : "N";
         document.getElementById("auth-policy-operator").textContent = state.authSession?.authPolicy?.operatorFallbackEnabled ? "Y" : "N";
         document.getElementById("auth-policy-dev").textContent = state.authSession?.authPolicy?.devAuthUserFallbackEnabled ? "Y" : "N";
         document.getElementById("visibility-summary").textContent = state.authSession?.authUserId
@@ -1497,6 +1546,28 @@
         updatePill("auth-status", "error");
         setOutput({ type: "auth/session", error: error.message });
       }
+    }
+
+    async function loadAuthAndAccess() {
+      await loadAuthSession();
+      await loadAccessProfile();
+    }
+
+    async function loadManagementAndVisibility() {
+      await loadManagementFlow();
+      await loadVisibilityPreview();
+    }
+
+    async function loadShopAndAuction() {
+      await loadGeneralShop();
+      await loadCurrentAuction();
+    }
+
+    async function loadCoreConsole() {
+      await loadAuthAndAccess();
+      await loadOverview();
+      await loadShopAndAuction();
+      await loadManagementAndVisibility();
     }
 
     async function loadAccessProfile() {
@@ -2120,6 +2191,37 @@
       }
     }
 
+    async function runJourneyCycle() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        await loadJourneys();
+        await loadJourneyDashboard();
+        await loadJourneySummary();
+        await loadJourneyActionQueueSummary();
+        setOutput({
+          type: "console/journey-cycle",
+          payload: {
+            gameId,
+            playerId,
+            stages: [
+              "journeys",
+              "journey-dashboard",
+              "journey-summary",
+              "journey-action-queue",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/journey-cycle", error: error.message });
+      }
+    }
+
     async function reviewTrafficIncidentsBatch() {
       const gameId = getGameId();
       if (!gameId) {
@@ -2157,6 +2259,35 @@
         await loadManagementSnapshot();
       } catch (error) {
         setOutput({ type: "games/traffic-incidents/review-batch", error: error.message });
+      }
+    }
+
+    async function runTrafficReviewCycle() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        await reviewTrafficIncidentsBatch();
+        await loadTrafficIncidentReviewSummary();
+        await loadTrafficIncidentList();
+        await loadManagementSnapshot();
+        setOutput({
+          type: "console/traffic-review-cycle",
+          payload: {
+            gameId,
+            stages: [
+              "traffic-review-batch",
+              "traffic-review-summary",
+              "traffic-list",
+              "management-snapshot",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/traffic-review-cycle", error: error.message });
       }
     }
 
@@ -2691,6 +2822,33 @@
       }
     }
 
+    async function runShopCycle() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        await loadGeneralShop();
+        await loadCurrentAuction();
+        await loadOverview();
+        setOutput({
+          type: "console/shop-cycle",
+          payload: {
+            gameId,
+            stages: [
+              "general-shop",
+              "auction",
+              "overview",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/shop-cycle", error: error.message });
+      }
+    }
+
     async function initializeAuctionFlow() {
       const gameId = getGameId();
       if (!gameId) {
@@ -2723,6 +2881,35 @@
         await loadCurrentAuction();
       } catch (error) {
         setOutput({ type: "games/auction-shop/initialize", error: error.message });
+      }
+    }
+
+    async function runAuctionCycle() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        await initializeAuctionFlow();
+        await loadCurrentAuction();
+        await loadOverview();
+        setOutput({
+          type: "console/auction-cycle",
+          payload: {
+            gameId,
+            playerId,
+            stages: [
+              "auction-initialize",
+              "auction-current",
+              "overview",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/auction-cycle", error: error.message });
       }
     }
 
@@ -2855,6 +3042,8 @@
         overview: "總覽",
         shop: "商店",
         auction: "拍賣",
+        "shop-cycle": "商店循環",
+        "auction-cycle": "拍賣循環",
         journeys: "旅程",
         visibility: "可見性",
         "public-records-journey": "公開旅程紀錄",
@@ -2862,9 +3051,14 @@
         "public-blind-boxes": "公開盲盒",
         "player-assets": "票券與狀態",
         "player-records": "玩家紀錄",
+        "blindbox-review-cycle": "盲盒回顧循環",
+        "player-assets-cycle": "玩家資產循環",
+        "visibility-cycle": "可見性循環",
+        "journey-cycle": "旅程循環",
         management: "管理",
         "management-flow": "管理全流程",
         "management-cycle": "管理循環",
+        "traffic-review-cycle": "交通審核循環",
         checklist: "待辦",
         "traffic-review": "交通審核摘要",
         "traffic-list": "交通清單",
@@ -2876,6 +3070,8 @@
         overview: "讀取遊戲、商店、拍賣與旅程總覽。",
         shop: "讀取一般商店清單與商品狀態。",
         auction: "讀取目前拍賣與票券評級。",
+        "shop-cycle": "跑一次商店清單、拍賣與總覽刷新。",
+        "auction-cycle": "跑一次拍賣初始化、目前拍賣與總覽刷新。",
         journeys: "讀取玩家旅程、目前與保留旅程。",
         visibility: "讀取公開旅程與賽後 review。",
         "public-records-journey": "讀取公開旅程紀錄。",
@@ -2883,9 +3079,14 @@
         "public-blind-boxes": "讀取公開盲盒分頁。",
         "player-assets": "讀取票券與特殊狀態。",
         "player-records": "讀取玩家紀錄。",
+        "blindbox-review-cycle": "跑一次盲盒回顧、公開盲盒、玩家紀錄與可見性刷新。",
+        "player-assets-cycle": "跑一次票券、特殊狀態、玩家紀錄與可見性刷新。",
+        "visibility-cycle": "跑一次公開旅程、公開紀錄、公開盲盒與 review 刷新。",
+        "journey-cycle": "跑一次旅程列表、旅程看板、摘要與待辦摘要刷新。",
         management: "讀取管理快照與巡檢摘要。",
         "management-flow": "串接 management-snapshot、checklist、交通審核與旅程管理整合流程。",
         "management-cycle": "跑一次巡檢、處理與刷新管理摘要。",
+        "traffic-review-cycle": "跑一次交通批次審核與摘要刷新。",
         checklist: "讀取管理待辦清單。",
         "traffic-review": "讀取交通中斷審核摘要。",
         "traffic-list": "讀取交通中斷列表。",
@@ -2897,6 +3098,8 @@
         overview: "對應 `/games/:gameId/overview`，同步遊戲、商店、拍賣與旅程摘要。",
         shop: "對應 `/games/:gameId/general-shop/items`，確認一般商店項目與優先購買權。",
         auction: "對應 `/games/:gameId/auction-shop/current`，確認 current auction、ticket 與 bid 統計。",
+        "shop-cycle": "對應 `/games/:gameId/general-shop/items`、`/games/:gameId/auction-shop/current` 與 `/games/:gameId/overview` 的商店整合巡檢。",
+        "auction-cycle": "對應 `/games/:gameId/auction-shop/initialize`、`/games/:gameId/auction-shop/current` 與 `/games/:gameId/overview` 的拍賣整合巡檢。",
         journeys: "對應 `/games/:gameId/players/:playerId/journeys` 與 current/reserved 旅程。",
         visibility: "對應 `/games/:gameId/players/:playerId/public-journey` 與 review。",
         "public-records-journey": "對應 `/games/:gameId/records/public?recordType=journey`，確認公開旅程紀錄與日期區間。",
@@ -2904,9 +3107,14 @@
         "public-blind-boxes": "對應 `/games/:gameId/blind-boxes/public`，確認公開盲盒分頁與狀態。",
         "player-assets": "對應 `/games/:gameId/players/:playerId/tickets` 與 `special-states`，確認票券與特殊狀態。",
         "player-records": "對應 `/games/:gameId/players/:playerId/records`，確認玩家紀錄與日期區間。",
+        "blindbox-review-cycle": "對應 `/games/:gameId/blind-boxes/review`、`/games/:gameId/blind-boxes/public`、`/games/:gameId/players/:playerId/records` 與 `/games/:gameId/players/:playerId/public-journey` 的盲盒回顧整合巡檢。",
+        "player-assets-cycle": "對應 `/games/:gameId/players/:playerId/tickets`、`/games/:gameId/players/:playerId/special-states`、`/games/:gameId/players/:playerId/records` 與 `/games/:gameId/players/:playerId/public-journey` 的玩家資產整合巡檢。",
+        "visibility-cycle": "對應 `/games/:gameId/players/:playerId/public-journey`、`/games/:gameId/records/public`、`/games/:gameId/blind-boxes/public` 與 `/games/:gameId/review` 的可見性整合巡檢。",
+        "journey-cycle": "對應 `/games/:gameId/players/:playerId/journeys`、`/games/:gameId/journeys/dashboard`、`/games/:gameId/journeys/summary` 與 `/games/:gameId/journeys/action-queue/summary` 的旅程整合巡檢。",
         management: "對應 management snapshot 的管理視角摘要與警示。",
         "management-flow": "對應 `/games/:gameId/management-snapshot`、`/games/:gameId/checklist`、`/games/:gameId/traffic-incidents/review-summary` 與 `/games/:gameId/journeys/dashboard` 的整合巡檢。",
         "management-cycle": "對應 `/games/:gameId/management-snapshot` 與 `/games/:gameId/checklist/process` 的巡檢後處理循環。",
+        "traffic-review-cycle": "對應 `/games/:gameId/traffic-incidents/review-batch` 與 `/games/:gameId/traffic-incidents/review-summary` 的審核後刷新循環。",
         checklist: "對應 `/games/:gameId/checklist`，顯示待辦項目與處理結果。",
         "traffic-review": "對應 `/games/:gameId/traffic-incidents/review-summary`。",
         "traffic-list": "對應 `/games/:gameId/traffic-incidents`，列出交通中斷請求。",
@@ -3146,6 +3354,39 @@
       }
     }
 
+    async function runVisibilityCycle() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        await loadVisibilityPreview();
+        await loadPublicRecordsPreview("journey");
+        await loadPublicRecordsPreview("blind_box");
+        await loadPublicBlindBoxesPreview();
+        await loadPlayerRecordsPreview();
+        setOutput({
+          type: "console/visibility-cycle",
+          payload: {
+            gameId,
+            playerId,
+            stages: [
+              "visibility",
+              "public-records-journey",
+              "public-records-blind-box",
+              "public-blind-boxes",
+              "player-records",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/visibility-cycle", error: error.message });
+      }
+    }
+
     async function loadPlayerRecordsPreview() {
       const gameId = getGameId();
       const playerId = document.getElementById("player-id").value.trim();
@@ -3203,6 +3444,66 @@
         });
       } catch (error) {
         setOutput({ type: "games/players/records", error: error.message });
+      }
+    }
+
+    async function runBlindBoxReviewCycle() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        await loadBlindBoxReviewPreview();
+        await loadPublicBlindBoxesPreview();
+        await loadPlayerRecordsPreview();
+        await loadVisibilityPreview();
+        setOutput({
+          type: "console/blindbox-review-cycle",
+          payload: {
+            gameId,
+            playerId,
+            stages: [
+              "blindbox-review",
+              "public-blind-boxes",
+              "player-records",
+              "visibility",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/blindbox-review-cycle", error: error.message });
+      }
+    }
+
+    async function runPlayerAssetsCycle() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("player-id").value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        await loadPlayerTicketsAndStates();
+        await loadPlayerRecordsPreview();
+        await loadVisibilityPreview();
+        setOutput({
+          type: "console/player-assets-cycle",
+          payload: {
+            gameId,
+            playerId,
+            stages: [
+              "player-assets",
+              "player-records",
+              "visibility",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/player-assets-cycle", error: error.message });
       }
     }
 
@@ -3485,30 +3786,20 @@
       try {
         const steps = [];
 
-        await loadAuthSession();
-        steps.push("auth");
-        await loadAccessProfile();
-        steps.push("access");
-
-        setSection("overview");
-        await refreshDashboard();
-        steps.push("snapshot");
-        await loadOverview();
-        steps.push("overview");
-
-        setSection("shops");
-        await loadGeneralShop();
-        steps.push("shop");
-        await loadCurrentAuction();
-        steps.push("auction");
+        await loadCoreConsole();
+        steps.push("core-console");
 
         if (playerId) {
           setSection("journeys");
           await loadJourneys();
           steps.push("journeys");
+          await runJourneyCycle();
+          steps.push("journey-cycle");
           setSection("visibility");
           await loadVisibilityPreview();
           steps.push("visibility");
+          await runVisibilityCycle();
+          steps.push("visibility-cycle");
           await loadPublicRecordsPreview("journey");
           steps.push("public-records-journey");
           await loadPublicRecordsPreview("blind_box");
@@ -3517,6 +3808,10 @@
           steps.push("public-blind-boxes");
           await loadPlayerTicketsAndStates();
           steps.push("player-assets");
+          await runPlayerAssetsCycle();
+          steps.push("player-assets-cycle");
+          await loadBlindBoxReviewPreview();
+          steps.push("blindbox-review-cycle");
           await loadPlayerRecordsPreview();
           steps.push("player-records");
         }
@@ -3525,20 +3820,32 @@
         await loadManagementFlow();
         steps.push("management");
         steps.push("management-flow");
+        await runManagementCycle();
+        steps.push("management-cycle");
+        await runTrafficReviewCycle();
+        steps.push("traffic-review-cycle");
 
-        state.fullTourDetailMap = {
-          auth: `Auth 狀態：${readSummary("auth-status")} / ${readSummary("game-summary")}`,
-          access: `Access 狀態：${readSummary("access-status")} / ${readSummary("visibility-summary")}`,
+      state.fullTourDetailMap = {
+        "core-console": `Core console：${readSummary("auth-status")} / ${readSummary("access-status")} / ${readSummary("shop-summary")} / ${readSummary("management-preview-summary")} / ${readSummary("visibility-summary")}`,
+        auth: `Auth 狀態：${readSummary("auth-status")} / ${readSummary("game-summary")}`,
+        access: `Access 狀態：${readSummary("access-status")} / ${readSummary("visibility-summary")}`,
           snapshot: `Snapshot：${readSummary("management-preview-summary")} / ${readSummary("management-preview-overview")}`,
-          overview: `Overview：${readSummary("game-summary")} / ${readSummary("shop-summary")}`,
-          shop: `Shop：${readSummary("shop-summary")} / 商店預覽 ${readSummary("shop-preview-count")}`,
-          auction: `Auction：${readSummary("auction-details")} / ${readSummary("auction-bid-count")} / ${readSummary("auction-total-amount")}`,
-          journeys: `Journeys：${readSummary("journey-details")} / 目前 ${readSummary("current-journey-details")} / 保留 ${readSummary("reserved-journey-details")}`,
-          visibility: `Visibility：${readSummary("visibility-summary")} / Review ${readSummary("overview-review-count")} / 公開 ${readSummary("visibility-preview-public-records")} / 玩家 ${readSummary("visibility-preview-player-records")} / 公開玩家 ${readSummary("public-records-player-id")} / 玩家紀錄類型 ${readSummary("player-records-type")}`,
-          "public-blind-boxes": `Public blind boxes：${readSummary("public-blindbox-preview")} / ${readSummary("public-blindbox-status")}`,
-          management: `Management：${readSummary("management-preview-summary")} / ${readSummary("management-preview-health")}`,
+        overview: `Overview：${readSummary("game-summary")} / ${readSummary("shop-summary")}`,
+        shop: `Shop：${readSummary("shop-summary")} / 商店預覽 ${readSummary("shop-preview-count")}`,
+        auction: `Auction：${readSummary("auction-details")} / ${readSummary("auction-bid-count")} / ${readSummary("auction-total-amount")}`,
+        "shop-cycle": `Shop cycle：${readSummary("shop-summary")} / ${readSummary("shop-preview-count")} / ${readSummary("overview-auction-state")}`,
+        "auction-cycle": `Auction cycle：${readSummary("auction-details")} / ${readSummary("auction-bid-count")} / ${readSummary("overview-auction-state")}`,
+        journeys: `Journeys：${readSummary("journey-details")} / 目前 ${readSummary("current-journey-details")} / 保留 ${readSummary("reserved-journey-details")}`,
+        visibility: `Visibility：${readSummary("visibility-summary")} / Review ${readSummary("overview-review-count")} / 公開 ${readSummary("visibility-preview-public-records")} / 玩家 ${readSummary("visibility-preview-player-records")} / 公開玩家 ${readSummary("public-records-player-id")} / 玩家紀錄類型 ${readSummary("player-records-type")}`,
+        "public-blind-boxes": `Public blind boxes：${readSummary("public-blindbox-preview")} / ${readSummary("public-blindbox-status")}`,
+        "blindbox-review-cycle": `Blindbox review cycle：${readSummary("blindbox-review-preview")} / ${readSummary("blindbox-review-effect-preview")} / ${readSummary("blindbox-review-record-preview")}`,
+        "player-assets-cycle": `Player assets cycle：${readSummary("ticket-preview-count")} / ${readSummary("special-state-preview-count")} / ${readSummary("player-records-preview")}`,
+        "visibility-cycle": `Visibility cycle：${readSummary("visibility-summary")} / ${readSummary("visibility-preview-public-records")} / ${readSummary("visibility-preview-player-records")}`,
+        management: `Management：${readSummary("management-preview-summary")} / ${readSummary("management-preview-health")}`,
+        "journey-cycle": `Journey cycle：${readSummary("journey-details")} / ${readSummary("journey-preview-count")} / ${readSummary("management-preview-action-queue")}`,
         "management-flow": `Management flow：${readSummary("management-preview-summary")} / ${readSummary("management-preview-journeys")} / ${readSummary("management-preview-traffic-review")}`,
         "management-cycle": `Management cycle：${readSummary("management-preview-summary")} / ${readSummary("management-preview-checklist")} / ${readSummary("management-preview-health")}`,
+        "traffic-review-cycle": `Traffic review cycle：${readSummary("management-preview-traffic-review")} / ${readSummary("traffic-review-details")} / ${readSummary("management-preview-pending-list")}`,
         checklist: `Checklist：${readSummary("management-preview-checklist")}`,
           "traffic-review": `Traffic review：${readSummary("management-preview-traffic-review")} / ${readSummary("traffic-review-details")}`,
           "traffic-list": `Traffic list：${readSummary("traffic-review-details")} / ${readSummary("management-preview-pending-list")}`,
@@ -3586,3 +3893,4 @@
   </script>
 </body>
 </html>
+

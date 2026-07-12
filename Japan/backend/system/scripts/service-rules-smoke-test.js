@@ -2180,6 +2180,12 @@ async function main() {
   assert.equal(Array.isArray(processGameChecklistActionsResult.checklistAfter.pendingTrafficIncidentRequestList), true);
   assert.equal(processGameChecklistActionsResult.checklistBefore.game.id, gameData.id);
   assert.equal(processGameChecklistActionsResult.checklistAfter.game.id, gameData.id);
+  assert.equal(typeof processGameChecklistActionsResult.checklistBefore.summary.pendingTrafficIncidentCount, "number");
+  assert.equal(typeof processGameChecklistActionsResult.checklistBefore.summary.dueJourneyStartCount, "number");
+  assert.equal(typeof processGameChecklistActionsResult.checklistBefore.summary.dueJourneyCompleteCount, "number");
+  assert.equal(typeof processGameChecklistActionsResult.checklistAfter.summary.pendingTrafficIncidentCount, "number");
+  assert.equal(typeof processGameChecklistActionsResult.checklistAfter.summary.dueJourneyStartCount, "number");
+  assert.equal(typeof processGameChecklistActionsResult.checklistAfter.summary.dueJourneyCompleteCount, "number");
 
   const endedGameData = processAllScheduledEventsResult.gameResult.endedGame ?? {
     id: gameData.id,

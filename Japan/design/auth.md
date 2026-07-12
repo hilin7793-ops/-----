@@ -1,6 +1,6 @@
 # Japan Auth Design
 
-本文件定義目前 `operatorPlayerId` 權限骨架，並記錄如何平順接到 PocketBase 正式身份驗證。
+本文件定義目前的 request auth 與 legacy `operatorPlayerId` 相容骨架，並記錄如何平順接到 PocketBase 正式身份驗證。
 
 目標不是一次做完所有 auth，而是先把：
 
@@ -18,7 +18,7 @@
 - `assertGameHostAccess`
 - `assertSelfAccess`
 
-目前正式路徑已經可以透過 auth context 驗證，但相容模式下仍可能讀到：
+目前正式路徑已經可以透過 auth context 驗證，但 legacy 相容模式下仍可能讀到：
 
 - `operatorPlayerId`
 

@@ -90,6 +90,7 @@ export async function getMap({ dataAccessLayer, mapId }) {
 
 export async function listMaps({ dataAccessLayer, filterOptions = {}, queryOptions = {} }) {
   const {
+    name,
     hasStartLocation,
     hasGoalLocation,
     ...recordFilterOptions
@@ -103,6 +104,10 @@ export async function listMaps({ dataAccessLayer, filterOptions = {}, queryOptio
 
   return {
     mapList: mapList.filter((mapData) => {
+      if (name && mapData.name !== name) {
+        return false;
+      }
+
       if (hasStartLocation === true && !mapData.startLocation) {
         return false;
       }

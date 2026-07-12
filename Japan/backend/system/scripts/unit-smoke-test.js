@@ -67,8 +67,8 @@ async function run() {
   });
 
   process.env.NODE_ENV = "production";
-  delete process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK;
-  delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
   delete process.env.JAPAN_DISABLE_DEV_AUTH_USER_FALLBACK;
   delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
   delete process.env.JAPAN_AUTH_STRICT;
@@ -148,6 +148,8 @@ async function run() {
   assert.equal(productionContext.playerId, null);
   assert.equal(productionContext.authMode, "anonymous");
   assert.equal(productionContext.usedOperatorFallback, false);
+  assert.equal(productionContext.operatorFallbackEnabled, false);
+  assert.equal(productionContext.devAuthUserFallbackEnabled, false);
   assert.equal(productionContext.authPolicy.strict, false);
   assert.equal(productionContext.authPolicy.operatorFallbackEnabled, false);
   assert.equal(productionContext.authPolicy.devAuthUserFallbackEnabled, false);

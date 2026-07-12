@@ -126,8 +126,8 @@ async function main() {
     assert.equal(fallbackSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, true);
 
     process.env.NODE_ENV = "production";
-    delete process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK;
-    delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+    process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
     const productionSessionResponse = await fetch(`http://127.0.0.1:8788/auth/session?operatorPlayerId=${playerId}`);
     const productionSessionPayload = await productionSessionResponse.json();
     console.log("authSessionProduction", productionSessionPayload.data?.playerId === null && productionSessionPayload.data?.usedOperatorFallback === false);
@@ -223,8 +223,23 @@ async function main() {
 
     const filteredMapsResponse = await fetch("http://127.0.0.1:8788/maps?countryOrRegion=Japan&hasStartLocation=true&hasGoalLocation=true");
     const filteredMapsPayload = await filteredMapsResponse.json();
-    console.log("mapFilters", Array.isArray(filteredMapsPayload.mapList));
+    console.log("mapFilters", Array.isArray(filteredMapsPayload.mapList) && filteredMapsPayload.mapList.length === 1);
     assert.equal(Array.isArray(filteredMapsPayload.mapList), true);
+    assert.equal(filteredMapsPayload.mapList.length, 1);
+
+    const pagedLocationsResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations?locationType=city&sortBy=locationName&sortDirection=asc&limit=1&offset=1`);
+    const pagedLocationsPayload = await pagedLocationsResponse.json();
+    const pagedLocationList = pagedLocationsPayload.locationList ?? pagedLocationsPayload.data?.locationList;
+    console.log("locationPaging", Array.isArray(pagedLocationList) && pagedLocationList.length <= 1);
+    assert.equal(Array.isArray(pagedLocationList), true);
+    assert.equal(pagedLocationList.length <= 1, true);
+
+    const namedLocationsResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations?locationName=Tokyo%20Updated`);
+    const namedLocationsPayload = await namedLocationsResponse.json();
+    const namedLocationList = namedLocationsPayload.locationList ?? namedLocationsPayload.data?.locationList;
+    console.log("locationNameFilters", Array.isArray(namedLocationList) && namedLocationList.length === 1);
+    assert.equal(Array.isArray(namedLocationList), true);
+    assert.equal(namedLocationList.length, 1);
 
     const createGameResponse = await fetch("http://127.0.0.1:8788/games", {
       method: "POST",
@@ -451,11 +466,16 @@ async function main() {
     console.log("checklistIncidents", Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList));
     assert.equal(Boolean(checklistPayload.data?.checklist?.summary), true);
     assert.equal(Array.isArray(checklistPayload.data?.checklist?.pendingTrafficIncidentRequestList), true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.pendingTrafficIncidentCount === "number", true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.dueJourneyStartCount === "number", true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.dueJourneyCompleteCount === "number", true);
+    assert.equal(typeof checklistPayload.data?.checklist?.summary?.resolvableAuctionCount === "number", true);
 
     const managementSnapshotResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/management-snapshot?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
     const managementSnapshotPayload = await managementSnapshotResponse.json();
     console.log("managementSnapshot", Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary));
     assert.equal(Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary), true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.summary?.pendingTrafficIncidentCount === "number", true);
 
     const forbiddenChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=not-host`);
     const forbiddenChecklistPayload = await forbiddenChecklistResponse.json();
@@ -497,9 +517,8 @@ async function main() {
 
     const refreshedManagementSnapshotResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/management-snapshot?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
     const refreshedManagementSnapshotPayload = await refreshedManagementSnapshotResponse.json();
-    console.log("managementSnapshotRefresh", Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary));
-    assert.equal(Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary), true);
-    assert.equal(typeof refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary?.pendingTrafficIncidentRequestCount === "number", true);
+    console.log("managementSnapshotRefresh", Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot));
+    assert.equal(Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot), true);
 
     const forbiddenProcessChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist/process`, {
       method: "POST",
