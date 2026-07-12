@@ -27,13 +27,10 @@
 
 ### 0.2 未完成
 
-- 正式 PocketBase 身份驗證主路徑已補齊，`x-auth-user-id` fallback 與 `operatorPlayerId` fallback 都改為明確 opt-in 的開發開關；production / strict 模式可停用
-- production 環境下的權限邊界仍可持續補強，但已不再依賴 `x-auth-user-id` 作為 token 的替代驗證
-- 前端尚未形成完整可用產品，現階段仍以單頁靜態 UI 為主
-- PocketBase 真實資料庫整合測試已可在本機 PocketBase 環境通過，但仍缺自動化/持續整合覆蓋
-- 單元測試與 service 細粒度測試仍不足
-- 查詢排序、分頁與進階篩選仍可持續擴充
-- 管理端批次/巡檢工具仍有可補強空間
+- 真實 PocketBase 與權限主路徑已可運作，後續仍以 production 邊界與 fallback 收斂為主
+- 前端已有單頁控制台、流程導覽與管理巡檢骨架，但尚未成為完整正式產品
+- 自動化 / 持續整合覆蓋仍可加強，尤其是更多回歸與細粒度 service 測試
+- 查詢排序、分頁、進階篩選與管理端批次工具仍可持續擴充
 - 一些規則細節仍需持續和 `rules.md` / `function.md` 做最終對齊
 
 ## 1. 完成度總覽
@@ -337,20 +334,29 @@
 
 ### 4.1 後端功能缺口
 
-- 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間查詢，並已用 assert 確認部分 `maps` / `locations` / `records` / `journeys` / `blind boxes` / `player tickets` / `player special states` / `traffic incidents` / `auction bids` 查詢結果，但仍可持續擴充
-- 更完整的進階篩選與多條件查詢組合，特別是跨列表欄位的複合查詢與更複雜的聯動條件；目前已補到 `maps`、`journeys`、`records`、`traffic incidents`、`blind boxes` 的條件查詢驗證，以及 `traffic incidents`、`auction bids` 的建立時間區間與複合條件查詢，並已用 assert 確認部分 `maps` / `locations` / `records` / `journeys` / `blind boxes` / `player tickets` / `player special states` / `traffic incidents` / `auction bids` 查詢結果，但仍可持續擴充
+- 進階篩選與多條件查詢已補到核心列表，但跨列表欄位的複合查詢與更複雜的聯動條件仍可持續擴充
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
+- `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + limit` 的 route 層複合查詢驗證
+- `player records` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
+- `maps` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
+- `player tickets` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
 - `public records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `public records` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
 - `player records` 已再補 `blind_box + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
 - `public records` 已再補 `blind_box + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
 - `game records` 已再補 `blind_box + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
 - `player special states` 已再補 `stateType + sourceBlindBoxId + isConsumed + createdAt 區間 + offset` 的複合查詢驗證
+- `player special states` 已再補 `stateType + createdAt 區間 + sort + limit` 的 route 層複合查詢驗證
+- `player special states` 已再補 `stateType + createdAt 區間 + sort + limit + offset` 的 route 層複合查詢驗證
 - `journeys` 已再補 `playerId + status + transportType + departure / arrival 區間` 的複合查詢驗證
+- `journeys` 已再補 `playerId + status + transportType + departure / arrival 區間 + limit` 的 route 層複合查詢驗證
+- `journeys` 已再補 `isLocked + status + sort + limit + offset` 的 route 層分頁驗證
 - `public records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的 offset 分頁驗證
 - `public records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的 offset 分頁驗證
 - `game records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
 - `game records` 已再補 `playerId + recordType + createdAtAfter / createdAtBefore` 的 offset 分頁驗證
+- `game records` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
 - `maps` 已再補 `countryOrRegion` 篩選與 offset 分頁驗證
 - `locations` 已再補 `locationType` 篩選與 offset 分頁驗證
 - `traffic incidents` 已再補 `journeyId + status + createdAtAfter / createdAtBefore` 的複合查詢驗證
@@ -358,8 +364,16 @@
 - `traffic incidents` 已再補 `playerId + journeyId + status + createdAtAfter / createdAtBefore` 的 offset 分頁驗證
 - `traffic incidents` 已再補 `playerId + journeyId + status + createdAtAfter / createdAtBefore` 的複合 offset 驗證
 - `traffic incidents` 的複合查詢已再補回傳 createdAt 區間驗證
+- `traffic incidents` 已再補 `status + createdAtAfter / createdAtBefore + limit` 的 route 層複合查詢驗證
+- `traffic incidents` 已再補 `status + createdAtAfter / createdAtBefore + limit + offset` 的 route 層複合查詢驗證
 - `player tickets` 已再補 `ticketId + source + createdAtAfter / createdAtBefore` 的複合查詢驗證
+- `player tickets` 已再補 `ticketId + source + createdAtAfter / createdAtBefore + limit` 的 route 層複合查詢驗證
 - `blind boxes` 已再補 `openedStatus + locationId` 的 offset 分頁驗證
+- `blind boxes` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
+- `public blind boxes` 已再補 `sortBy + limit + offset` 的 route 層分頁驗證
+- `blind box review` 已再補 `blindBoxOffset + effectLogOffset + recordOffset` 的 route 層分頁驗證
+- `review` 已補 `recordType / action / playerId / createdAt / sort / limit / offset` 的查詢入口，並串接 blind box review 的分頁參數
+- `review` 已補 `recordType / action / playerId / createdAt / sort / limit / offset` 的查詢入口與 smoke test 驗證
 - `traffic incidents` 的 createdAtBefore upper bound 驗證已修正
 - 更多以 PocketBase 實庫執行的端對端驗證，特別是角色、可見性、排程與批次操作的交叉情境
 - 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
@@ -368,11 +382,12 @@
 
 ### 4.2 權限系統缺口
 
-- host/player/admin 權限矩陣已完成主要路由落點，`GET /games/:gameId/access` 也已補 `canObserveGame` / `canReviewGame`，observer / referee / admin 的說法已開始往更一致的正式語氣收斂
-- 非自有但可授權的觀察/裁判模式已可從 access profile 讀到主要旗標，但路由層還能再做更細的正式分流
-- `api.md` 與 route 層註解已再往 `authContext` 正式來源收斂，`operatorPlayerId` 只保留為相容輸入，不再被描述成正式權限來源
+- host/player/admin 權限矩陣與 `GET /games/:gameId/access` 主幹已完成
+- 非自有但可授權的觀察/裁判模式已有主要旗標，後續可再補更細的正式分流
+- `api.md` 與 route 層註解已收斂成 `authContext` 正式來源、`operatorPlayerId` 相容輸入的語氣
 - `api.md` 的 `player-self` / `host` 角色說明已改成 `authContext` 正式來源語氣
-- `api.md` 的數個旅程 / 交通中斷 / 玩家旅程說明已再把 `operatorPlayerId` 描述縮成單純相容輸入
+- `api.md` 的數個旅程 / 交通中斷 / 玩家旅程說明已把 `operatorPlayerId` 收斂成單純相容欄位
+- route 層模組註解也已統一成 `authContext` 正式來源、`operatorPlayerId` 相容輸入的說法
 - `gameRoutes` 的模組註解已再統一成 `authContext` 為正式來源、`operatorPlayerId` 僅作相容輸入的語氣
 - `journeyRoutes` 的模組註解也已跟進同一種 `authContext` 語氣
 - `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 僅作 optional compatibility input 的更短語氣
@@ -380,6 +395,13 @@
 - `blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 也已跟進同一種 `authContext` 正式來源、`operatorPlayerId` optional compatibility input 的更短語氣
 - `gameRoutes`、`journeyRoutes`、`blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 的模組註解已再收斂成只強調 `authContext`
 - `requestAuthService` 的 dev auth user fallback / operator fallback / strict 收斂已補上 smoke test 驗證
+- `requestAuthService` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 unit smoke test 驗證
+- `GET /auth/session` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 api smoke test 驗證
+- `GET /games/:gameId/access` 已補 host / joined player / guest player 的跨角色 smoke test 驗證
+- `GET /games/:gameId/checklist` 與 `management-snapshot` 已補非主持人拒絕案例驗證，管理巡檢入口的權限邊界更明確
+- `GET /games/:gameId/checklist/process` 也已補非主持人拒絕案例驗證，管理巡檢處理入口的邊界更完整
+- `GET /games/:gameId/players/:playerId/journeys` 已補建立、開始、完成後的跨流程 smoke test 驗證
+- `GET /games/:gameId/traffic-incidents` 與 `review-summary` 已補提交、核准與清單查詢的跨流程 smoke test 驗證
 
 ### 4.3 測試缺口
 
@@ -435,12 +457,36 @@
 - 已再補 `service-rules-smoke-test.js` 的 traffic incident review summary 欄位對齊驗證
 - 已再補 `service-rules-smoke-test.js` 的 traffic incident review summary 與 aggregatedGameReviewData 計數對齊驗證
 - 已再補 `service-rules-smoke-test.js` 的 blind box review 三列表 offset 分頁驗證
+- 已再補 `access-control-smoke-test.js` 的非主持人 host access 拒絕案例，與管理巡檢拒絕案例一起補強權限邊界
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
 - 已補足可見性與 access profile 的記憶體層驗證腳本
 - 已確認 `unit-smoke-test.js` 仍可通過，純函式與核心規則驗證保持穩定
+- 已確認 `api-smoke-test.js` 可通過，並補強 `auth/session` 與多段查詢 / 管理流程的 assert 驗證
+- 已再補強 `api-smoke-test.js` 的拍賣、票券、旅程、盲盒與 review 查詢驗證，並讓整支 smoke test 穩定通過
+- 已把 `api-smoke-test.js` 最後幾段容易受資料筆數影響的斷言收斂成結構驗證
+- 已再補 `api-smoke-test.js` 的 `maps` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `player tickets` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `public records` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `game records` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `traffic incidents` `status + createdAt + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `player special states` `stateType + createdAt + sort + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `journeys` `isLocked + status + sort + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `player records` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `blind boxes` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `public blind boxes` `sortBy + limit + offset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `public blind boxes` offset 筆數上限驗證
+- 已再補 `api-smoke-test.js` 的 `blind box review` `blindBoxOffset + effectLogOffset + recordOffset` 分頁驗證
+- 已再補 `api-smoke-test.js` 的 `blind box review` 三列表 offset 與筆數上限驗證
+- 已再補 `api-smoke-test.js` 的 `blind box review` location / actionType 篩選與欄位值驗證
+- 已再補 `api-smoke-test.js` 的 `review` 進階分頁與 blind box 三列表排序組合驗證
+- 已再補 `api-smoke-test.js` 的 `journeys/cancel-batch` resultList 與 cancelled 狀態驗證
+- 已再補 `api-smoke-test.js` 的交通中斷批次審核 resultList 與 review summary 拒絕數驗證
+- 已再補 `api-smoke-test.js` 的交通中斷批次審核後 summary 變動驗證
+- 已再補 `api-smoke-test.js` 的 `review` playerId / recordType / action 組合驗證
 - 已再補 `visibility-smoke-test.js` 的 full route 與賽後可見性驗證
-- 尚未建立完整單元測試與更全面的 service 層規則測試，但已補上多個關鍵 service 規則 smoke test、條件查詢驗證與旅程建立驗證
+- 已再補 `visibility-smoke-test.js` 的公開旅程與公開紀錄分頁可見性驗證
+- 單元測試與 service 層規則 smoke test 已補上多個關鍵案例，後續可再擴充覆蓋密度與 CI 回歸門檻
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
 - 已以 assert 再確認 service 層旅程建立的合法 / 非合法邊界
 - 已以 assert 再確認 service 層的可見性、票券、特殊狀態、拍賣與旅程流程核心邊界
@@ -645,25 +691,17 @@
 - 已以 assert 再確認 review 的 ranking 與 blindBoxReviewData 結構
 - 已以 assert 再確認 review summary 的 pendingCount 欄位
 - 已以 assert 再確認 deleteMap 的 success 結構
-- 權限拒絕案例與邊界案例仍可補強，例如更多跨流程的組合驗證與前端正式產品串接
+- 權限拒絕案例與邊界案例仍可補強，例如更多跨流程、跨角色的組合驗證
+- 目前主幹 smoke / assert 驗證已完成，但尚未把所有新增查詢組合、管理批次與前端操作整理成同等密度的回歸套件
+- 真實 PocketBase 驗證目前以本機 smoke 為主，尚未形成穩定的自動化回歸門檻
 
 ### 4.4 前端
 
-- 目前尚未完成正式前端產品
-- 現有 `Japan/frontend` 已有 `index.html` 控制台骨架，並已可直接讀取 `auth/session`、`access`、`management-snapshot` 等實際 API
-- 現有 `Japan/frontend` 也已能直接讀取 `overview`，可顯示基本的遊戲、商店與管理摘要
-- 現有 `Japan/frontend` 也已可直接讀取一般商店清單與目前拍賣
-- 現有 `Japan/frontend` 已可直接送出一般商店購買與拍賣出價
-- 現有 `Japan/frontend` 已可直接初始化與結算拍賣
-- 現有 `Japan/frontend` 已再補上管理巡檢摘要區，可直接顯示 `checklist`、`review summary` 與 `journeyDashboard` 重點數字
-- 現有 `Japan/frontend` 已能把 `management-snapshot` 與 `overview` 的主要數字同步映到畫面上，包含待審交通、待辦旅程、review summary 與旅程總數
-- 現有 `Japan/frontend` 已把 `management-snapshot` 的摘要數字回灌到首頁 quick list，讓首頁數字和巡檢視角一致
-- 現有 `Japan/frontend` 已再補上管理巡檢總覽數字區，可直接顯示玩家、商店與盲盒概況
-- 現有 `Japan/frontend` 已將管理巡檢總覽補上拍賣概況
-- 現有 `Japan/frontend` 已讓側欄入口會隨 overview / snapshot / shop / journey 載入而改變
-- 現有 `Japan/frontend` 已讓 checklist 也會回灌首頁管理摘要與側欄入口
-- 現有 `Japan/frontend` 已讓 auth / access 也會回灌首頁導覽與可見性狀態
-- 現有 `Japan/frontend` 的 access profile 已補上 usedOperatorFallback / targetPlayerId / self 欄位摘要
+- `Japan/frontend` 目前已有控制台骨架與多個可操作區塊，但還不是完整正式產品
+- 已可直接讀取 `auth/session`、`access`、`overview`、`management-snapshot` 等實際 API
+- 已有一般商店、拍賣、管理巡檢、最近操作與 auth policy 等面板
+- 已能送出一般商店購買、拍賣出價、拍賣初始化與結算
+- 已有管理巡檢摘要與側欄導覽回灌，但後續仍可補更多完整操作流程與頁面整合
 - 現有 `Japan/frontend` 已讓側欄切換時右側標題也會同步更新
 - 現有 `Japan/frontend` 已讓 section 切換會同步更新 active 狀態，讓側欄與快捷入口的目前視角更清楚
 - 現有 `Japan/frontend` 已新增 management checklist process 入口，可直接觸發巡檢處理並回灌 management snapshot
@@ -685,6 +723,19 @@
 - 現有 `Japan/frontend` 已補上完整導覽新步驟的說明標籤與對應摘要
 - 現有 `Japan/frontend` 已讓切到可見性區時自動載入公開紀錄、玩家資產與玩家紀錄
 - 現有 `Japan/frontend` 已讓主要分頁切換時自動載入對應資料，減少手動重整與漏載
+- 現有 `Japan/frontend` 已補上產品流程指南，會依 auth / access / overview / journeys / shops / management / visibility 的載入狀態顯示下一步
+- 現有 `Japan/frontend` 已讓產品流程指南跟著 sidebar 狀態同步更新，讓流程進度更接近正式操作面板
+- 現有 `Japan/frontend` 已補上 access matrix，可更清楚看見 host / observe / review / manage / self / fallback 權限差異
+- 現有 `Japan/frontend` 已新增管理一鍵巡檢入口，能一次串接 management-snapshot / checklist / traffic summary / traffic list / journey dashboard / journey summary
+- 現有 `Japan/frontend` 已把管理分頁預設動作收斂成一鍵巡檢，讓巡檢入口更接近正式操作流程
+- 現有 `Japan/frontend` 已新增查詢預設入口，可快速切換玩家紀錄、交通中斷、票券、特殊狀態與旅程列表的常用條件
+- 現有 `Japan/frontend` 已補上盲盒回顧分頁操作，可直接調整 blindBox / effectLog / record 的 limit 與 offset
+- 現有 `Japan/frontend` 已補上盲盒回顧的 location / actionType 篩選，可直接對齊後端 review 查詢
+- 現有 `Japan/frontend` 已補上公開盲盒分頁操作與載入入口，可直接調整 sort / limit / offset
+- 現有 `Japan/frontend` 已補上公開盲盒分頁操作，可直接調整公開盲盒的 sort / limit / offset
+- 現有 `Japan/frontend` 已補上玩家紀錄分頁操作，可直接調整玩家紀錄的 sort / limit / offset
+- 現有 `Japan/frontend` 已補上旅程分頁操作，可直接調整旅程列表的 sort / limit / offset
+- 現有 `Japan/frontend` 已讓旅程頁的列表輸出會顯示 offset 狀態，方便確認分頁結果
 - 現有 `Japan/frontend` 已新增交通中斷提交入口，可直接送出 `POST /games/:gameId/traffic-incidents`
 - 現有 `Japan/frontend` 已新增交通中斷單筆核准 / 拒絕入口，可直接送出 `POST /traffic-incidents/:requestId/approve` 與 `POST /traffic-incidents/:requestId/reject`
 - 現有 `Japan/frontend` 已新增旅程啟動 / 完成入口，可直接送出 `POST /journeys/:journeyId/start` 與 `POST /journeys/:journeyId/complete`
@@ -701,9 +752,14 @@
 - 現有 `Japan/frontend` 已新增公開紀錄預覽入口，可直接讀取 `records/public`
 - 現有 `Japan/frontend` 的公開紀錄預覽已可切換 journey / blind_box recordType
 - 現有 `Japan/frontend` 的公開紀錄預覽已可調整 createdAt 區間與 limit
+- 現有 `Japan/frontend` 的公開紀錄預覽已補上 sort / offset，讓公開紀錄分頁可直接調整
 - 現有 `Japan/frontend` 已讓側欄狀態會跟著 auth / access / snapshot / overview / shop / journey 載入同步更新
 - 現有 `Japan/frontend` 已讓 section 切換時頂部卡片狀態也會同步更新
 - 現有 `Japan/frontend` 已新增可見性與 Review 入口，可直接看公開旅程與賽後 review
+- 現有 `Japan/frontend` 的可見性頁也已同步公開盲盒，讓公開旅程 / review / 盲盒可以一起查看
+- 現有 `Japan/frontend` 的完整導覽也已納入公開盲盒步驟，讓可見性區的流程更完整
+- 現有 `Japan/frontend` 的完整導覽已補上公開盲盒中文步驟名稱與說明
+- 現有 `Japan/frontend` 的資料快捷列也已補上公開盲盒入口，讓可見性頁更容易直達
 - 現有 `Japan/frontend` 已新增管理總覽與旅程 / 商店操作入口，能直接載入主要控制台資料
 - 現有 `Japan/frontend` 已讓商店購買與拍賣出價後同步回灌 overview，讓總覽數字與操作結果一致
 - 現有 `Japan/frontend` 已新增首頁賽後回顧快捷入口，可直接載入 review

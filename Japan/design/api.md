@@ -25,8 +25,8 @@
 目前 API 可先用三種主要角色理解：
 
 - `public`：不需要登入即可存取
-- `player-self`：需要可解析到操作者玩家身分，正式來源以 `authContext` 為準
-- `host`：需要可解析到主持人玩家身分，正式來源以 `authContext` 為準
+- `player-self`：需要可解析到操作者玩家身分，使用 `authContext`
+- `host`：需要可解析到主持人玩家身分，使用 `authContext`
 
 `access` 與 review 類 API 的觀察/審查語意細分為：
 
@@ -1040,25 +1040,25 @@ Request body:
 
 用途：手動啟動旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入。
+Request body 可保留 `operatorPlayerId` 作為相容欄位。
 
 ### `POST /journeys/:journeyId/complete`
 
 用途：手動完成旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入。
+Request body 可保留 `operatorPlayerId` 作為相容欄位。
 
 ### `POST /journeys/:journeyId/cancel`
 
 用途：取消旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入。
+Request body 可保留 `operatorPlayerId` 作為相容欄位。
 
 ### `PATCH /journeys/:journeyId`
 
 用途：更新旅程。
 
-Request body 可含 `operatorPlayerId` 作為相容輸入。
+Request body 可保留 `operatorPlayerId` 作為相容欄位。
 
 ### `GET /journeys/:journeyId`
 
@@ -1070,7 +1070,7 @@ Request body 可含 `operatorPlayerId` 作為相容輸入。
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入
+- `operatorPlayerId`，可選
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1082,7 +1082,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入
+- `operatorPlayerId`，可選
 
 ### `GET /games/:gameId/players/:playerId/journeys/reserved`
 
@@ -1090,7 +1090,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入
+- `operatorPlayerId`，可選
 
 ## Traffic Incidents
 
@@ -1100,7 +1100,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，相容輸入
+- `operatorPlayerId`，可選
 - `playerId`
 - `journeyId`
 - `status`
@@ -1140,7 +1140,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選
 
 ### `POST /traffic-incidents/:requestId/approve`
 

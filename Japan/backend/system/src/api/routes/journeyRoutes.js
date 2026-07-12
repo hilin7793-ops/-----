@@ -13,7 +13,7 @@ import {
 } from "../../index.js";
 import { buildQueryOptions } from "../queryOptions.js";
 
-// Authorization in this module is centered on `authContext`.
+// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
 export function createJourneyRoutes({ dataAccessLayer }) {
   return [
     {

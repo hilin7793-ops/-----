@@ -38,7 +38,7 @@ function parseBooleanQueryValue(value) {
   return null;
 }
 
-// Authorization in this module is centered on `authContext`.
+// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
   return [
     {
@@ -278,6 +278,15 @@ export function createBlindBoxRoutes({ dataAccessLayer }) {
             data: await getBlindBoxReviewData({
               dataAccessLayer,
               gameId: params.gameId,
+              blindBoxFilterOptions: {
+                ...(query.openedStatus ? { openedStatus: query.openedStatus === "true" } : {}),
+                ...(query.locationId ? { locationId: query.locationId } : {}),
+              },
+              blindBoxEffectLogFilterOptions: {
+                ...(query.blindBoxId ? { blindBoxId: query.blindBoxId } : {}),
+                ...(query.playerId ? { playerId: query.playerId } : {}),
+                ...(query.actionType ? { actionType: query.actionType } : {}),
+              },
               queryOptions: buildBlindBoxReviewQueryOptions(query),
             }),
           },

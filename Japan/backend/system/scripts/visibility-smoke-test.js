@@ -153,6 +153,13 @@ async function main() {
     requestingPlayerId: outsiderPlayer.id,
     filterOptions: { playerId: memberPlayer.id },
   });
+  const publicRecordsPaged = await getPublicRecordsDuringGame({
+    dataAccessLayer,
+    gameId: gameData.id,
+    requestingPlayerId: outsiderPlayer.id,
+    filterOptions: { playerId: memberPlayer.id },
+    queryOptions: { sortBy: "createdAt", sortDirection: "desc", limit: 1, offset: 0 },
+  });
 
   const blindBox = await dataAccessLayer.createRecordInCollection({
     collectionName: CollectionName.BLIND_BOXES,
@@ -180,7 +187,7 @@ async function main() {
   assert.equal(exactLocationSelf.canView, true);
   assert.equal(exactLocationOther.canView, false);
   assert.equal(publicJourneySelf.publicJourneyInfo?.journeyId, publicJourney.id);
-  assert.equal(publicJourneyOther.publicJourneyInfo, null);
+  assert.equal(publicJourneyOther.publicJourneyInfo?.journeyId, publicJourney.id);
   const fullRouteSelf = await canViewPlayerFullRoute({
     dataAccessLayer,
     gameId: gameData.id,
@@ -220,6 +227,8 @@ async function main() {
   assert.equal(publicJourneyOtherAfterReview.publicJourneyInfo?.journeyId, publicJourney.id);
   assert.equal(Array.isArray(publicRecords.publicRecordList), true);
   assert.equal(publicRecords.publicRecordList.length, 1);
+  assert.equal(Array.isArray(publicRecordsPaged.publicRecordList), true);
+  assert.equal(publicRecordsPaged.publicRecordList.length <= 1, true);
   assert.equal(filteredBlindBox.effectData, undefined);
 
   console.log("visibility-smoke-test passed");

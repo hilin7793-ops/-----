@@ -112,18 +112,25 @@ async function run() {
   assert.equal(devFallbackContext.authMode, "dev_auth_user");
   assert.equal(devFallbackContext.usedOperatorFallback, false);
   assert.equal(devFallbackContext.devAuthUserFallbackEnabled, true);
+  assert.equal(devFallbackContext.authPolicy.strict, false);
+  assert.equal(devFallbackContext.authPolicy.operatorFallbackEnabled, false);
+  assert.equal(devFallbackContext.authPolicy.devAuthUserFallbackEnabled, true);
 
   assert.equal(operatorFallbackContext.authVerified, false);
   assert.equal(operatorFallbackContext.playerId, authPlayer.id);
   assert.equal(operatorFallbackContext.authMode, "operator_fallback");
   assert.equal(operatorFallbackContext.usedOperatorFallback, true);
   assert.equal(operatorFallbackContext.operatorFallbackEnabled, true);
+  assert.equal(operatorFallbackContext.authPolicy.strict, false);
+  assert.equal(operatorFallbackContext.authPolicy.operatorFallbackEnabled, true);
 
   assert.equal(strictContext.authVerified, false);
   assert.equal(strictContext.playerId, null);
   assert.equal(strictContext.authMode, "anonymous");
   assert.equal(strictContext.usedOperatorFallback, false);
   assert.equal(strictContext.authStrictEnabled, true);
+  assert.equal(strictContext.authPolicy.strict, true);
+  assert.equal(strictContext.authPolicy.operatorFallbackEnabled, false);
 
   const basicQueryOptions = buildQueryOptions({
     sortBy: "createdAt",

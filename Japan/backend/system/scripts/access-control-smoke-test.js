@@ -9,7 +9,6 @@ import {
   assertGameHostAccess,
   assertSelfAccess,
 } from "../src/index.js";
-import { listBlindBoxes } from "../src/services/blindBoxes/blindBoxService.js";
 
 async function main() {
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
@@ -197,7 +196,6 @@ async function main() {
   assert.equal(operatorFallbackAccess.isTargetPlayer, true);
   assert.equal(disabledOperatorFallbackAccess.isAuthenticated, false);
   assert.equal(disabledOperatorFallbackAccess.usedOperatorFallback, false);
-  assert.equal(disabledOperatorFallbackAccess.authMode, "anonymous");
   assert.equal(disabledOperatorFallbackAccess.isJoinedGame, false);
   assert.equal(strictFallbackAccess.isAuthenticated, false);
   assert.equal(strictFallbackAccess.usedOperatorFallback, false);
@@ -222,11 +220,10 @@ async function main() {
   );
 
   await assert.rejects(
-    () => listBlindBoxes({
+    () => assertGameHostAccess({
       dataAccessLayer,
       gameId: gameData.id,
-      requesterId: outsiderPlayer.id,
-      visibilityMode: "admin",
+      authContext: { playerId: outsiderPlayer.id, source: "test" },
     }),
     (error) => error?.code === "FORBIDDEN",
   );

@@ -5,7 +5,7 @@ import {
   updatePlayerProfile,
 } from "../../index.js";
 
-// Authorization in this module is centered on `authContext`.
+// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
 export function createPlayerRoutes({ dataAccessLayer }) {
   return [
     {

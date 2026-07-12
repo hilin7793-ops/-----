@@ -427,11 +427,12 @@
             <h2>控制台入口</h2>
             <p class="subtle">先把首頁、商店、旅程、管理與審核入口收斂，後續可逐步接上 API 與即時狀態。</p>
           </div>
-          <div class="actions">
-            <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
-            <a class="action" href="javascript:void(0)" onclick="refreshDashboard()">重新整理</a>
-            <a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">完整導覽</a>
-            <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
+            <div class="actions">
+              <a class="action primary" href="javascript:void(0)" onclick="loadAuthSession()">檢查登入</a>
+              <a class="action" href="javascript:void(0)" onclick="refreshDashboard()">重新整理</a>
+              <a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">完整導覽</a>
+              <a class="action" href="javascript:void(0)" onclick="loadManagementFlow()">管理一鍵巡檢</a>
+              <a class="action" href="javascript:void(0)" onclick="loadAccessProfile()">查看權限</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview()">查看總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">管理總覽</a>
             <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadChecklist()">檢查待辦</a>
@@ -450,7 +451,7 @@
             <div class="mini-item"><span>1. 驗證與權限</span><span><a class="action" href="javascript:void(0)" onclick="loadAuthSession(); loadAccessProfile()">進入</a></span></div>
             <div class="mini-item"><span>2. 總覽與商店</span><span><a class="action" href="javascript:void(0)" onclick="setSection('overview', event); loadOverview(); loadGeneralShop(); loadCurrentAuction(); loadManagementSnapshot(); loadChecklist()">進入</a></span></div>
             <div class="mini-item"><span>3. 旅程與車票</span><span><a class="action" href="javascript:void(0)" onclick="setSection('journeys', event); loadJourneys(); loadJourneyDashboard(); loadJourneySummary(); loadJourneyActionQueueSummary()">進入</a></span></div>
-              <div class="mini-item"><span>4. 管理與審核</span><span><a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot(); loadChecklist(); loadTrafficIncidentReviewSummary(); loadTrafficIncidentList(); loadJourneyDashboard(); loadJourneySummary()">進入</a></span></div>
+            <div class="mini-item"><span>4. 管理與審核</span><span><a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementFlow()">進入</a></span></div>
               <div class="mini-item"><span>5. 可見性與回顧</span><span><a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview(); loadPublicRecordsPreview(); loadPublicRecordsPreview('blind_box'); loadPlayerRecordsPreview(); loadOverview()">進入</a></span></div>
             <div class="mini-item"><span>6. 完整導覽</span><span><a class="action" href="javascript:void(0)" onclick="loadFullConsoleTour()">進入</a></span></div>
           </div>
@@ -579,7 +580,7 @@
                 <span>管理快捷</span>
                 <span>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">總覽</a>
-                  <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementSnapshot()">巡檢</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementFlow()">巡檢</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadChecklist()">待辦</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); processChecklist()">處理</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); startGameFromConsole()">開始遊戲</a>
@@ -599,6 +600,14 @@
                   <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">回顧</a>
                 </span>
               </div>
+            </div>
+            <div class="mini-list" id="access-matrix" style="margin-top: 16px;">
+              <div class="mini-item"><span>Host</span><span id="access-matrix-host">未載入</span></div>
+              <div class="mini-item"><span>Observe</span><span id="access-matrix-observe">未載入</span></div>
+              <div class="mini-item"><span>Review</span><span id="access-matrix-review">未載入</span></div>
+              <div class="mini-item"><span>Manage</span><span id="access-matrix-manage">未載入</span></div>
+              <div class="mini-item"><span>Self</span><span id="access-matrix-self">未載入</span></div>
+              <div class="mini-item"><span>Fallback</span><span id="access-matrix-fallback">未載入</span></div>
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <input id="management-journey-id-list" type="text" placeholder="Journey IDs, comma separated">
@@ -651,7 +660,20 @@
                   <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">公開旅程</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadGeneralShop()">商店</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('shops', event); loadCurrentAuction()">拍賣</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPublicBlindBoxesPreview()">公開盲盒</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadVisibilityPreview()">可見性</a>
+                </span>
+              </div>
+            </div>
+            <div class="mini-list" id="query-presets" style="margin-top: 16px;">
+              <div class="mini-item">
+                <span>查詢預設</span>
+                <span>
+                  <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('player-records')">玩家紀錄</a>
+                  <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('traffic-incidents')">交通中斷</a>
+                  <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('player-tickets')">玩家票券</a>
+                  <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('special-states')">特殊狀態</a>
+                  <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('journeys')">旅程列表</a>
                 </span>
               </div>
             </div>
@@ -661,11 +683,25 @@
               <div class="mini-item"><span>Snapshot 狀態</span><span id="status-snapshot">未載入</span></div>
               <div class="mini-item"><span>可見性</span><span id="status-visibility">未載入</span></div>
             </div>
+            <div class="mini-list" id="auth-policy-panel" style="margin-top: 16px;">
+              <div class="mini-item"><span>Auth Mode</span><span id="auth-policy-mode">未載入</span></div>
+              <div class="mini-item"><span>Player ID</span><span id="auth-policy-player">未載入</span></div>
+              <div class="mini-item"><span>Strict</span><span id="auth-policy-strict">未載入</span></div>
+              <div class="mini-item"><span>Operator Fallback</span><span id="auth-policy-operator">未載入</span></div>
+              <div class="mini-item"><span>Dev Auth Fallback</span><span id="auth-policy-dev">未載入</span></div>
+            </div>
+            <div class="mini-list" id="product-flow-guide" style="margin-top: 16px;">
+              <div class="mini-item"><span>產品流程</span><span id="product-flow-summary">未載入</span></div>
+              <div class="mini-item"><span>下一步</span><span id="product-flow-next">未載入</span></div>
+              <div class="mini-item"><span>流程狀態</span><span id="product-flow-stages">未載入</span></div>
+            </div>
             <div class="api-form" style="margin-top: 16px;">
               <input id="public-records-player-id" type="text" placeholder="Public Records Player ID">
+              <input id="public-records-sort-by" type="text" value="createdAt" placeholder="Public Records Sort By">
               <input id="public-records-after" type="text" placeholder="Public Records After">
               <input id="public-records-before" type="text" placeholder="Public Records Before">
               <input id="public-records-limit" type="text" value="3" placeholder="Public Records Limit">
+              <input id="public-records-offset" type="number" min="0" step="1" value="0" placeholder="Public Records Offset">
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <input id="player-records-type" type="text" value="journey" placeholder="Player Record Type">
@@ -704,6 +740,7 @@
               <input id="journey-list-after" type="text" placeholder="Journey After">
               <input id="journey-list-before" type="text" placeholder="Journey Before">
               <input id="journey-list-limit" type="text" value="3" placeholder="Journey Limit">
+              <input id="journey-list-offset" type="number" min="0" step="1" value="0" placeholder="Journey Offset">
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <input id="journey-list-arrival-after" type="text" placeholder="Journey Arrival After">
@@ -746,6 +783,17 @@
               <div class="mini-item"><span>待審交通</span><span id="traffic-review-details">未載入</span></div>
               <div class="mini-item"><span>目前旅程</span><span id="current-journey-details">未載入</span></div>
               <div class="mini-item"><span>保留旅程</span><span id="reserved-journey-details">未載入</span></div>
+            </div>
+            <div class="mini-list" id="shop-health" style="margin-top: 16px;">
+              <div class="mini-item"><span>商店狀態</span><span id="shop-health-status">未載入</span></div>
+              <div class="mini-item"><span>拍賣狀態</span><span id="auction-health-status">未載入</span></div>
+              <div class="mini-item"><span>票券評級</span><span id="auction-ticket-health">未載入</span></div>
+              <div class="mini-item"><span>優先購買</span><span id="shop-priority-health">未載入</span></div>
+              <div class="mini-item"><span>最後操作</span><span id="shop-action-health">未載入</span></div>
+            </div>
+            <div class="mini-list" id="recent-action-panel" style="margin-top: 16px;">
+              <div class="mini-item"><span>最近操作</span><span id="recent-action-type">未載入</span></div>
+              <div class="mini-item"><span>操作結果</span><span id="recent-action-summary">未載入</span></div>
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <input id="shop-purchase-player-id" type="text" placeholder="Buyer Player ID">
@@ -806,6 +854,7 @@
               <div class="mini-item"><span>管理清單</span><span id="management-preview-checklist">未載入</span></div>
               <div class="mini-item"><span>審核摘要</span><span id="management-preview-review">未載入</span></div>
               <div class="mini-item"><span>Review 核心</span><span id="management-preview-review-core">未載入</span></div>
+              <div class="mini-item"><span>Traffic Review</span><span id="management-preview-traffic-review">未載入</span></div>
               <div class="mini-item"><span>管理健康</span><span id="management-preview-health">未載入</span></div>
               <div class="mini-item"><span>壓力拆分</span><span id="management-preview-pressure-breakdown">未載入</span></div>
               <div class="mini-item"><span>旅程總數</span><span id="management-preview-journeys">未載入</span></div>
@@ -821,12 +870,72 @@
               <div class="mini-item"><span>玩家紀錄</span><span id="visibility-preview-player-records">未載入</span></div>
               <div class="mini-item"><span>票券 / 狀態</span><span id="visibility-preview-assets">未載入</span></div>
             </div>
+            <div class="panel" style="margin-top: 16px;">
+              <h3>公開盲盒分頁</h3>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr));">
+                <input id="public-blindbox-sort-by" type="text" value="openedAt" placeholder="Sort By">
+                <input id="public-blindbox-limit" type="number" min="1" step="1" value="2" placeholder="Limit">
+                <input id="public-blindbox-offset" type="number" min="0" step="1" value="0" placeholder="Offset">
+              </div>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: 2fr auto;">
+                <input id="public-blindbox-player-id" type="text" placeholder="Player ID">
+                <button type="button" onclick="loadPublicBlindBoxesPreview()">載入公開盲盒</button>
+              </div>
+              <div class="mini-list" id="public-blindbox-preview-list" style="margin-top: 12px;">
+                <div class="mini-item"><span>公開盲盒</span><span id="public-blindbox-preview">未載入</span></div>
+                <div class="mini-item"><span>盲盒狀態</span><span id="public-blindbox-status">未載入</span></div>
+              </div>
+            </div>
+            <div class="panel" style="margin-top: 16px;">
+              <h3>盲盒回顧分頁</h3>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(4, minmax(0, 1fr));">
+                <input id="blindbox-review-blindbox-limit" type="number" min="1" step="1" value="2" placeholder="BlindBox Limit">
+                <input id="blindbox-review-blindbox-offset" type="number" min="0" step="1" value="0" placeholder="BlindBox Offset">
+                <input id="blindbox-review-effect-limit" type="number" min="1" step="1" value="2" placeholder="EffectLog Limit">
+                <input id="blindbox-review-effect-offset" type="number" min="0" step="1" value="0" placeholder="EffectLog Offset">
+              </div>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(4, minmax(0, 1fr));">
+                <input id="blindbox-review-record-limit" type="number" min="1" step="1" value="2" placeholder="Record Limit">
+                <input id="blindbox-review-record-offset" type="number" min="0" step="1" value="0" placeholder="Record Offset">
+                <input id="blindbox-review-player-id" type="text" placeholder="Player ID">
+                <input id="blindbox-review-location-id" type="text" placeholder="Location ID">
+              </div>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(4, minmax(0, 1fr));">
+                <input id="blindbox-review-action-type" type="text" placeholder="Action Type">
+                <div></div>
+                <div></div>
+                <button type="button" onclick="loadBlindBoxReviewPreview()">載入盲盒回顧</button>
+              </div>
+              <div class="mini-list" id="blindbox-review-preview-list" style="margin-top: 12px;">
+                <div class="mini-item"><span>盲盒回顧</span><span id="blindbox-review-preview">未載入</span></div>
+                <div class="mini-item"><span>效果日誌</span><span id="blindbox-review-effect-preview">未載入</span></div>
+                <div class="mini-item"><span>回顧紀錄</span><span id="blindbox-review-record-preview">未載入</span></div>
+              </div>
+            </div>
             <div class="api-form" style="margin-top: 12px;">
               <button type="button" onclick="loadPublicRecordsPreview('journey')">旅程紀錄</button>
               <button type="button" onclick="loadPublicRecordsPreview('blind_box')">盲盒紀錄</button>
               <button type="button" onclick="loadPlayerRecordsPreview()">玩家紀錄</button>
               <button type="button" onclick="loadPlayerTicketsAndStates()">票券 / 狀態</button>
               <button type="button" onclick="loadVisibilityPreview()">回顧</button>
+            </div>
+            <div class="panel" style="margin-top: 16px;">
+              <h3>玩家紀錄分頁</h3>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(4, minmax(0, 1fr));">
+                <input id="player-records-sort-by" type="text" value="createdAt" placeholder="Sort By">
+                <input id="player-records-limit" type="text" value="5" placeholder="Player Records Limit">
+                <input id="player-records-offset" type="number" min="0" step="1" value="0" placeholder="Offset">
+                <input id="player-records-type" type="text" value="journey" placeholder="Player Record Type">
+              </div>
+              <div class="api-form" style="margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr));">
+                <input id="player-records-after" type="text" placeholder="Player Records After">
+                <input id="player-records-before" type="text" placeholder="Player Records Before">
+                <button type="button" onclick="loadPlayerRecordsPreview()">載入玩家紀錄</button>
+              </div>
+              <div class="mini-list" id="player-records-preview-list" style="margin-top: 12px;">
+                <div class="mini-item"><span>玩家紀錄</span><span id="player-records-preview">未載入</span></div>
+                <div class="mini-item"><span>紀錄清單</span><span id="player-records-preview-items">未載入</span></div>
+              </div>
             </div>
             <div class="api-form" style="margin-top: 12px;">
               <button type="button" onclick="loadManagementSnapshot()">重新整理巡檢</button>
@@ -943,9 +1052,7 @@
           loadGeneralShop();
           loadCurrentAuction();
         } else if (section === "management") {
-          loadManagementSnapshot();
-          loadChecklist();
-          loadTrafficIncidentReviewSummary();
+          loadManagementFlow();
         } else if (section === "visibility" && hasPlayer) {
           loadVisibilityPreview();
           loadPublicRecordsPreview("journey");
@@ -970,6 +1077,19 @@
     function setOutput(payload) {
       state.lastResponse = payload;
       document.getElementById("api-output").textContent = JSON.stringify(payload, null, 2);
+      document.getElementById("recent-action-type").textContent = payload?.type ?? "unknown";
+      const summaryText = payload?.error
+        ? `error: ${payload.error}`
+        : payload?.payload?.success === true
+          ? "success"
+          : payload?.payload?.success === false
+            ? "failed"
+            : payload?.payload
+              ? "ok"
+          : payload?.message
+            ? payload.message
+            : "已更新";
+      document.getElementById("recent-action-summary").textContent = summaryText;
     }
 
     function updatePill(id, text) {
@@ -994,6 +1114,65 @@
           chip.textContent = `Status: ${sectionText} / ${accessText} / ${snapshotText}`;
         }
       });
+      updateProductFlowGuide();
+    }
+
+    function updateProductFlowGuide() {
+      const stages = [
+        {
+          id: "auth",
+          label: "驗證",
+          ready: Boolean(state.authSession?.authMode),
+        },
+        {
+          id: "access",
+          label: "權限",
+          ready: Boolean(state.accessProfile),
+        },
+        {
+          id: "overview",
+          label: "總覽",
+          ready: Boolean(document.getElementById("overview-shop-count")?.textContent) || Boolean(state.managementSnapshot?.snapshot),
+        },
+        {
+          id: "journeys",
+          label: "旅程",
+          ready: Boolean(document.getElementById("journey-preview-count")?.textContent) || Boolean(document.getElementById("journey-details")?.textContent),
+        },
+        {
+          id: "shops",
+          label: "商店",
+          ready: Boolean(document.getElementById("shop-preview-count")?.textContent) || Boolean(document.getElementById("auction-preview-count")?.textContent),
+        },
+        {
+          id: "management",
+          label: "管理",
+          ready: Boolean(state.managementSnapshot?.snapshot),
+        },
+        {
+          id: "visibility",
+          label: "回顧",
+          ready: Boolean(document.getElementById("visibility-preview-public-records")?.textContent) || Boolean(document.getElementById("visibility-preview-player-records")?.textContent),
+        },
+      ];
+      const completedCount = stages.filter((stage) => stage.ready).length;
+      const nextStage = stages.find((stage) => !stage.ready);
+      const summaryText = `${completedCount}/${stages.length} 已就緒`;
+      const nextText = nextStage ? `${nextStage.label}：${nextStage.id}` : "流程已完整就緒";
+      const stageText = stages.map((stage) => `${stage.label}:${stage.ready ? "OK" : "待"}`).join(" / ");
+
+      const summaryEl = document.getElementById("product-flow-summary");
+      const nextEl = document.getElementById("product-flow-next");
+      const stagesEl = document.getElementById("product-flow-stages");
+      if (summaryEl) {
+        summaryEl.textContent = summaryText;
+      }
+      if (nextEl) {
+        nextEl.textContent = nextText;
+      }
+      if (stagesEl) {
+        stagesEl.textContent = stageText;
+      }
     }
 
     function toggleTourDetail(step) {
@@ -1055,6 +1234,60 @@
         search.value = "";
       }
       filterFullTourSteps();
+    }
+
+    function applyQueryPreset(presetName) {
+      const gameId = getGameId();
+      const playerId = getPlayerId();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      const presets = {
+        "player-records": () => {
+          document.getElementById("player-records-type").value = "journey";
+          document.getElementById("player-records-limit").value = "5";
+          document.getElementById("player-records-after").value = "2026-07-09T00:00:00+08:00";
+          document.getElementById("player-records-before").value = "2026-07-10T23:59:59+08:00";
+          loadPlayerRecordsPreview();
+        },
+        "traffic-incidents": () => {
+          document.getElementById("traffic-list-player-id").value = playerId;
+          document.getElementById("traffic-list-status").value = "pending";
+          document.getElementById("traffic-list-after").value = "2026-07-09T00:00:00+08:00";
+          document.getElementById("traffic-list-before").value = "2026-07-10T23:59:59+08:00";
+          loadTrafficIncidentList();
+        },
+        "player-tickets": () => {
+          document.getElementById("player-tickets-source").value = "shop_purchase";
+          document.getElementById("player-tickets-after").value = "2026-07-09T00:00:00+08:00";
+          document.getElementById("player-tickets-before").value = "2026-07-10T23:59:59+08:00";
+          loadPlayerTicketsAndStates();
+        },
+        "special-states": () => {
+          document.getElementById("special-states-type").value = "free_shop_refresh_count";
+          document.getElementById("special-states-after").value = "2026-07-09T00:00:00+08:00";
+          document.getElementById("special-states-before").value = "2026-07-10T23:59:59+08:00";
+          loadPlayerTicketsAndStates();
+        },
+        "journeys": () => {
+          document.getElementById("journey-list-player-id").value = playerId;
+          document.getElementById("journey-list-status").value = "started";
+          document.getElementById("journey-list-after").value = "2026-07-09T00:00:00+08:00";
+          document.getElementById("journey-list-before").value = "2026-07-10T23:59:59+08:00";
+          loadJourneys();
+        },
+      };
+
+      const preset = presets[presetName];
+      if (!preset) {
+        setOutput({ error: `Unknown preset: ${presetName}` });
+        return;
+      }
+
+      preset();
+      updateSidebarStatus();
     }
 
     function escapeTourText(text) {
@@ -1240,6 +1473,11 @@
         document.getElementById("visibility-status").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth Pending";
         document.getElementById("status-auth").textContent = state.authSession?.authMode ?? "unknown";
         document.getElementById("status-visibility").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth Pending";
+        document.getElementById("auth-policy-mode").textContent = state.authSession?.authMode ?? "unknown";
+        document.getElementById("auth-policy-player").textContent = state.authSession?.playerId ?? "-";
+        document.getElementById("auth-policy-strict").textContent = state.authSession?.authPolicy?.strict ? "Y" : "N";
+        document.getElementById("auth-policy-operator").textContent = state.authSession?.authPolicy?.operatorFallbackEnabled ? "Y" : "N";
+        document.getElementById("auth-policy-dev").textContent = state.authSession?.authPolicy?.devAuthUserFallbackEnabled ? "Y" : "N";
         document.getElementById("visibility-summary").textContent = state.authSession?.authUserId
           ? `User: ${state.authSession.authUserId}`
           : "未取得 authUserId";
@@ -1279,6 +1517,12 @@
         document.getElementById("admin-summary").textContent = state.accessProfile
           ? `Host ${state.accessProfile.isHost ? "Y" : "N"} / Observe ${state.accessProfile.canObserveGame ? "Y" : "N"} / Review ${state.accessProfile.canReviewGame ? "Y" : "N"} / Fallback ${state.accessProfile.usedOperatorFallback ? "Y" : "N"}`
           : document.getElementById("admin-summary").textContent;
+        document.getElementById("access-matrix-host").textContent = state.accessProfile?.isHost ? "Y" : "N";
+        document.getElementById("access-matrix-observe").textContent = state.accessProfile?.canObserveGame ? "Y" : "N";
+        document.getElementById("access-matrix-review").textContent = state.accessProfile?.canReviewGame ? "Y" : "N";
+        document.getElementById("access-matrix-manage").textContent = state.accessProfile?.canManageGame ? "Y" : "N";
+        document.getElementById("access-matrix-self").textContent = state.accessProfile?.canAccessTargetPlayerSelfData ? "Y" : "N";
+        document.getElementById("access-matrix-fallback").textContent = state.accessProfile?.usedOperatorFallback ? "Y" : "N";
         document.getElementById("traffic-review-details").textContent = state.accessProfile
           ? `Target ${state.accessProfile.targetPlayerId ?? "-"} / Self ${state.accessProfile.canAccessTargetPlayerSelfData ? "Y" : "N"}`
           : document.getElementById("traffic-review-details").textContent;
@@ -1374,6 +1618,40 @@
       } catch (error) {
         updatePill("snapshot-status", "error");
         setOutput({ type: "games/checklist", error: error.message });
+      }
+    }
+
+    async function loadManagementFlow() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        await loadManagementSnapshot();
+        await loadChecklist();
+        await loadTrafficIncidentReviewSummary();
+        await loadTrafficIncidentList();
+        await loadJourneyDashboard();
+        await loadJourneySummary();
+        updateSidebarStatus();
+        setOutput({
+          type: "console/management-flow",
+          payload: {
+            gameId,
+            stages: [
+              "management-snapshot",
+              "checklist",
+              "traffic-review-summary",
+              "traffic-list",
+              "journey-dashboard",
+              "journey-summary",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/management-flow", error: error.message });
       }
     }
 
@@ -1979,6 +2257,9 @@
         document.getElementById("management-preview-review-core").textContent = reviewSummary
           ? `${reviewSummary.pendingCount ?? 0} 待審 / ${reviewSummary.approvedCount ?? 0} 已核 / ${reviewSummary.rejectedCount ?? 0} 已退`
           : "已載入 review summary";
+        document.getElementById("management-preview-traffic-review").textContent = reviewSummary
+          ? `待審 ${reviewSummary.pendingCount ?? 0} / 核准 ${reviewSummary.approvedCount ?? 0} / 退回 ${reviewSummary.rejectedCount ?? 0}`
+          : "已載入 review summary";
         document.getElementById("admin-status").textContent = reviewSummary ? "Review Summary Ready" : "Review";
         updateSidebarStatus();
         setOutput({ type: "games/traffic-incidents/review-summary", payload });
@@ -2047,15 +2328,18 @@
 
       try {
         const requestingPlayerId = document.getElementById("public-records-player-id")?.value.trim() || document.getElementById("player-id")?.value.trim();
+        const sortBy = document.getElementById("public-records-sort-by")?.value.trim() || "createdAt";
         const createdAtAfter = document.getElementById("public-records-after")?.value?.trim();
         const createdAtBefore = document.getElementById("public-records-before")?.value?.trim();
         const limit = document.getElementById("public-records-limit")?.value?.trim() || "3";
+        const offset = document.getElementById("public-records-offset")?.value?.trim() || "0";
         const query = new URLSearchParams({
           recordType,
           requestingPlayerId,
-          sortBy: "createdAt",
+          sortBy,
           sortDirection: "desc",
           limit,
+          offset,
         });
         if (createdAtAfter) {
           query.set("createdAtAfter", createdAtAfter);
@@ -2066,11 +2350,11 @@
         const payload = await fetchJson(`/games/${gameId}/records/public?${query.toString()}`);
         const publicRecordList = payload.data?.publicRecordList ?? [];
         document.getElementById("overview-review-count").textContent = String(publicRecordList.length);
+        document.getElementById("visibility-preview-public-records").textContent = publicRecordList.length > 0
+          ? `${publicRecordList.length} 筆 / ${recordType} / offset ${offset}`
+          : "0 筆";
         document.getElementById("management-preview-review").textContent = publicRecordList.length > 0
           ? `${publicRecordList.length} 筆 / ${recordType}:${publicRecordList.slice(0, 3).map((record) => `${record.recordType ?? "unknown"}:${record.playerId ?? "-"}`).join(" | ")}`
-          : "0 筆";
-        document.getElementById("visibility-preview-public-records").textContent = publicRecordList.length > 0
-          ? `${publicRecordList.length} 筆 / ${recordType}`
           : "0 筆";
         document.getElementById("admin-status").textContent = publicRecordList.length > 0 ? `${recordType} Records Loaded` : "Public Records Empty";
         document.getElementById("admin-summary").textContent = publicRecordList.length > 0
@@ -2086,6 +2370,51 @@
         setOutput({ type: "games/records/public", payload });
       } catch (error) {
         setOutput({ type: "games/records/public", error: error.message });
+      }
+    }
+
+    async function loadPublicBlindBoxesPreview() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        const playerId = document.getElementById("public-blindbox-player-id")?.value.trim() || document.getElementById("player-id")?.value.trim();
+        const sortBy = document.getElementById("public-blindbox-sort-by")?.value.trim() || "openedAt";
+        const limit = document.getElementById("public-blindbox-limit")?.value.trim() || "2";
+        const offset = document.getElementById("public-blindbox-offset")?.value.trim() || "0";
+        const query = new URLSearchParams({
+          sortBy,
+          sortDirection: "desc",
+          limit,
+          offset,
+        });
+        if (playerId) {
+          query.set("requestingPlayerId", playerId);
+        }
+        const payload = await fetchJson(`/games/${gameId}/blind-boxes/public?${query.toString()}`);
+        const publicBlindBoxList = payload.data?.publicBlindBoxList ?? [];
+        document.getElementById("public-blindbox-preview").textContent = publicBlindBoxList.length
+          ? `${publicBlindBoxList.length} 筆 / offset ${offset}`
+          : "0 筆";
+        document.getElementById("public-blindbox-status").textContent = publicBlindBoxList.length
+          ? publicBlindBoxList.slice(0, 3).map((item) => `${item.id ?? "-"}:${item.openedStatus ? "opened" : "hidden"}`).join(" | ")
+          : "未載入";
+        document.getElementById("visibility-preview-public-records").textContent = publicBlindBoxList.length
+          ? `公開盲盒 ${publicBlindBoxList.length} 筆`
+          : document.getElementById("visibility-preview-public-records").textContent;
+        document.getElementById("visibility-summary").textContent = publicBlindBoxList.length
+          ? `公開盲盒 ${publicBlindBoxList.length} 筆`
+          : document.getElementById("visibility-summary").textContent;
+        setVisibilityPreviewSummary({
+          publicRecordsText: `公開盲盒 ${publicBlindBoxList.length} 筆`,
+        });
+        updateSidebarStatus();
+        setOutput({ type: "games/blind-boxes/public", payload });
+      } catch (error) {
+        setOutput({ type: "games/blind-boxes/public", error: error.message });
       }
     }
 
@@ -2163,6 +2492,9 @@
           ? `${payload.data.priorityState.priorityStartedAt ?? "-"} ~ ${payload.data.priorityState.priorityEndsAt ?? "-"}`
           : "none";
         document.getElementById("shop-entry").textContent = shopTicketList.length > 0 ? "Shop Live" : "Shop Empty";
+        document.getElementById("shop-health-status").textContent = shopTicketList.length > 0 ? `${shopTicketList.length} 筆商店項目` : "空商店";
+        document.getElementById("shop-priority-health").textContent = payload.data?.priorityState?.isPriorityItem ? "有優先權" : "無優先權";
+        document.getElementById("shop-action-health").textContent = "已載入商店";
         updateSidebarStatus();
         document.getElementById("shop-preview-count").textContent = `${shopTicketList.slice(0, 5).length} 筆`;
         document.getElementById("shop-preview-items").textContent = shopTicketList
@@ -2204,6 +2536,7 @@
         });
         document.getElementById("shop-status").textContent = "Shop Purchased";
         document.getElementById("shop-summary").textContent = `已購買 ${shopItemId}`;
+        document.getElementById("shop-action-health").textContent = `已購買 ${shopItemId}`;
         setOutput({ type: "games/general-shop/purchase", payload });
         await loadGeneralShop();
         await loadOverview();
@@ -2244,6 +2577,7 @@
         });
         document.getElementById("shop-status").textContent = "Shop Refreshed";
         document.getElementById("shop-summary").textContent = `刷新商店 ${refreshType}`;
+        document.getElementById("shop-action-health").textContent = `已刷新 ${refreshType}`;
         setOutput({ type: "games/general-shop/refresh", payload });
         await loadGeneralShop();
         await loadOverview();
@@ -2276,6 +2610,7 @@
         });
         document.getElementById("shop-status").textContent = "Shop Initialized";
         document.getElementById("shop-summary").textContent = `初始化商店 ${mapId}`;
+        document.getElementById("shop-action-health").textContent = `已初始化 ${mapId}`;
         setOutput({ type: "games/general-shop/initialize", payload });
         await loadGeneralShop();
         await loadOverview();
@@ -2299,6 +2634,9 @@
         document.getElementById("auction-details").textContent = currentAuction?.ticketRating?.ratingGrade ?? "未載入";
         document.getElementById("auction-bid-count").textContent = String(currentAuction?.bidCount ?? 0);
         document.getElementById("auction-total-amount").textContent = String(currentAuction?.totalBidAmount ?? 0);
+        document.getElementById("auction-health-status").textContent = currentAuction ? `進行中 ${currentAuction.bidCount ?? 0} 筆` : "未進行";
+        document.getElementById("auction-ticket-health").textContent = currentAuction?.ticketRating?.ratingGrade ?? currentAuction?.ticketRating?.ratingType ?? "未載入";
+        document.getElementById("shop-action-health").textContent = currentAuction ? "拍賣已載入" : "拍賣待命";
         document.getElementById("shop-status").textContent = currentAuction ? "Auction Live" : "Shop Ready";
         document.getElementById("shop-summary").textContent = currentAuction
           ? `目前拍賣 ${currentAuction.ticketRating?.ratingGrade ?? "-"} 級 / ${currentAuction.bidCount ?? 0} 筆出價`
@@ -2343,6 +2681,7 @@
         });
         document.getElementById("shop-status").textContent = "Auction Initialized";
         document.getElementById("shop-summary").textContent = "已初始化拍賣";
+        document.getElementById("shop-action-health").textContent = "已初始化拍賣";
         setOutput({ type: "games/auction-shop/initialize", payload });
         await loadCurrentAuction();
       } catch (error) {
@@ -2384,6 +2723,7 @@
         });
         document.getElementById("shop-status").textContent = "Auction Round Created";
         document.getElementById("shop-summary").textContent = `建立拍賣回合 ${payload.data?.id ?? ""}`;
+        document.getElementById("shop-action-health").textContent = `建立回合 ${payload.data?.id ?? "-"}`;
         setOutput({ type: "games/auction-shop/rounds", payload });
         await loadCurrentAuction();
       } catch (error) {
@@ -2417,6 +2757,7 @@
         });
         document.getElementById("shop-status").textContent = "Auction Resolved";
         document.getElementById("shop-summary").textContent = `已結算拍賣 ${auctionId}`;
+        document.getElementById("shop-action-health").textContent = `已結算 ${auctionId}`;
         setOutput({ type: "games/auction-shop/resolve", payload });
         await loadCurrentAuction();
       } catch (error) {
@@ -2458,6 +2799,7 @@
         });
         document.getElementById("shop-status").textContent = "Bid Sent";
         document.getElementById("shop-summary").textContent = `拍賣 ${auctionId} 已出價`;
+        document.getElementById("shop-action-health").textContent = `已出價 ${bidAmount}`;
         setOutput({ type: "games/auction-shop/bids", payload });
         await loadCurrentAuction();
         await loadOverview();
@@ -2480,6 +2822,7 @@
         visibility: "可見性",
         "public-records-journey": "公開旅程紀錄",
         "public-records-blind-box": "公開盲盒紀錄",
+        "public-blind-boxes": "公開盲盒",
         "player-assets": "票券與狀態",
         "player-records": "玩家紀錄",
         management: "管理",
@@ -2498,6 +2841,7 @@
         visibility: "讀取公開旅程與賽後 review。",
         "public-records-journey": "讀取公開旅程紀錄。",
         "public-records-blind-box": "讀取公開盲盒紀錄。",
+        "public-blind-boxes": "讀取公開盲盒分頁。",
         "player-assets": "讀取票券與特殊狀態。",
         "player-records": "讀取玩家紀錄。",
         management: "讀取管理快照與巡檢摘要。",
@@ -2516,6 +2860,7 @@
         visibility: "對應 `/games/:gameId/players/:playerId/public-journey` 與 review。",
         "public-records-journey": "對應 `/games/:gameId/records/public?recordType=journey`，確認公開旅程紀錄與日期區間。",
         "public-records-blind-box": "對應 `/games/:gameId/records/public?recordType=blind_box`，確認公開盲盒紀錄。",
+        "public-blind-boxes": "對應 `/games/:gameId/blind-boxes/public`，確認公開盲盒分頁與狀態。",
         "player-assets": "對應 `/games/:gameId/players/:playerId/tickets` 與 `special-states`，確認票券與特殊狀態。",
         "player-records": "對應 `/games/:gameId/players/:playerId/records`，確認玩家紀錄與日期區間。",
         management: "對應 management snapshot 的管理視角摘要與警示。",
@@ -2539,6 +2884,7 @@
         const arrivalAfter = document.getElementById("journey-list-arrival-after")?.value.trim();
         const arrivalBefore = document.getElementById("journey-list-arrival-before")?.value.trim();
         const limit = document.getElementById("journey-list-limit")?.value.trim();
+        const offset = document.getElementById("journey-list-offset")?.value.trim();
         if (listPlayerId) query.set("playerId", listPlayerId);
         if (status) query.set("status", status);
         if (transportType) query.set("transportType", transportType);
@@ -2547,6 +2893,7 @@
         if (arrivalAfter) query.set("arrivalAfter", arrivalAfter);
         if (arrivalBefore) query.set("arrivalBefore", arrivalBefore);
         if (limit) query.set("limit", limit);
+        if (offset) query.set("offset", offset);
         const [journeyPayload, currentJourneyPayload, reservedJourneyPayload, ticketPayload, specialStatePayload] = await Promise.all([
           fetchJson(`/games/${gameId}/players/${playerId}/journeys?operatorPlayerId=${encodeURIComponent(playerId)}${query.toString() ? `&${query.toString()}` : ""}`),
           fetchJson(`/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
@@ -2584,11 +2931,9 @@
         );
         document.getElementById("management-preview-journeys").textContent = `${journeyList.length} 總旅程`;
         document.getElementById("journey-preview-count").textContent = `${journeyList.slice(0, 5).length} 筆`;
-        document.getElementById("journey-preview-items").textContent = [
-          currentJourney ? `current:${currentJourney.id ?? "-"}:${currentJourney.status ?? "unknown"}` : null,
-          reservedJourney ? `reserved:${reservedJourney.id ?? "-"}:${reservedJourney.status ?? "unknown"}` : null,
-          ...journeyList.slice(0, 3).map((journey) => `${journey.id ?? "-"}:${journey.status ?? "unknown"}`),
-        ].filter(Boolean).join(" | ") || "無旅程";
+        document.getElementById("journey-preview-items").textContent = journeyList.length
+          ? `${journeyList.slice(0, 3).map((journey) => `${journey.id ?? "-"}:${journey.status ?? "unknown"}`).join(" | ")} / offset ${offset || "0"}`
+          : "無旅程";
         document.getElementById("ticket-preview-count").textContent = `${ticketList.length} 筆`;
         document.getElementById("ticket-preview-items").textContent = ticketList.length
           ? ticketList.slice(0, 3).map((ticket) => `${ticket.id ?? "-"}:${ticket.source ?? ticket.ticketType ?? "ticket"}`).join(" | ")
@@ -2707,21 +3052,23 @@
       }
 
       try {
-        const [publicJourneyPayload, reviewPayload] = await Promise.all([
+        const [publicJourneyPayload, reviewPayload, publicBlindBoxPayload] = await Promise.all([
           fetchJson(`/games/${gameId}/players/${playerId}/public-journey?requestingPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
           fetchJson(`/games/${gameId}/review?visibilityMode=post_game_review&operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/blind-boxes/public?requestingPlayerId=${encodeURIComponent(playerId)}&sortBy=openedAt&sortDirection=desc&limit=2&offset=0`).catch((error) => ({ error: error.message })),
         ]);
 
         const publicJourneyInfo = publicJourneyPayload?.data?.publicJourneyInfo ?? null;
         const reviewData = reviewPayload?.data?.reviewData ?? null;
+        const publicBlindBoxList = publicBlindBoxPayload?.data?.publicBlindBoxList ?? [];
         document.getElementById("visibility-status").textContent = publicJourneyInfo ? "Public OK" : "Public Hidden";
         document.getElementById("status-visibility").textContent = reviewData ? "Review OK" : "Public Hidden";
         document.getElementById("visibility-summary").textContent = reviewData
-          ? `Review ${reviewData.recordList?.length ?? 0} 筆 / 旅程 ${publicJourneyInfo ? "可見" : "隱藏"}`
+          ? `Review ${reviewData.recordList?.length ?? 0} 筆 / 旅程 ${publicJourneyInfo ? "可見" : "隱藏"} / 盲盒 ${publicBlindBoxList.length} 筆`
           : "已載入可見性資料";
         setVisibilityPreviewSummary({
           publicRecordsText: publicJourneyInfo ? "公開旅程已載入" : "公開旅程隱藏",
-          playerRecordsText: reviewData ? `Review ${reviewData.recordList?.length ?? 0} 筆` : "0 筆",
+          playerRecordsText: reviewData ? `Review ${reviewData.recordList?.length ?? 0} 筆 / 盲盒 ${publicBlindBoxList.length} 筆` : `${publicBlindBoxList.length} 筆盲盒`,
         });
         document.getElementById("game-status").textContent = publicJourneyInfo ? "Visibility Ready" : "Visibility Hidden";
         document.getElementById("game-summary").textContent = publicJourneyInfo
@@ -2736,8 +3083,11 @@
         document.getElementById("overview-review-count").textContent = String(reviewData?.recordList?.length ?? 0);
         document.getElementById("current-journey-details").textContent = publicJourneyInfo?.journeyId ?? "無公開旅程";
         document.getElementById("reserved-journey-details").textContent = reviewData?.winnerPlayerId ?? "無 winner";
+        document.getElementById("visibility-preview-public-records").textContent = publicBlindBoxList.length
+          ? `公開盲盒 ${publicBlindBoxList.length} 筆`
+          : document.getElementById("visibility-preview-public-records").textContent;
         setVisibilityPreviewSummary({
-          playerRecordsText: reviewData?.recordList?.length ? `${reviewData.recordList.length} 筆 / review` : "0 筆",
+          playerRecordsText: reviewData?.recordList?.length ? `${reviewData.recordList.length} 筆 / review` : `${publicBlindBoxList.length} 筆盲盒`,
         });
         updateSidebarStatus();
         setOutput({
@@ -2745,6 +3095,7 @@
           payload: {
             publicJourney: publicJourneyPayload,
             review: reviewPayload,
+            publicBlindBoxes: publicBlindBoxPayload,
           },
         });
       } catch (error) {
@@ -2762,14 +3113,17 @@
 
       try {
         const recordType = document.getElementById("player-records-type")?.value.trim() || "journey";
+        const sortBy = document.getElementById("player-records-sort-by")?.value.trim() || "createdAt";
         const limit = document.getElementById("player-records-limit")?.value.trim() || "5";
+        const offset = document.getElementById("player-records-offset")?.value.trim() || "0";
         const createdAtAfter = document.getElementById("player-records-after")?.value.trim();
         const createdAtBefore = document.getElementById("player-records-before")?.value.trim();
         const query = new URLSearchParams({
           visibilityMode: "during_game",
-          sortBy: "createdAt",
+          sortBy,
           sortDirection: "desc",
           limit,
+          offset,
           recordType,
           operatorPlayerId: playerId,
         });
@@ -2782,6 +3136,12 @@
         const payload = await fetchJson(`/games/${gameId}/players/${playerId}/records?${query.toString()}`).catch((error) => ({ error: error.message }));
         const recordList = payload.data?.recordList ?? [];
         document.getElementById("overview-review-count").textContent = String(recordList.length);
+        document.getElementById("player-records-preview").textContent = recordList.length
+          ? `${recordList.length} 筆 / offset ${offset}`
+          : "0 筆";
+        document.getElementById("player-records-preview-items").textContent = recordList.length
+          ? recordList.slice(0, 3).map((record) => `${record.recordType ?? "unknown"}:${record.id ?? "-"}`).join(" | ")
+          : "未載入";
         document.getElementById("visibility-summary").textContent = recordList.length
           ? `Player Records ${recordList.length} 筆 / ${recordType}`
           : "Player records empty";
@@ -2800,6 +3160,69 @@
         });
       } catch (error) {
         setOutput({ type: "games/players/records", error: error.message });
+      }
+    }
+
+    async function loadBlindBoxReviewPreview() {
+      const gameId = getGameId();
+      const playerId = document.getElementById("blindbox-review-player-id")?.value.trim() || document.getElementById("player-id")?.value.trim();
+      if (!gameId || !playerId) {
+        setOutput({ error: "請先輸入 Game ID 與 Player ID" });
+        return;
+      }
+
+      try {
+        const blindBoxLimit = document.getElementById("blindbox-review-blindbox-limit")?.value.trim() || "2";
+        const blindBoxOffset = document.getElementById("blindbox-review-blindbox-offset")?.value.trim() || "0";
+        const effectLogLimit = document.getElementById("blindbox-review-effect-limit")?.value.trim() || "2";
+        const effectLogOffset = document.getElementById("blindbox-review-effect-offset")?.value.trim() || "0";
+        const recordLimit = document.getElementById("blindbox-review-record-limit")?.value.trim() || "2";
+        const recordOffset = document.getElementById("blindbox-review-record-offset")?.value.trim() || "0";
+        const locationId = document.getElementById("blindbox-review-location-id")?.value.trim();
+        const actionType = document.getElementById("blindbox-review-action-type")?.value.trim();
+        const query = new URLSearchParams({
+          operatorPlayerId: playerId,
+          blindBoxLimit,
+          blindBoxOffset,
+          effectLogLimit,
+          effectLogOffset,
+          recordLimit,
+          recordOffset,
+        });
+        if (locationId) {
+          query.set("locationId", locationId);
+        }
+        if (actionType) {
+          query.set("actionType", actionType);
+        }
+        const payload = await fetchJson(`/games/${gameId}/blind-boxes/review?${query.toString()}`);
+        const blindBoxReviewData = payload.data?.blindBoxReviewData ?? null;
+        const blindBoxList = blindBoxReviewData?.blindBoxList ?? [];
+        const blindBoxEffectLogList = blindBoxReviewData?.blindBoxEffectLogList ?? [];
+        const recordList = blindBoxReviewData?.recordList ?? [];
+        document.getElementById("blindbox-review-preview").textContent = blindBoxList.length
+          ? `${blindBoxList.length} 筆 / offset ${blindBoxOffset}`
+          : "0 筆";
+        document.getElementById("blindbox-review-effect-preview").textContent = blindBoxEffectLogList.length
+          ? `${blindBoxEffectLogList.length} 筆 / offset ${effectLogOffset}`
+          : "0 筆";
+        document.getElementById("blindbox-review-record-preview").textContent = recordList.length
+          ? `${recordList.length} 筆 / offset ${recordOffset}`
+          : "0 筆";
+        document.getElementById("visibility-summary").textContent = blindBoxList.length
+          ? `盲盒回顧 ${blindBoxList.length} 筆 / 效果 ${blindBoxEffectLogList.length} 筆 / 紀錄 ${recordList.length} 筆`
+          : "盲盒回顧已載入";
+        document.getElementById("admin-summary").textContent = blindBoxList.length
+          ? `盲盒回顧 ${blindBoxList.length} 筆`
+          : document.getElementById("admin-summary").textContent;
+        setVisibilityPreviewSummary({
+          publicRecordsText: `盲盒回顧 ${blindBoxList.length} 筆`,
+          playerRecordsText: `${blindBoxEffectLogList.length} 筆效果 / ${recordList.length} 筆紀錄`,
+        });
+        updateSidebarStatus();
+        setOutput({ type: "games/blind-boxes/review", payload });
+      } catch (error) {
+        setOutput({ type: "games/blind-boxes/review", error: error.message });
       }
     }
 
@@ -2871,6 +3294,9 @@
             : "已取得 review summary";
           document.getElementById("management-preview-review-core").textContent = overviewSummary
             ? `${overviewSummary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overviewSummary.trafficIncidentSummary?.approveCount ?? 0} 已核 / ${overviewSummary.trafficIncidentSummary?.rejectCount ?? 0} 已退`
+            : "已取得 review summary";
+          document.getElementById("management-preview-traffic-review").textContent = overviewSummary
+            ? `待審 ${overviewSummary.trafficIncidentSummary?.pendingCount ?? 0} / 核准 ${overviewSummary.trafficIncidentSummary?.approveCount ?? 0} / 退回 ${overviewSummary.trafficIncidentSummary?.rejectCount ?? 0}`
             : "已取得 review summary";
           document.getElementById("management-preview-pressure-breakdown").textContent = formatManagementPressureBreakdown({
             pendingTrafficCount: snapshotPayload.data.snapshot.trafficIncidentReview?.pendingCount ?? 0,
@@ -2950,6 +3376,9 @@
           document.getElementById("management-preview-review-core").textContent = overview.summary
             ? `${overview.summary.trafficIncidentSummary?.pendingCount ?? 0} 待審 / ${overview.summary.trafficIncidentSummary?.approveCount ?? 0} 已核 / ${overview.summary.trafficIncidentSummary?.rejectCount ?? 0} 已退`
             : document.getElementById("management-preview-review-core").textContent;
+          document.getElementById("management-preview-traffic-review").textContent = overview.summary
+            ? `待審 ${overview.summary.trafficIncidentSummary?.pendingCount ?? 0} / 核准 ${overview.summary.trafficIncidentSummary?.approveCount ?? 0} / 退回 ${overview.summary.trafficIncidentSummary?.rejectCount ?? 0}`
+            : document.getElementById("management-preview-traffic-review").textContent;
           document.getElementById("management-preview-pressure-breakdown").textContent = formatManagementPressureBreakdown({
             pendingTrafficCount: overview.summary?.pendingTrafficIncidentCount ?? 0,
             dueJourneyCount: overview.journeyDashboard?.summary?.dueReservedJourneyCount ?? 0,
@@ -3041,6 +3470,8 @@
           steps.push("public-records-journey");
           await loadPublicRecordsPreview("blind_box");
           steps.push("public-records-blind-box");
+          await loadPublicBlindBoxesPreview();
+          steps.push("public-blind-boxes");
           await loadPlayerTicketsAndStates();
           steps.push("player-assets");
           await loadPlayerRecordsPreview();
@@ -3066,9 +3497,10 @@
           auction: `Auction：${readSummary("auction-details")} / ${readSummary("auction-bid-count")} / ${readSummary("auction-total-amount")}`,
           journeys: `Journeys：${readSummary("journey-details")} / 目前 ${readSummary("current-journey-details")} / 保留 ${readSummary("reserved-journey-details")}`,
           visibility: `Visibility：${readSummary("visibility-summary")} / Review ${readSummary("overview-review-count")} / 公開 ${readSummary("visibility-preview-public-records")} / 玩家 ${readSummary("visibility-preview-player-records")} / 公開玩家 ${readSummary("public-records-player-id")} / 玩家紀錄類型 ${readSummary("player-records-type")}`,
+          "public-blind-boxes": `Public blind boxes：${readSummary("public-blindbox-preview")} / ${readSummary("public-blindbox-status")}`,
           management: `Management：${readSummary("management-preview-summary")} / ${readSummary("management-preview-health")}`,
           checklist: `Checklist：${readSummary("management-preview-checklist")}`,
-          "traffic-review": `Traffic review：${readSummary("management-preview-review-core")} / ${readSummary("traffic-review-details")}`,
+          "traffic-review": `Traffic review：${readSummary("management-preview-traffic-review")} / ${readSummary("traffic-review-details")}`,
           "traffic-list": `Traffic list：${readSummary("traffic-review-details")} / ${readSummary("management-preview-pending-list")}`,
         };
 

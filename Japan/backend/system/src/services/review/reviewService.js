@@ -67,7 +67,15 @@ function buildReviewSummary({ game, ranking, winnerResult, recordList, blindBoxR
   };
 }
 
-export async function getAggregatedGameReviewData({ dataAccessLayer, gameId }) {
+export async function getAggregatedGameReviewData({
+  dataAccessLayer,
+  gameId,
+  recordFilterOptions = {},
+  recordQueryOptions = {},
+  blindBoxFilterOptions = {},
+  blindBoxEffectLogFilterOptions = {},
+  blindBoxQueryOptions = {},
+}) {
   const [gameData, rankingData, winnerResult, gameRecordData, blindBoxReviewData] = await Promise.all([
     getGame({ dataAccessLayer, gameId }),
     getRanking({ dataAccessLayer, gameId }),
@@ -76,8 +84,16 @@ export async function getAggregatedGameReviewData({ dataAccessLayer, gameId }) {
       dataAccessLayer,
       gameId,
       visibilityMode: "post_game_review",
+      filterOptions: recordFilterOptions,
+      queryOptions: recordQueryOptions,
     }),
-    getBlindBoxReviewData({ dataAccessLayer, gameId }),
+    getBlindBoxReviewData({
+      dataAccessLayer,
+      gameId,
+      blindBoxFilterOptions,
+      blindBoxEffectLogFilterOptions,
+      queryOptions: blindBoxQueryOptions,
+    }),
   ]);
 
   return {

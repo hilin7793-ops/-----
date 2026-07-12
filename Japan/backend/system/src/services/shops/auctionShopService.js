@@ -257,6 +257,7 @@ export async function placeBid({
   }));
 
   const affordability = await canAfford({
+    dataAccessLayer,
     gameId,
     playerId,
     amount: bidAmount,
@@ -268,6 +269,7 @@ export async function placeBid({
   }));
 
   const updatedMoney = await deductPlayerMoney({
+    dataAccessLayer,
     gameId,
     playerId,
     amount: bidAmount,
@@ -383,6 +385,7 @@ export async function awardAuctionTicket({
   }));
 
   await addTicketToPlayer({
+    dataAccessLayer,
     gameId,
     playerId: winnerPlayerId,
     ticketId,
@@ -538,6 +541,7 @@ export async function resolveAuction({
 
     for (const state of allStates) {
       const updatedMoney = await addPlayerMoney({
+        dataAccessLayer,
         gameId,
         playerId: state.playerId,
         amount: auction.totalBidAmount ?? 0,

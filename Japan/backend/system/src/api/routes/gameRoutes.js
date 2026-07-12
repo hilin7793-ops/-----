@@ -51,7 +51,7 @@ import {
 } from "../../index.js";
 import { buildQueryOptions } from "../queryOptions.js";
 
-// Authorization in this module is centered on `authContext`.
+// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
 export function createGameRoutes({ dataAccessLayer }) {
   return [
     {
@@ -625,13 +625,50 @@ export function createGameRoutes({ dataAccessLayer }) {
     {
       method: "GET",
       template: "/games/:gameId/review",
-      handler: async ({ params }) => ({
+      handler: async ({ params, query }) => ({
         statusCode: 200,
         payload: {
           success: true,
           data: await getAggregatedGameReviewData({
             dataAccessLayer,
             gameId: params.gameId,
+            recordFilterOptions: {
+              ...(query.playerId ? { playerId: query.playerId } : {}),
+              ...(query.recordType ? { recordType: query.recordType } : {}),
+              ...(query.action ? { action: query.action } : {}),
+              ...(query.createdAtAfter ? { createdAtAfter: query.createdAtAfter } : {}),
+              ...(query.createdAtBefore ? { createdAtBefore: query.createdAtBefore } : {}),
+            },
+            recordQueryOptions: buildQueryOptions(query),
+            blindBoxFilterOptions: {
+              ...(query.openedStatus ? { openedStatus: query.openedStatus === "true" } : {}),
+              ...(query.locationId ? { locationId: query.locationId } : {}),
+            },
+            blindBoxEffectLogFilterOptions: {
+              ...(query.blindBoxId ? { blindBoxId: query.blindBoxId } : {}),
+              ...(query.playerId ? { playerId: query.playerId } : {}),
+              ...(query.actionType ? { actionType: query.actionType } : {}),
+            },
+            blindBoxQueryOptions: {
+              blindBoxList: buildQueryOptions({
+                sortBy: query.blindBoxSortBy,
+                sortDirection: query.blindBoxSortDirection,
+                limit: query.blindBoxLimit,
+                offset: query.blindBoxOffset,
+              }),
+              blindBoxEffectLogList: buildQueryOptions({
+                sortBy: query.effectLogSortBy,
+                sortDirection: query.effectLogSortDirection,
+                limit: query.effectLogLimit,
+                offset: query.effectLogOffset,
+              }),
+              recordList: buildQueryOptions({
+                sortBy: query.reviewRecordSortBy,
+                sortDirection: query.reviewRecordSortDirection,
+                limit: query.recordLimit,
+                offset: query.recordOffset,
+              }),
+            },
           }),
         },
       }),

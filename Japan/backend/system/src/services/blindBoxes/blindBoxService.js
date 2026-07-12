@@ -1132,21 +1132,24 @@ export async function recordBlindBoxEffectLogAction({
 export async function getBlindBoxReviewData({
   dataAccessLayer,
   gameId,
+  blindBoxFilterOptions = {},
+  blindBoxEffectLogFilterOptions = {},
+  recordFilterOptions = {},
   queryOptions = {},
 }) {
   const blindBoxList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.BLIND_BOXES,
-    filterOptions: { gameId },
+    filterOptions: { gameId, ...blindBoxFilterOptions },
     queryOptions: queryOptions.blindBoxList ?? queryOptions,
   });
   const blindBoxEffectLogList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.BLIND_BOX_EFFECT_LOGS,
-    filterOptions: { gameId },
+    filterOptions: { gameId, ...blindBoxEffectLogFilterOptions },
     queryOptions: queryOptions.blindBoxEffectLogList ?? queryOptions,
   });
   const recordList = await dataAccessLayer.listRecords({
     collectionName: CollectionName.RECORDS,
-    filterOptions: { gameId },
+    filterOptions: { gameId, ...recordFilterOptions },
     queryOptions: queryOptions.recordList ?? queryOptions,
   });
 
