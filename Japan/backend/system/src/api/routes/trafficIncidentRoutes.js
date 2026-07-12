@@ -11,7 +11,7 @@ import {
 } from "../../index.js";
 import { buildQueryOptions } from "../queryOptions.js";
 
-// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
+// Authorization uses `authContext`; legacy compatibility inputs remain supported.
 export function createTrafficIncidentRoutes({ dataAccessLayer }) {
   return [
     {

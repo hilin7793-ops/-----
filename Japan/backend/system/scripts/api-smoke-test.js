@@ -4,6 +4,9 @@ import { createAppServer } from "../src/api/createAppServer.js";
 import { TransportType } from "../src/index.js";
 
 async function main() {
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalEnableDevAuthUserFallback = process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK;
+  const originalEnableOperatorFallback = process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
   process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK ??= "1";
   process.env.JAPAN_ENABLE_OPERATOR_FALLBACK ??= "1";
   const { dataAccessLayer } = createServiceContext({ mode: "memory" });
@@ -99,6 +102,8 @@ async function main() {
     assert.equal(anonymousSessionPayload.data?.playerId, null);
     assert.equal(anonymousSessionPayload.data?.source, "anonymous");
     assert.equal(typeof anonymousSessionPayload.data?.authPolicy?.strict === "boolean", true);
+    assert.equal(typeof anonymousSessionPayload.data?.authPolicy?.productionSafe === "boolean", true);
+    assert.equal(anonymousSessionPayload.data?.authPolicy?.productionSafe, false);
 
     const mappedSessionResponse = await fetch("http://127.0.0.1:8788/auth/session", {
       headers: {
@@ -110,6 +115,7 @@ async function main() {
     assert.equal(mappedSessionPayload.data?.playerId, playerId);
     assert.equal(mappedSessionPayload.data?.source, "dev_auth_user_mapping");
     assert.equal(mappedSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, true);
+    assert.equal(mappedSessionPayload.data?.authPolicy?.strict, false);
 
     const fallbackSessionResponse = await fetch(`http://127.0.0.1:8788/auth/session?operatorPlayerId=${playerId}`);
     const fallbackSessionPayload = await fallbackSessionResponse.json();
@@ -117,6 +123,35 @@ async function main() {
     assert.equal(fallbackSessionPayload.data?.playerId, playerId);
     assert.equal(fallbackSessionPayload.data?.usedOperatorFallback, true);
     assert.equal(fallbackSessionPayload.data?.authPolicy?.operatorFallbackEnabled, true);
+    assert.equal(fallbackSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, true);
+
+    process.env.NODE_ENV = "production";
+    delete process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK;
+    delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+    const productionSessionResponse = await fetch(`http://127.0.0.1:8788/auth/session?operatorPlayerId=${playerId}`);
+    const productionSessionPayload = await productionSessionResponse.json();
+    console.log("authSessionProduction", productionSessionPayload.data?.playerId === null && productionSessionPayload.data?.usedOperatorFallback === false);
+    assert.equal(productionSessionPayload.data?.playerId, null);
+    assert.equal(productionSessionPayload.data?.usedOperatorFallback, false);
+    assert.equal(productionSessionPayload.data?.authPolicy?.productionSafe, true);
+    assert.equal(productionSessionPayload.data?.authPolicy?.operatorFallbackEnabled, false);
+    assert.equal(productionSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, false);
+
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+    if (originalEnableDevAuthUserFallback === undefined) {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = originalEnableDevAuthUserFallback;
+    }
+    if (originalEnableOperatorFallback === undefined) {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalEnableOperatorFallback;
+    }
 
     const addStartLocationResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations`, {
       method: "POST",
@@ -459,6 +494,12 @@ async function main() {
     console.log("processChecklist", Boolean(processChecklistPayload.data?.checklistBefore) && Boolean(processChecklistPayload.data?.checklistAfter));
     assert.equal(Boolean(processChecklistPayload.data?.checklistBefore), true);
     assert.equal(Boolean(processChecklistPayload.data?.checklistAfter), true);
+
+    const refreshedManagementSnapshotResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/management-snapshot?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=${playerId}`);
+    const refreshedManagementSnapshotPayload = await refreshedManagementSnapshotResponse.json();
+    console.log("managementSnapshotRefresh", Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary));
+    assert.equal(Boolean(refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary), true);
+    assert.equal(typeof refreshedManagementSnapshotPayload.data?.managementSnapshot?.summary?.pendingTrafficIncidentRequestCount === "number", true);
 
     const forbiddenProcessChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist/process`, {
       method: "POST",

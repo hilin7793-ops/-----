@@ -38,7 +38,7 @@ function parseBooleanQueryValue(value) {
   return null;
 }
 
-// Authorization uses `authContext`; `operatorPlayerId` is compatibility input.
+// Authorization uses `authContext`; legacy compatibility inputs remain supported.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
   return [
     {

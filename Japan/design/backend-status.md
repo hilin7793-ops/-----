@@ -398,6 +398,7 @@
 - `requestAuthService` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 unit smoke test 驗證
 - `GET /auth/session` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 api smoke test 驗證
 - `GET /games/:gameId/access` 已補 host / joined player / guest player 的跨角色 smoke test 驗證
+- `Japan/frontend` 的 access / auth 語氣也已再收斂成較正式的主控 / 觀察 / 審核 / 回退表述
 - `GET /games/:gameId/checklist` 與 `management-snapshot` 已補非主持人拒絕案例驗證，管理巡檢入口的權限邊界更明確
 - `GET /games/:gameId/checklist/process` 也已補非主持人拒絕案例驗證，管理巡檢處理入口的邊界更完整
 - `GET /games/:gameId/players/:playerId/journeys` 已補建立、開始、完成後的跨流程 smoke test 驗證
@@ -729,6 +730,8 @@
 - 現有 `Japan/frontend` 已新增管理一鍵巡檢入口，能一次串接 management-snapshot / checklist / traffic summary / traffic list / journey dashboard / journey summary
 - 現有 `Japan/frontend` 已把管理分頁預設動作收斂成一鍵巡檢，讓巡檢入口更接近正式操作流程
 - 現有 `Japan/frontend` 已新增查詢預設入口，可快速切換玩家紀錄、交通中斷、票券、特殊狀態與旅程列表的常用條件
+- 現有 `Japan/frontend` 的查詢預設也已補上公開盲盒入口，讓可見性相關入口更好找
+- 現有 `Japan/frontend` 的公開盲盒也已加入查詢預設，可直接一鍵切到可見性查詢
 - 現有 `Japan/frontend` 已補上盲盒回顧分頁操作，可直接調整 blindBox / effectLog / record 的 limit 與 offset
 - 現有 `Japan/frontend` 已補上盲盒回顧的 location / actionType 篩選，可直接對齊後端 review 查詢
 - 現有 `Japan/frontend` 已補上公開盲盒分頁操作與載入入口，可直接調整 sort / limit / offset

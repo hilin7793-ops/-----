@@ -1,4 +1,4 @@
-# Japan Game System API
+﻿# Japan Game System API
 
 這份文件只描述目前已經在 [createAppServer.js](C:/Users/hilin/Desktop/縱貫搶旗賽/Japan/backend/system/src/api/createAppServer.js) 實作完成的 HTTP API。
 
@@ -384,7 +384,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 - `targetPlayerId`，可選，用於判定是否可視為 self access
 
 回應包含：
@@ -601,7 +601,7 @@ Query:
 Query:
 
 - `currentTime`，可選，用於判定目前是否已達旅程／拍賣處理時點
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 
 回應包含：
 
@@ -666,7 +666,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 
 回應包含：
@@ -685,7 +685,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
@@ -703,7 +703,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
@@ -722,7 +722,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 
 回應包含：
@@ -738,7 +738,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `playerId`，可選
 - `status`，可選
 - `transportType`，可選
@@ -797,7 +797,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 
 ### `GET /games/:gameId/players/:playerId/records`
 
@@ -806,7 +806,7 @@ Query:
 Query:
 
 - `visibilityMode`，預設 `during_game`
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -842,7 +842,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -854,7 +854,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1040,25 +1040,25 @@ Request body:
 
 用途：手動啟動旅程。
 
-Request body 可保留 `operatorPlayerId` 作為相容欄位。
+Request body 可暫時保留 `operatorPlayerId` 作為相容欄位。
 
 ### `POST /journeys/:journeyId/complete`
 
 用途：手動完成旅程。
 
-Request body 可保留 `operatorPlayerId` 作為相容欄位。
+Request body 可暫時保留 `operatorPlayerId` 作為相容欄位。
 
 ### `POST /journeys/:journeyId/cancel`
 
 用途：取消旅程。
 
-Request body 可保留 `operatorPlayerId` 作為相容欄位。
+Request body 可暫時保留 `operatorPlayerId` 作為相容欄位。
 
 ### `PATCH /journeys/:journeyId`
 
 用途：更新旅程。
 
-Request body 可保留 `operatorPlayerId` 作為相容欄位。
+Request body 可暫時保留 `operatorPlayerId` 作為相容欄位。
 
 ### `GET /journeys/:journeyId`
 
@@ -1070,7 +1070,7 @@ Request body 可保留 `operatorPlayerId` 作為相容欄位。
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1082,7 +1082,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 
 ### `GET /games/:gameId/players/:playerId/journeys/reserved`
 
@@ -1090,7 +1090,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 
 ## Traffic Incidents
 
@@ -1100,7 +1100,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 - `playerId`
 - `journeyId`
 - `status`
@@ -1140,7 +1140,7 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選
+- `operatorPlayerId`，可選，相容輸入
 
 ### `POST /traffic-incidents/:requestId/approve`
 
@@ -1319,7 +1319,7 @@ Query:
 
 Query:
 
-- `operatorPlayerId`
+- `operatorPlayerId`，可選，相容輸入
 - `sortBy`，可選，作為三組 review 列表的共同預設排序
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1355,3 +1355,4 @@ Query:
 - 部分流程依賴遊戲狀態與時間條件，不符合規則時會回傳 `INVALID_STATE`
 - 商店與票券有隨機性，測試時不應假設固定票價或固定票種
 - 若後續新增 API，請直接擴充本文件對應章節，不另開新檔
+

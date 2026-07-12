@@ -66,6 +66,18 @@ async function run() {
     body: { operatorPlayerId: authPlayer.id },
   });
 
+  process.env.NODE_ENV = "production";
+  delete process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK;
+  delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  delete process.env.JAPAN_DISABLE_DEV_AUTH_USER_FALLBACK;
+  delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  delete process.env.JAPAN_AUTH_STRICT;
+  const productionContext = await resolveRequestAuthContext({
+    request: { headers: {} },
+    dataAccessLayer,
+    body: { operatorPlayerId: authPlayer.id },
+  });
+
   if (originalNodeEnv === undefined) {
     delete process.env.NODE_ENV;
   } else {
@@ -131,6 +143,15 @@ async function run() {
   assert.equal(strictContext.authStrictEnabled, true);
   assert.equal(strictContext.authPolicy.strict, true);
   assert.equal(strictContext.authPolicy.operatorFallbackEnabled, false);
+
+  assert.equal(productionContext.authVerified, false);
+  assert.equal(productionContext.playerId, null);
+  assert.equal(productionContext.authMode, "anonymous");
+  assert.equal(productionContext.usedOperatorFallback, false);
+  assert.equal(productionContext.authPolicy.strict, false);
+  assert.equal(productionContext.authPolicy.operatorFallbackEnabled, false);
+  assert.equal(productionContext.authPolicy.devAuthUserFallbackEnabled, false);
+  assert.equal(productionContext.authPolicy.productionSafe, true);
 
   const basicQueryOptions = buildQueryOptions({
     sortBy: "createdAt",

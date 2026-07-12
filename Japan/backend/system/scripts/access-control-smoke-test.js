@@ -110,6 +110,7 @@ async function main() {
   const originalDisableOperatorFallback = process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
   const originalAuthStrict = process.env.JAPAN_AUTH_STRICT;
   const originalOperatorFallback = process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  const originalNodeEnv = process.env.NODE_ENV;
   process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = "0";
   process.env.JAPAN_AUTH_STRICT = "0";
   process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
@@ -139,6 +140,17 @@ async function main() {
     operatorPlayerId: hostPlayer.id,
     targetPlayerId: hostPlayer.id,
   });
+  process.env.NODE_ENV = "production";
+  delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
+  delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
+  delete process.env.JAPAN_AUTH_STRICT;
+  const productionFallbackAccess = await getGameAccessProfile({
+    dataAccessLayer,
+    gameId: gameData.id,
+    authContext: { source: "test" },
+    operatorPlayerId: hostPlayer.id,
+    targetPlayerId: hostPlayer.id,
+  });
   if (originalAuthStrict === undefined) {
     delete process.env.JAPAN_AUTH_STRICT;
   } else {
@@ -148,6 +160,11 @@ async function main() {
     delete process.env.JAPAN_ENABLE_OPERATOR_FALLBACK;
   } else {
     process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalOperatorFallback;
+  }
+  if (originalNodeEnv === undefined) {
+    delete process.env.NODE_ENV;
+  } else {
+    process.env.NODE_ENV = originalNodeEnv;
   }
   if (originalDisableOperatorFallback === undefined) {
     delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
@@ -200,6 +217,9 @@ async function main() {
   assert.equal(strictFallbackAccess.isAuthenticated, false);
   assert.equal(strictFallbackAccess.usedOperatorFallback, false);
   assert.equal(strictFallbackAccess.isJoinedGame, false);
+  assert.equal(productionFallbackAccess.isAuthenticated, false);
+  assert.equal(productionFallbackAccess.usedOperatorFallback, false);
+  assert.equal(productionFallbackAccess.isJoinedGame, false);
 
   await assert.rejects(
     () => assertGameHostAccess({

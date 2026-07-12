@@ -583,6 +583,7 @@
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadManagementFlow()">巡檢</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); loadChecklist()">待辦</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); processChecklist()">處理</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('management', event); runManagementCycle()">巡檢 + 處理</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); startGameFromConsole()">開始遊戲</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); endGameFromConsole()">結束遊戲</a>
                   <a class="action" href="javascript:void(0)" onclick="setSection('management', event); batchCancelJourneys()">取消預約</a>
@@ -674,6 +675,7 @@
                   <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('player-tickets')">玩家票券</a>
                   <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('special-states')">特殊狀態</a>
                   <a class="action" href="javascript:void(0)" onclick="applyQueryPreset('journeys')">旅程列表</a>
+                  <a class="action" href="javascript:void(0)" onclick="setSection('visibility', event); loadPublicBlindBoxesPreview()">公開盲盒</a>
                 </span>
               </div>
             </div>
@@ -1278,6 +1280,14 @@
           document.getElementById("journey-list-before").value = "2026-07-10T23:59:59+08:00";
           loadJourneys();
         },
+        "public-blind-boxes": () => {
+          document.getElementById("public-blindbox-player-id").value = playerId;
+          document.getElementById("public-blindbox-sort-by").value = "openedAt";
+          document.getElementById("public-blindbox-limit").value = "2";
+          document.getElementById("public-blindbox-offset").value = "0";
+          setSection("visibility", event);
+          loadPublicBlindBoxesPreview();
+        },
       };
 
       const preset = presets[presetName];
@@ -1470,7 +1480,7 @@
         state.authSession = payload.data ?? null;
         updatePill("auth-status", state.authSession?.authMode ?? "unknown");
         document.getElementById("admin-entry").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth";
-        document.getElementById("visibility-status").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth Pending";
+        document.getElementById("visibility-status").textContent = state.authSession?.authVerified ? "已驗證" : "待驗證";
         document.getElementById("status-auth").textContent = state.authSession?.authMode ?? "unknown";
         document.getElementById("status-visibility").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth Pending";
         document.getElementById("auth-policy-mode").textContent = state.authSession?.authMode ?? "unknown";
@@ -1479,8 +1489,8 @@
         document.getElementById("auth-policy-operator").textContent = state.authSession?.authPolicy?.operatorFallbackEnabled ? "Y" : "N";
         document.getElementById("auth-policy-dev").textContent = state.authSession?.authPolicy?.devAuthUserFallbackEnabled ? "Y" : "N";
         document.getElementById("visibility-summary").textContent = state.authSession?.authUserId
-          ? `User: ${state.authSession.authUserId}`
-          : "未取得 authUserId";
+          ? `登入使用者：${state.authSession.authUserId}`
+          : "未取得登入使用者";
         updateSidebarStatus();
         setOutput({ type: "auth/session", payload });
       } catch (error) {
@@ -1512,10 +1522,10 @@
             : "受限";
         document.getElementById("status-visibility").textContent = state.accessProfile?.canReviewGame ? "Review OK" : "Review Pending";
         document.getElementById("visibility-summary").textContent = state.accessProfile?.isHost
-          ? "Host access 已就緒"
-          : "等待 host / self 權限";
+          ? "主控權限已就緒"
+          : "等待觀察 / 審核 / 主控權限";
         document.getElementById("admin-summary").textContent = state.accessProfile
-          ? `Host ${state.accessProfile.isHost ? "Y" : "N"} / Observe ${state.accessProfile.canObserveGame ? "Y" : "N"} / Review ${state.accessProfile.canReviewGame ? "Y" : "N"} / Fallback ${state.accessProfile.usedOperatorFallback ? "Y" : "N"}`
+          ? `主控 ${state.accessProfile.isHost ? "Y" : "N"} / 觀察 ${state.accessProfile.canObserveGame ? "Y" : "N"} / 審核 ${state.accessProfile.canReviewGame ? "Y" : "N"} / 回退 ${state.accessProfile.usedOperatorFallback ? "Y" : "N"}`
           : document.getElementById("admin-summary").textContent;
         document.getElementById("access-matrix-host").textContent = state.accessProfile?.isHost ? "Y" : "N";
         document.getElementById("access-matrix-observe").textContent = state.accessProfile?.canObserveGame ? "Y" : "N";
@@ -1524,7 +1534,7 @@
         document.getElementById("access-matrix-self").textContent = state.accessProfile?.canAccessTargetPlayerSelfData ? "Y" : "N";
         document.getElementById("access-matrix-fallback").textContent = state.accessProfile?.usedOperatorFallback ? "Y" : "N";
         document.getElementById("traffic-review-details").textContent = state.accessProfile
-          ? `Target ${state.accessProfile.targetPlayerId ?? "-"} / Self ${state.accessProfile.canAccessTargetPlayerSelfData ? "Y" : "N"}`
+          ? `目標 ${state.accessProfile.targetPlayerId ?? "-"} / 自身資料 ${state.accessProfile.canAccessTargetPlayerSelfData ? "Y" : "N"}`
           : document.getElementById("traffic-review-details").textContent;
         updateSidebarStatus();
         setOutput({ type: "games/access", payload });
@@ -1681,6 +1691,33 @@
         await loadManagementSnapshot();
       } catch (error) {
         setOutput({ type: "games/checklist/process", error: error.message });
+      }
+    }
+
+    async function runManagementCycle() {
+      const gameId = getGameId();
+      if (!gameId) {
+        setOutput({ error: "請先輸入 Game ID" });
+        return;
+      }
+
+      try {
+        await loadManagementFlow();
+        await processChecklist();
+        await loadManagementFlow();
+        setOutput({
+          type: "console/management-cycle",
+          payload: {
+            gameId,
+            stages: [
+              "management-flow",
+              "checklist/process",
+              "management-flow-refresh",
+            ],
+          },
+        });
+      } catch (error) {
+        setOutput({ type: "console/management-cycle", error: error.message });
       }
     }
 
@@ -2826,6 +2863,8 @@
         "player-assets": "票券與狀態",
         "player-records": "玩家紀錄",
         management: "管理",
+        "management-flow": "管理全流程",
+        "management-cycle": "管理循環",
         checklist: "待辦",
         "traffic-review": "交通審核摘要",
         "traffic-list": "交通清單",
@@ -2845,6 +2884,8 @@
         "player-assets": "讀取票券與特殊狀態。",
         "player-records": "讀取玩家紀錄。",
         management: "讀取管理快照與巡檢摘要。",
+        "management-flow": "串接 management-snapshot、checklist、交通審核與旅程管理整合流程。",
+        "management-cycle": "跑一次巡檢、處理與刷新管理摘要。",
         checklist: "讀取管理待辦清單。",
         "traffic-review": "讀取交通中斷審核摘要。",
         "traffic-list": "讀取交通中斷列表。",
@@ -2864,6 +2905,8 @@
         "player-assets": "對應 `/games/:gameId/players/:playerId/tickets` 與 `special-states`，確認票券與特殊狀態。",
         "player-records": "對應 `/games/:gameId/players/:playerId/records`，確認玩家紀錄與日期區間。",
         management: "對應 management snapshot 的管理視角摘要與警示。",
+        "management-flow": "對應 `/games/:gameId/management-snapshot`、`/games/:gameId/checklist`、`/games/:gameId/traffic-incidents/review-summary` 與 `/games/:gameId/journeys/dashboard` 的整合巡檢。",
+        "management-cycle": "對應 `/games/:gameId/management-snapshot` 與 `/games/:gameId/checklist/process` 的巡檢後處理循環。",
         checklist: "對應 `/games/:gameId/checklist`，顯示待辦項目與處理結果。",
         "traffic-review": "對應 `/games/:gameId/traffic-incidents/review-summary`。",
         "traffic-list": "對應 `/games/:gameId/traffic-incidents`，列出交通中斷請求。",
@@ -3260,10 +3303,10 @@
 
         if (accessPayload?.data) {
           updatePill("access-status", accessPayload.data.canObserveGame ? "可觀察" : "不可觀察");
-          document.getElementById("visibility-status").textContent = accessPayload.data.canReviewGame ? "Review OK" : "Review Pending";
-          document.getElementById("visibility-summary").textContent = accessPayload.data.isHost ? "Host access 已就緒" : "等待 host / self 權限";
-          document.getElementById("admin-summary").textContent = `Host ${accessPayload.data.isHost ? "Y" : "N"} / Observe ${accessPayload.data.canObserveGame ? "Y" : "N"} / Review ${accessPayload.data.canReviewGame ? "Y" : "N"} / Fallback ${accessPayload.data.usedOperatorFallback ? "Y" : "N"}`;
-          document.getElementById("traffic-review-details").textContent = `Target ${accessPayload.data.targetPlayerId ?? "-"} / Self ${accessPayload.data.canAccessTargetPlayerSelfData ? "Y" : "N"}`;
+          document.getElementById("visibility-status").textContent = accessPayload.data.canReviewGame ? "可審核" : "待審核";
+          document.getElementById("visibility-summary").textContent = accessPayload.data.isHost ? "主控權限已就緒" : "等待觀察 / 審核 / 主控權限";
+          document.getElementById("admin-summary").textContent = `主控 ${accessPayload.data.isHost ? "Y" : "N"} / 觀察 ${accessPayload.data.canObserveGame ? "Y" : "N"} / 審核 ${accessPayload.data.canReviewGame ? "Y" : "N"} / 回退 ${accessPayload.data.usedOperatorFallback ? "Y" : "N"}`;
+          document.getElementById("traffic-review-details").textContent = `目標 ${accessPayload.data.targetPlayerId ?? "-"} / 自身資料 ${accessPayload.data.canAccessTargetPlayerSelfData ? "Y" : "N"}`;
         }
 
         if (snapshotPayload?.data?.snapshot) {
@@ -3479,14 +3522,9 @@
         }
 
         setSection("management");
-        await loadManagementSnapshot();
+        await loadManagementFlow();
         steps.push("management");
-        await loadChecklist();
-        steps.push("checklist");
-        await loadTrafficIncidentReviewSummary();
-        steps.push("traffic-review");
-        await loadTrafficIncidentList();
-        steps.push("traffic-list");
+        steps.push("management-flow");
 
         state.fullTourDetailMap = {
           auth: `Auth 狀態：${readSummary("auth-status")} / ${readSummary("game-summary")}`,
@@ -3499,7 +3537,9 @@
           visibility: `Visibility：${readSummary("visibility-summary")} / Review ${readSummary("overview-review-count")} / 公開 ${readSummary("visibility-preview-public-records")} / 玩家 ${readSummary("visibility-preview-player-records")} / 公開玩家 ${readSummary("public-records-player-id")} / 玩家紀錄類型 ${readSummary("player-records-type")}`,
           "public-blind-boxes": `Public blind boxes：${readSummary("public-blindbox-preview")} / ${readSummary("public-blindbox-status")}`,
           management: `Management：${readSummary("management-preview-summary")} / ${readSummary("management-preview-health")}`,
-          checklist: `Checklist：${readSummary("management-preview-checklist")}`,
+        "management-flow": `Management flow：${readSummary("management-preview-summary")} / ${readSummary("management-preview-journeys")} / ${readSummary("management-preview-traffic-review")}`,
+        "management-cycle": `Management cycle：${readSummary("management-preview-summary")} / ${readSummary("management-preview-checklist")} / ${readSummary("management-preview-health")}`,
+        checklist: `Checklist：${readSummary("management-preview-checklist")}`,
           "traffic-review": `Traffic review：${readSummary("management-preview-traffic-review")} / ${readSummary("traffic-review-details")}`,
           "traffic-list": `Traffic list：${readSummary("traffic-review-details")} / ${readSummary("management-preview-pending-list")}`,
         };
