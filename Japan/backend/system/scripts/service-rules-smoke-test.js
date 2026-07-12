@@ -2549,7 +2549,13 @@ async function main() {
   assert.equal(Array.isArray(gameRecordsReview.recordList), true);
   assert.equal(gameRecordsDuringGame.recordList.length >= 0, true);
   assert.equal(gameRecordsReview.recordList.length >= 0, true);
-  assert.equal(gameRecordsDuringGame.recordList[0]?.recordType == null || gameRecordsDuringGame.recordList[0]?.recordType === "journey" || gameRecordsDuringGame.recordList[0]?.recordType === "player_action", true);
+  assert.equal(
+    gameRecordsDuringGame.recordList[0]?.recordType == null
+      || gameRecordsDuringGame.recordList[0]?.recordType === "journey"
+      || gameRecordsDuringGame.recordList[0]?.recordType === "player_action"
+      || gameRecordsDuringGame.recordList[0]?.recordType === "blind_box",
+    true,
+  );
   assert.equal(gameRecordsReview.recordList[0]?.playerId, memberPlayer.id);
   assert.equal(gameRecordsDuringGame.recordList[0]?.payload?.currentLocationId == null || typeof gameRecordsDuringGame.recordList[0]?.payload?.currentLocationId === "string", true);
   assert.equal(gameRecordsReview.recordList[0]?.payload?.currentLocationId == null || gameRecordsReview.recordList[0]?.payload?.currentLocationId === "secret-location", true);

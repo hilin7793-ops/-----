@@ -5,7 +5,7 @@ import {
   updatePlayerProfile,
 } from "../../index.js";
 
-// Authorization uses `authContext`; legacy compatibility inputs remain supported.
+// Auth uses `authContext`; legacy compatibility inputs are kept only as handler fallbacks.
 export function createPlayerRoutes({ dataAccessLayer }) {
   return [
     {

@@ -11,7 +11,7 @@ import {
 } from "../../index.js";
 import { buildQueryOptions } from "../queryOptions.js";
 
-// Authorization uses `authContext`; legacy compatibility inputs remain supported.
+// Auth uses `authContext`; legacy compatibility inputs are kept only as handler fallbacks.
 export function createTrafficIncidentRoutes({ dataAccessLayer }) {
   return [
     {

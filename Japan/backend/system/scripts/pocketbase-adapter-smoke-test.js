@@ -6,7 +6,13 @@ import {
 import { getPocketBaseTestConfig } from "./pocketbase-test-utils.js";
 
 async function main() {
-  const pocketBaseConfig = getPocketBaseTestConfig();
+  let pocketBaseConfig;
+  try {
+    pocketBaseConfig = getPocketBaseTestConfig();
+  } catch (error) {
+    console.log("pocketbaseAdapterSmokeSkipped", error.message);
+    return;
+  }
 
   const adapter = createPocketBaseRestAdapter({
     ...pocketBaseConfig,

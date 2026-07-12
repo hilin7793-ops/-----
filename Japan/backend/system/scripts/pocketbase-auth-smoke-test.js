@@ -48,7 +48,13 @@ async function createAuthUser({ baseUrl, email, password, name }) {
 }
 
 async function main() {
-  const pocketBaseConfig = getPocketBaseTestConfig();
+  let pocketBaseConfig;
+  try {
+    pocketBaseConfig = getPocketBaseTestConfig();
+  } catch (error) {
+    console.log("pocketbaseAuthSmokeSkipped", error.message);
+    return;
+  }
   process.env.POCKETBASE_AUTH_COLLECTION = process.env.POCKETBASE_AUTH_COLLECTION ?? "users";
   process.env.POCKETBASE_URL = pocketBaseConfig.baseUrl;
 
@@ -233,7 +239,44 @@ async function main() {
         sessionPayload.data?.authMode === "pocketbase_token" &&
         sessionPayload.data?.authVerified === true &&
         sessionPayload.data?.authTokenPresent === true &&
-        sessionPayload.data?.authUserId === authUser.user.id,
+        sessionPayload.data?.authUserId === authUser.user.id &&
+        typeof sessionPayload.data?.authPolicy?.productionSafe === "boolean",
+    );
+    console.log(
+      "pocketbaseAuthTokenProductionSafe",
+      sessionPayload.data?.authPolicy?.productionSafe === false,
+    );
+
+    const accessResponse = await fetch(`http://127.0.0.1:8790/games/${game.id}/access?targetPlayerId=${player.id}`, {
+      headers: {
+        Authorization: `Bearer ${authUser.token}`,
+      },
+    });
+    const accessPayload = await accessResponse.json();
+    console.log(
+      "pocketbaseAuthRouteContext",
+      accessResponse.ok === true &&
+        accessPayload.success === true &&
+        accessPayload.data?.isAuthenticated === true &&
+        accessPayload.data?.isHost === true &&
+        accessPayload.data?.canManageGame === true &&
+        accessPayload.data?.playerId === player.id &&
+        accessPayload.data?.targetPlayerId === player.id,
+    );
+
+    const invalidSessionResponse = await fetch("http://127.0.0.1:8790/auth/session", {
+      headers: {
+        Authorization: "Bearer definitely-not-a-valid-token",
+      },
+    });
+    const invalidSessionPayload = await invalidSessionResponse.json();
+    console.log(
+      "pocketbaseAuthTokenFailed",
+      invalidSessionPayload.success === true &&
+        invalidSessionPayload.data?.authMode === "pocketbase_token_failed" &&
+        invalidSessionPayload.data?.authVerified === false &&
+        invalidSessionPayload.data?.authTokenPresent === true &&
+        invalidSessionPayload.data?.authUserId === null,
     );
 
     const loginResponse = await fetch("http://127.0.0.1:8790/auth/login", {

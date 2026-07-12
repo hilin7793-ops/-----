@@ -426,12 +426,14 @@ export async function deleteBlindBoxBatch({
 export async function getPublicBlindBoxInfo({
   dataAccessLayer,
   gameId,
+  filterOptions = {},
   queryOptions = {},
 }) {
   const { blindBoxList } = await listBlindBoxes({
     dataAccessLayer,
     gameId,
     visibilityMode: "player",
+    filterOptions,
     queryOptions,
   });
 

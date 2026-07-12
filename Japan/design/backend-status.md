@@ -27,11 +27,11 @@
 
 ### 0.2 待持續補強
 
-- 真實 PocketBase 與權限主路徑已可運作，後續可持續收斂 production 邊界與 fallback
-- 前端已有單頁控制台、流程導覽與管理巡檢骨架，後續仍可持續產品化
-- 自動化 / 持續整合覆蓋已建立基礎，後續可再加強回歸與細粒度 service 測試
-- 查詢排序、分頁、進階篩選與管理端批次工具已具備基礎，後續可繼續擴充
-- 一些規則細節後續仍可持續和 `rules.md` / `function.md` 做最終對齊
+- 真實 PocketBase 與權限主路徑已可運作，production 邊界、fallback 與 disable override 也已補上對應 smoke 驗證，包含關閉 fallback 後回到匿名與不可觀察的邊界，後續主要是持續擴充邊界案例
+- 前端已有單頁控制台、流程導覽與管理巡檢骨架，且已接入 bearer token / `Authorization`、production-safe 顯示、token 儲存 / 清除與管理批次 / 巡檢入口，後續可持續產品化與細化操作流程
+- 自動化 / 持續整合覆蓋已建立基礎，並已有可直接執行的 full smoke / CI 回歸入口，也已補上 production 邊界 smoke、前端 production-safe 驗證與 auth fallback disable override 單元驗證，後續可再加強細粒度 service 測試
+- 查詢排序、分頁、進階篩選與管理端批次工具已具備基礎，包含 cancel / lock / unlock / review 與 checklist process 等入口，核心查詢回歸也已持續補強並持續收斂到可驗證狀態
+- 已補 `rules.md` / `function.md` 的設計一致性 smoke 入口，後續仍可持續把更細的規則差異收斂到同一套驗證裡
 
 ## 1. 完成度總覽
 
@@ -287,9 +287,9 @@
 - 已補 PocketBase `users` auth collection migration 與專用 smoke test 腳本
 - 真 token smoke test 仍需本機提供 PocketBase 管理員憑證或 admin token
 - PocketBase smoke test 已整理出共用前置檢查，缺少憑證時會一致報出環境需求
-- `x-auth-user-id` 需要明確開啟 `JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK=1` 才會使用，`operatorPlayerId` 需要 `JAPAN_ENABLE_OPERATOR_FALLBACK=1` 才會使用
+- `x-auth-user-id` 需要明確開啟 `JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK=1` 才會使用，`operatorPlayerId` 需要 `JAPAN_ENABLE_OPERATOR_FALLBACK=1` 才會使用，前端已可優先保存 bearer token 作為正式請求路徑
 - `GET /auth/session` 可直接看到 `authMode` / `authPolicy` / `operatorFallbackEnabled` / `devAuthUserFallbackEnabled` / `authStrictEnabled`
-- auth collection 規劃、登入流程與 production 驗證策略已可落地，後續主要是持續收斂與補強
+- auth collection 規劃、登入流程與 production 驗證策略已可落地，包含 fallback disable override 的 smoke 也已補上，後續主要是持續收斂與補強
 
 ### 3.2 API 文件角色標示
 
@@ -312,10 +312,12 @@
 
 - 已有 PocketBase adapter
 - 已完成 schema build 與 migration 套用
-- `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js` 已可在本機 PocketBase 服務下通過
+- `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js` 已具備本機 PocketBase 服務驗證入口，也已整理出 `smoke:test:pocketbase:full` 與 full smoke / CI 回歸入口，缺少憑證時會一致跳過並明確提示環境需求
 - PocketBase smoke test 已共用測試前置檢查，缺少憑證時會一致報出環境需求
 - 已補 PocketBase 真實環境驗證的主要煙霧測試路徑，包含 adapter、flow、auth、管理端巡檢總覽、交通中斷審核摘要與拍賣出價查詢
-- 後續主要是持續擴充 CI、自動化排程與更廣的真實資料庫覆蓋
+- `pocketbase-auth-smoke-test.js` 已再補 bearer token 對 API route context 的驗證，並補上 `auth/session` 的 production policy 檢查
+- `pocketbase-flow-smoke-test.js` 已再補一般商店優先購買權與拍賣 `A / S` 票生成驗證
+- 後續主要是持續擴充 CI、自動化排程與更廣的真實資料庫覆蓋，但核心真實整合路徑已更完整
 
 ### 3.5 管理端能力
 
@@ -385,19 +387,15 @@
 
 - host/player/admin 權限矩陣與 `GET /games/:gameId/access` 主幹已完成
 - 非自有但可授權的觀察/裁判模式已有主要旗標，整體已可由 `authContext` 作為正式來源
-- `api.md` 與 route 層註解已收斂成 `authContext` 正式來源、`operatorPlayerId` 只保留為 legacy 相容輸入
+- `api.md` 與 route 層註解已收斂成以 `authContext` 為正式來源，`operatorPlayerId` 只留在必要欄位
 - `api.md` 的 `player-self` / `host` 角色說明已改成 `authContext` 正式來源語氣
-- `api.md` 的數個旅程 / 交通中斷 / 玩家旅程說明已把 `operatorPlayerId` 收斂成單純相容欄位
-- route 層模組註解也已統一成 `authContext` 正式來源、`operatorPlayerId` 相容輸入的說法
-- `gameRoutes` 的模組註解已再統一成 `authContext` 為正式來源、`operatorPlayerId` 僅作相容輸入的語氣
-- `journeyRoutes` 的模組註解也已跟進同一種 `authContext` 語氣
-- `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 僅作 optional compatibility input 的更短語氣
-- `gameRoutes` / `journeyRoutes` 的模組註解已再收斂成 `authContext` 正式來源、`operatorPlayerId` 只作相容輸入的更簡短語氣
-- `blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 也已跟進同一種 `authContext` 正式來源、`operatorPlayerId` optional compatibility input 的更短語氣
+- `api.md` 的旅程 / 交通中斷 / 玩家旅程 / 盲盒回顧說明已移除 `operatorPlayerId` 的描述語氣
+- route 層模組註解也已統一成 `authContext` 正式來源、`operatorPlayerId` 只留在 handler 參數
 - `gameRoutes`、`journeyRoutes`、`blindBoxRoutes`、`trafficIncidentRoutes`、`playerRoutes` 的模組註解已再收斂成只強調 `authContext`
 - `requestAuthService` 的 dev auth user fallback / operator fallback / strict 收斂已補上 smoke test 驗證
 - `requestAuthService` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 unit smoke test 驗證
 - `GET /auth/session` 的 `authPolicy` strict / operator fallback / dev auth user fallback 狀態也已補上 api smoke test 驗證
+- `access-control-smoke-test.js` 已再補 production / strict / fallback 拒絕與權限邊界驗證
 - `GET /games/:gameId/access` 已補 host / joined player / guest player 的跨角色 smoke test 驗證
 - `Japan/frontend` 的 access / auth 語氣也已再收斂成較正式的主控 / 觀察 / 審核 / 回退表述
 - `GET /games/:gameId/checklist` 與 `management-snapshot` 已補非主持人拒絕案例驗證，管理巡檢入口的權限邊界更明確
@@ -408,6 +406,7 @@
 ### 4.3 測試
 
 - 已有可通過的 `api-smoke-test.js` 與 `smoke-test.js`
+- `api-smoke-test.js` 已補 `JAPAN_AUTH_STRICT=1` 的 fallback 收斂驗證
 - 已新增 `unit-smoke-test.js`，先補上 `queryOptions` 與 `random` 純函式的獨立驗證
 - 已再補 `unit-smoke-test.js` 的 query 預設值、盲盒 review fallback 與 random 邊界驗證
 - 已再補 `unit-smoke-test.js` 的 query null / undefined 回退與盲盒 review 混合優先順序驗證
@@ -488,7 +487,7 @@
 - 已再補 `api-smoke-test.js` 的 `review` playerId / recordType / action 組合驗證
 - 已再補 `visibility-smoke-test.js` 的 full route 與賽後可見性驗證
 - 已再補 `visibility-smoke-test.js` 的公開旅程與公開紀錄分頁可見性驗證
-- 單元測試與 service 層規則 smoke test 已補上多個關鍵案例，後續可再擴充覆蓋密度與 CI 回歸門檻
+- 單元測試與 service 層規則 smoke test 已補上多個關鍵案例，包含 auth fallback disable override 與 production 邊界驗證，後續可再擴充覆蓋密度與 CI 回歸門檻
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
 - 已以 assert 再確認 service 層旅程建立的合法 / 非合法邊界
 - 已以 assert 再確認 service 層的可見性、票券、特殊狀態、拍賣與旅程流程核心邊界
@@ -693,17 +692,19 @@
 - 已以 assert 再確認 review 的 ranking 與 blindBoxReviewData 結構
 - 已以 assert 再確認 review summary 的 pendingCount 欄位
 - 已以 assert 再確認 deleteMap 的 success 結構
-- 權限拒絕案例與邊界案例仍可補強，例如更多跨流程、跨角色的組合驗證
-- 目前主幹 smoke / assert 驗證已完成，但尚未把所有新增查詢組合、管理批次與前端操作整理成同等密度的回歸套件
-- 真實 PocketBase 驗證目前以本機 smoke 為主，尚未形成穩定的自動化回歸門檻
+- 權限拒絕案例與邊界案例已再補強，例如玩家 records / profile / special-states 的 FORBIDDEN 斷言
+- 目前主幹 smoke / assert 驗證已完成，也已具備可直接執行的 full smoke / CI 回歸套件，並再補上 public records blind_box、traffic incident pending 與 traffic incident review-batch 等新增查詢 / 批次組合，前端 smoke 也已補到管理批次與管理巡檢入口，而 PocketBase flow / auth smoke 也已納入同一條回歸線，但仍可把更多前端操作整理成更高密度的回歸套件
+- 真實 PocketBase 驗證目前以本機 smoke 為主，已具備可重跑的回歸入口，但仍可再往 CI 門檻收斂
 
 ### 4.4 前端現況
 
 - `Japan/frontend` 目前已有控制台骨架與多個可操作區塊，屬於可運作的控制台雛形
+- `Japan/frontend` 已新增 bearer token 儲存與 `Authorization` 注入，正式請求已優先走 authContext
+- `Japan/frontend` 也已能串到 `auth/session`、`access`、`overview` 與 `management-snapshot`
 - 已可直接讀取 `auth/session`、`access`、`overview`、`management-snapshot` 等實際 API
 - 已有一般商店、拍賣、管理巡檢、最近操作與 auth policy 等面板
 - 已能送出一般商店購買、拍賣出價、拍賣初始化與結算
-- 已有管理巡檢摘要與側欄導覽回灌，後續仍可補更多完整操作流程與頁面整合
+- 已有管理巡檢摘要與側欄導覽回灌，並已接上多個完整操作流程與頁面整合入口
 - 現有 `Japan/frontend` 已讓側欄切換時右側標題也會同步更新
 - 現有 `Japan/frontend` 已讓 section 切換會同步更新 active 狀態，讓側欄與快捷入口的目前視角更清楚
 - 現有 `Japan/frontend` 已新增 management checklist process 入口，可直接觸發巡檢處理並回灌 management snapshot
@@ -853,7 +854,8 @@
 - 現有 `Japan/frontend` 已補上商店優先權來源與窗口的可視化摘要
 - 現有 `Japan/frontend` 已補上管理壓力來源拆分摘要，可直接看交通 / 待辦 / 旅程待辦
 - 現有 `Japan/frontend` 已把管理壓力拆分做成共用 helper，讓巡檢 / 待辦 / 總覽入口同步更新
-- 後續仍可把旅程、商店、拍賣與管理操作頁面接成更完整的產品流程，進一步補齊編輯、操作與狀態流轉頁面
+- 旅程、商店、拍賣與管理操作頁面已接成更完整的產品流程，編輯、操作與狀態流轉頁面也已持續補齊
+- 前端 legacy `operatorPlayerId` 依賴已移除，正式操作現在以 bearer token / `authContext` 為準
 
 ## 5. 建議下一步
 

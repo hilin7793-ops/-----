@@ -70,7 +70,13 @@ function testStamp() {
 }
 
 async function main() {
-  const pocketBaseConfig = getPocketBaseTestConfig();
+  let pocketBaseConfig;
+  try {
+    pocketBaseConfig = getPocketBaseTestConfig();
+  } catch (error) {
+    console.log("pocketbaseFlowSmokeSkipped", error.message);
+    return;
+  }
 
   const adapter = createPocketBaseRestAdapter({
     ...pocketBaseConfig,
@@ -334,14 +340,20 @@ async function main() {
     filterOptions: { gameId: game.id, shopType: "general", status: "listed" },
   });
   console.log("dailyShopItems", dailyShopItems.length);
+  assert(dailyShopItems.length > 0, "Expected general shop items to be initialized");
   const dailyShopItemView = await getGeneralShopItems({
     dataAccessLayer,
     gameId: game.id,
   });
   console.log("dailyShopPrioritySource", dailyShopItemView.priorityState.prioritySource);
+  assert.equal(dailyShopItemView.priorityState.prioritySource, "none");
   console.log(
     "dailyShopHasNoPriority",
     dailyShopItemView.shopTicketList.every((item) => item.priorityAccess?.prioritySource === "none"),
+  );
+  assert.equal(
+    dailyShopItemView.shopTicketList.every((item) => item.priorityAccess?.prioritySource === "none"),
+    true,
   );
 
   const refreshedShop = await refreshGeneralShop({
@@ -361,9 +373,15 @@ async function main() {
   });
   console.log("manualRefreshPrioritySource", refreshedShopView.priorityState.prioritySource);
   console.log("manualRefreshPriorityBuyer", refreshedShopView.priorityState.priorityBuyerPlayerId === player1.id);
+  assert.equal(refreshedShopView.priorityState.prioritySource, "manual_refresh");
+  assert.equal(refreshedShopView.priorityState.priorityBuyerPlayerId, player1.id);
   console.log(
     "manualRefreshItemsPriorityTagged",
     refreshedShopView.shopTicketList.every((item) => item.priorityAccess?.priorityBuyerPlayerId === player1.id),
+  );
+  assert.equal(
+    refreshedShopView.shopTicketList.every((item) => item.priorityAccess?.priorityBuyerPlayerId === player1.id),
+    true,
   );
 
   const purchasableShopItem = refreshedShop.newShopTicketList.find(
@@ -389,6 +407,7 @@ async function main() {
     priorityBlocked = error?.code === "FORBIDDEN" || error?.message === "Shop item is currently reserved for the refresh owner";
   }
   console.log("manualRefreshPriorityBlocked", priorityBlocked);
+  assert.equal(priorityBlocked, true);
 
   await recordShopAction({
     dataAccessLayer,
@@ -432,6 +451,7 @@ async function main() {
     playerId: player1.id,
   });
   console.log("playerTicketsAfterPurchase", playerTicketsAfterPurchase.ticketList.length);
+  assert.equal(playerTicketsAfterPurchase.ticketList.length > 0, true);
 
   const initialJourneyDurationMinutes = Math.max(
     5,
@@ -615,10 +635,13 @@ async function main() {
   console.log("currentAuction", Boolean(currentAuction.currentAuction));
   console.log("currentAuctionRatingGrade", currentAuction.currentAuction?.ticketRating?.ratingGrade ?? null);
   console.log("currentAuctionRatingType", currentAuction.currentAuction?.ticketRating?.ratingType ?? null);
+  assert.equal(Boolean(currentAuction.currentAuction), true);
+  assert.equal(currentAuction.currentAuction?.ticketRating?.ratingType, "auction");
   console.log(
     "currentAuctionIsHighGrade",
     ["A", "S"].includes(currentAuction.currentAuction?.ticketRating?.ratingGrade),
   );
+  assert.equal(["A", "S"].includes(currentAuction.currentAuction?.ticketRating?.ratingGrade), true);
 
   await placeBid({
     dataAccessLayer,
@@ -642,6 +665,11 @@ async function main() {
   console.log(
     "auctionBidDateFilter",
     auctionBids.bidList.length === 2,
+  );
+  assert.equal(auctionBids.bidList.length >= 1, true);
+  assert.equal(
+    auctionBids.bidList.every((entry) => typeof entry.createdAt === "string"),
+    true,
   );
   await placeBid({
     dataAccessLayer,
@@ -687,6 +715,10 @@ async function main() {
     totalBidAmount: resolvedAuction.totalBidAmount,
     blindBoxRewards: resolvedAuction.blindBoxRewards.length,
   });
+  assert.equal(typeof resolvedAuction.winnerPlayerId, "string");
+  assert.equal(typeof resolvedAuction.totalBidAmount, "number");
+  assert.equal(Array.isArray(resolvedAuction.blindBoxRewards), true);
+  assert.equal(resolvedAuction.awardedTicket?.status === "owned" || resolvedAuction.awardedTicket?.status === "destroyed", true);
 
   const publicJourney = await getPublicJourneyInfo({
     dataAccessLayer,
@@ -695,6 +727,7 @@ async function main() {
     targetPlayerId: player1.id,
   });
   console.log("publicJourneyVisible", Boolean(publicJourney.publicJourneyInfo));
+  assert.equal(Boolean(publicJourney.publicJourneyInfo), true);
 
   const playerRecords = await getPlayerRecords({
     dataAccessLayer,
@@ -710,6 +743,7 @@ async function main() {
     requestingPlayerId: player2.id,
   });
   console.log("publicRecords", publicRecords.publicRecordList.length);
+  assert.equal(publicRecords.publicRecordList.length >= 1, true);
 
   await dataAccessLayer.updateRecordById({
     collectionName: CollectionName.GAME_PLAYERS,
@@ -775,11 +809,13 @@ async function main() {
     gameId: game.id,
   });
   console.log("postGameReviewRecords", reviewData.reviewData.recordList.length);
+  assert.equal(reviewData.reviewData.recordList.length >= 1, true);
   const blindBoxReviewData = await getBlindBoxReviewData({
     dataAccessLayer,
     gameId: game.id,
   });
   console.log("blindBoxReviewCount", blindBoxReviewData.blindBoxReviewData.blindBoxList.length);
+  assert.equal(blindBoxReviewData.blindBoxReviewData.blindBoxList.length >= 1, true);
 
   console.log("smokeTestGameId", game.id);
   console.log("smokeTestMapId", map.id);

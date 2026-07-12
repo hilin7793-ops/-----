@@ -38,7 +38,7 @@ function parseBooleanQueryValue(value) {
   return null;
 }
 
-// Authorization uses `authContext`; legacy compatibility inputs remain supported.
+// Auth uses `authContext`; legacy compatibility inputs are kept only as handler fallbacks.
 export function createBlindBoxRoutes({ dataAccessLayer }) {
   return [
     {
@@ -250,15 +250,21 @@ export function createBlindBoxRoutes({ dataAccessLayer }) {
       template: "/games/:gameId/blind-boxes/public",
       handler: async ({ params, query }) => ({
         statusCode: 200,
-          payload: {
-            success: true,
-            data: await getPublicBlindBoxInfo({
-              dataAccessLayer,
-              gameId: params.gameId,
-              queryOptions: buildQueryOptions(query),
-            }),
-          },
-        }),
+        payload: {
+          success: true,
+          data: await getPublicBlindBoxInfo({
+            dataAccessLayer,
+            gameId: params.gameId,
+            filterOptions: {
+              ...(parseBooleanQueryValue(query.openedStatus) !== null
+                ? { openedStatus: parseBooleanQueryValue(query.openedStatus) }
+                : {}),
+              ...(query.locationId ? { locationId: query.locationId } : {}),
+            },
+            queryOptions: buildQueryOptions(query),
+          }),
+        },
+      }),
     },
     {
       method: "GET",

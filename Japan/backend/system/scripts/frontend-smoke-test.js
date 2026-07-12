@@ -15,7 +15,17 @@ async function main() {
   assert.match(html, /await loadCoreConsole\(\)/);
   assert.match(html, /refreshDashboard\(\)/);
   assert.match(html, /Production: 未載入/);
+  assert.match(html, /Production: \$\{state\.authSession\?\.authPolicy\?\.productionSafe \? "Safe" : "Review"\}/);
   assert.match(html, /auth-policy-production-safe/);
+  assert.match(html, /auth-bearer-token/);
+  assert.match(html, /japan\.bearerToken/);
+  assert.match(html, /saveBearerTokenFromConsole\(\)/);
+  assert.match(html, /clearBearerTokenFromConsole\(\)/);
+  assert.match(html, /games\/\$\{gameId\}\/checklist\/process/);
+  assert.match(html, /games\/\$\{gameId\}\/journeys\/cancel-batch/);
+  assert.match(html, /games\/\$\{gameId\}\/journeys\/lock-batch/);
+  assert.match(html, /games\/\$\{gameId\}\/journeys\/unlock-batch/);
+  assert.match(html, /games\/\$\{gameId\}\/traffic-incidents\/review-batch/);
   assert.match(html, /首頁整體刷新/);
   assert.match(html, /管理 \+ 回顧/);
   assert.match(html, /商店與拍賣/);

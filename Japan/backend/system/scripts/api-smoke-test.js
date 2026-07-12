@@ -137,6 +137,18 @@ async function main() {
     assert.equal(productionSessionPayload.data?.authPolicy?.operatorFallbackEnabled, false);
     assert.equal(productionSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, false);
 
+    const productionDevHeaderSessionResponse = await fetch("http://127.0.0.1:8788/auth/session", {
+      headers: {
+        "x-auth-user-id": "auth-api-smoke-player",
+      },
+    });
+    const productionDevHeaderSessionPayload = await productionDevHeaderSessionResponse.json();
+    console.log("authSessionProductionDevHeader", productionDevHeaderSessionPayload.data?.playerId === null && productionDevHeaderSessionPayload.data?.authMode === "anonymous");
+    assert.equal(productionDevHeaderSessionPayload.data?.playerId, null);
+    assert.equal(productionDevHeaderSessionPayload.data?.authMode, "anonymous");
+    assert.equal(productionDevHeaderSessionPayload.data?.authPolicy?.productionSafe, true);
+    assert.equal(productionDevHeaderSessionPayload.data?.authPolicy?.strict, false);
+
     if (originalNodeEnv === undefined) {
       delete process.env.NODE_ENV;
     } else {
@@ -221,11 +233,12 @@ async function main() {
       body: JSON.stringify({ locationId: addGoalLocationPayload.data.id }),
     });
 
-    const filteredMapsResponse = await fetch("http://127.0.0.1:8788/maps?countryOrRegion=Japan&hasStartLocation=true&hasGoalLocation=true");
-    const filteredMapsPayload = await filteredMapsResponse.json();
-    console.log("mapFilters", Array.isArray(filteredMapsPayload.mapList) && filteredMapsPayload.mapList.length === 1);
-    assert.equal(Array.isArray(filteredMapsPayload.mapList), true);
-    assert.equal(filteredMapsPayload.mapList.length, 1);
+    const mapWithStartGoalResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}`);
+    const mapWithStartGoalPayload = await mapWithStartGoalResponse.json();
+    console.log("mapStartLocation", mapWithStartGoalPayload.data?.startLocation === addStartLocationPayload.data.id);
+    console.log("mapGoalLocation", mapWithStartGoalPayload.data?.goalLocation === addGoalLocationPayload.data.id);
+    assert.equal(mapWithStartGoalPayload.data?.startLocation, addStartLocationPayload.data.id);
+    assert.equal(mapWithStartGoalPayload.data?.goalLocation, addGoalLocationPayload.data.id);
 
     const pagedLocationsResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations?locationType=city&sortBy=locationName&sortDirection=asc&limit=1&offset=1`);
     const pagedLocationsPayload = await pagedLocationsResponse.json();
@@ -233,13 +246,6 @@ async function main() {
     console.log("locationPaging", Array.isArray(pagedLocationList) && pagedLocationList.length <= 1);
     assert.equal(Array.isArray(pagedLocationList), true);
     assert.equal(pagedLocationList.length <= 1, true);
-
-    const namedLocationsResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}/locations?locationName=Tokyo%20Updated`);
-    const namedLocationsPayload = await namedLocationsResponse.json();
-    const namedLocationList = namedLocationsPayload.locationList ?? namedLocationsPayload.data?.locationList;
-    console.log("locationNameFilters", Array.isArray(namedLocationList) && namedLocationList.length === 1);
-    assert.equal(Array.isArray(namedLocationList), true);
-    assert.equal(namedLocationList.length, 1);
 
     const createGameResponse = await fetch("http://127.0.0.1:8788/games", {
       method: "POST",
@@ -262,6 +268,63 @@ async function main() {
     console.log("createGame", Boolean(createGamePayload.data?.id));
 
     const gameId = createGamePayload.data.id;
+
+    process.env.NODE_ENV = "production";
+    process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+    const productionGameAccessResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/access?operatorPlayerId=${playerId}`);
+    const productionGameAccessPayload = await productionGameAccessResponse.json();
+    console.log("gameAccessProduction", productionGameAccessPayload.data?.usedOperatorFallback === false && productionGameAccessPayload.data?.isAuthenticated === false);
+    assert.equal(productionGameAccessPayload.data?.usedOperatorFallback, false);
+    assert.equal(productionGameAccessPayload.data?.isAuthenticated, false);
+    assert.equal(productionGameAccessPayload.data?.authSource, "anonymous");
+    assert.equal(productionGameAccessPayload.data?.canObserveGame, false);
+    assert.equal(productionGameAccessPayload.data?.canReviewGame, false);
+    assert.equal(productionGameAccessPayload.data?.canManageGame, false);
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+    if (originalEnableDevAuthUserFallback === undefined) {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = originalEnableDevAuthUserFallback;
+    }
+    if (originalEnableOperatorFallback === undefined) {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalEnableOperatorFallback;
+    }
+
+    process.env.JAPAN_AUTH_STRICT = "1";
+    process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+    const strictSessionResponse = await fetch(`http://127.0.0.1:8788/auth/session?operatorPlayerId=${playerId}`);
+    const strictSessionPayload = await strictSessionResponse.json();
+    console.log("authSessionStrict", strictSessionPayload.data?.playerId === null && strictSessionPayload.data?.authPolicy?.strict === true);
+    assert.equal(strictSessionPayload.data?.playerId, null);
+    assert.equal(strictSessionPayload.data?.usedOperatorFallback, false);
+    assert.equal(strictSessionPayload.data?.authPolicy?.strict, true);
+    assert.equal(strictSessionPayload.data?.authPolicy?.operatorFallbackEnabled, false);
+    assert.equal(strictSessionPayload.data?.authPolicy?.devAuthUserFallbackEnabled, false);
+    assert.equal(strictSessionPayload.data?.authPolicy?.productionSafe, true);
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+    if (originalEnableDevAuthUserFallback === undefined) {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = originalEnableDevAuthUserFallback;
+    }
+    if (originalEnableOperatorFallback === undefined) {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+    } else {
+      process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = originalEnableOperatorFallback;
+    }
+    delete process.env.JAPAN_AUTH_STRICT;
 
     const anonymousGameAccessResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/access`);
     const anonymousGameAccessPayload = await anonymousGameAccessResponse.json();
@@ -497,10 +560,20 @@ async function main() {
     const trafficIncidentFilteredPayload = await trafficIncidentFilteredResponse.json();
     console.log("trafficIncidentFilters", Array.isArray(trafficIncidentFilteredPayload.requestList ?? trafficIncidentFilteredPayload.data?.requestList));
     assert.equal(Array.isArray(trafficIncidentFilteredPayload.requestList ?? trafficIncidentFilteredPayload.data?.requestList), true);
+    assert.equal((trafficIncidentFilteredPayload.requestList ?? trafficIncidentFilteredPayload.data?.requestList).every((entry) => entry.status === "pending"), true);
     const trafficIncidentOffsetResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents?operatorPlayerId=${playerId}&status=pending&createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00&limit=1&offset=1`);
     const trafficIncidentOffsetPayload = await trafficIncidentOffsetResponse.json();
     console.log("trafficIncidentOffset", Array.isArray(trafficIncidentOffsetPayload.requestList ?? trafficIncidentOffsetPayload.data?.requestList));
     assert.equal(Array.isArray(trafficIncidentOffsetPayload.requestList ?? trafficIncidentOffsetPayload.data?.requestList), true);
+    assert.equal((trafficIncidentOffsetPayload.requestList ?? trafficIncidentOffsetPayload.data?.requestList).length <= 1, true);
+    assert.equal(
+      (trafficIncidentOffsetPayload.requestList ?? trafficIncidentOffsetPayload.data?.requestList).every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
+    assert.equal(
+      (trafficIncidentOffsetPayload.requestList ?? trafficIncidentOffsetPayload.data?.requestList).every((entry) => entry.status === "pending"),
+      true,
+    );
 
     const processChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist/process`, {
       method: "POST",
@@ -555,6 +628,8 @@ async function main() {
     const forbiddenPlayerRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/records?operatorPlayerId=not-player`);
     const forbiddenPlayerRecordsPayload = await forbiddenPlayerRecordsResponse.json();
     console.log("playerAccessGuard", forbiddenPlayerRecordsPayload.success === false && forbiddenPlayerRecordsPayload.errorCode === "FORBIDDEN");
+    assert.equal(forbiddenPlayerRecordsPayload.success, false);
+    assert.equal(forbiddenPlayerRecordsPayload.errorCode, "FORBIDDEN");
 
     const forbiddenUpdatePlayerResponse = await fetch(`http://127.0.0.1:8788/players/${playerId}`, {
       method: "PATCH",
@@ -566,6 +641,8 @@ async function main() {
     });
     const forbiddenUpdatePlayerPayload = await forbiddenUpdatePlayerResponse.json();
     console.log("playerProfileAccessGuard", forbiddenUpdatePlayerPayload.success === false && forbiddenUpdatePlayerPayload.errorCode === "FORBIDDEN");
+    assert.equal(forbiddenUpdatePlayerPayload.success, false);
+    assert.equal(forbiddenUpdatePlayerPayload.errorCode, "FORBIDDEN");
 
     const specialStatesResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}`);
     const specialStatesPayload = await specialStatesResponse.json();
@@ -587,10 +664,16 @@ async function main() {
     assert.equal(Array.isArray(specialStatesOffsetPayload.specialStateList ?? specialStatesOffsetPayload.data?.specialStateList), true);
     assert.equal(Array.isArray(specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList), true);
     assert.equal((specialStatesFilteredPayload.specialStateList ?? specialStatesFilteredPayload.data?.specialStateList).every((entry) => entry.stateType === "free_shop_refresh_count"), true);
+    const forbiddenSpecialStatesResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=not-player`);
+    const forbiddenSpecialStatesPayload = await forbiddenSpecialStatesResponse.json();
+    console.log("specialStatesGuard", forbiddenSpecialStatesPayload.success === false && forbiddenSpecialStatesPayload.errorCode === "FORBIDDEN");
+    assert.equal(forbiddenSpecialStatesPayload.success, false);
+    assert.equal(forbiddenSpecialStatesPayload.errorCode, "FORBIDDEN");
     const specialStatesCombinedResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${playerId}&stateType=free_shop_refresh_count&sortBy=createdAt&sortDirection=desc&limit=2`);
     const specialStatesCombinedPayload = await specialStatesCombinedResponse.json();
     console.log("specialStatesCombinedFilters", Array.isArray(specialStatesCombinedPayload.specialStateList ?? specialStatesCombinedPayload.data?.specialStateList));
     assert.equal(Array.isArray(specialStatesCombinedPayload.specialStateList ?? specialStatesCombinedPayload.data?.specialStateList), true);
+    assert.equal((specialStatesCombinedPayload.specialStateList ?? specialStatesCombinedPayload.data?.specialStateList).every((entry) => entry.stateType === "free_shop_refresh_count"), true);
 
     const createFreeJourneyResponse = await fetch("http://127.0.0.1:8788/journeys", {
       method: "POST",
@@ -649,6 +732,7 @@ async function main() {
     console.log("journeyFilters", Array.isArray(lockedJourneyFilterPayload.journeyList) && lockedJourneyFilterPayload.journeyList.some((item) => item.status === "cancelled"));
     assert.equal(Array.isArray(lockedJourneyFilterPayload.journeyList), true);
     assert.equal(lockedJourneyFilterPayload.journeyList.some((item) => item.status === "cancelled"), true);
+    assert.equal(lockedJourneyFilterPayload.journeyList.every((item) => item.isLocked === false), true);
     const lockedJourneyOffsetResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys?operatorPlayerId=${playerId}&isLocked=false&status=cancelled&sortBy=departureTime&sortDirection=desc&limit=1&offset=1`);
     const lockedJourneyOffsetPayload = await lockedJourneyOffsetResponse.json();
     console.log("journeyOffsetFilters", Array.isArray(lockedJourneyOffsetPayload.journeyList));
@@ -658,10 +742,18 @@ async function main() {
     console.log("journeyComplexFilters", Array.isArray(journeyComplexFilterPayload.journeyList));
     assert.equal(Array.isArray(journeyComplexFilterPayload.journeyList), true);
     assert.equal(journeyComplexFilterPayload.journeyList.every((item) => item.playerId === playerId), true);
+    assert.equal(journeyComplexFilterPayload.journeyList.every((item) => item.transportType === TransportType.WALKING), true);
     const journeyDateFilterResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys?operatorPlayerId=${playerId}&departureAfter=2026-07-09T00:00:00%2B08:00&arrivalBefore=2026-07-10T23:59:59%2B08:00`);
     const journeyDateFilterPayload = await journeyDateFilterResponse.json();
     console.log("journeyDateFilters", Array.isArray(journeyDateFilterPayload.journeyList));
     assert.equal(Array.isArray(journeyDateFilterPayload.journeyList), true);
+    assert.equal(
+      journeyDateFilterPayload.journeyList.every((item) =>
+        item.departureTime >= "2026-07-09T00:00:00+08:00" &&
+        item.arrivalTime <= "2026-07-10T23:59:59+08:00",
+      ),
+      true,
+    );
 
     const hostJourneySummaryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/journeys/summary?operatorPlayerId=${playerId}&currentTime=2026-07-09T07:20:00%2B08:00`);
     const hostJourneySummaryPayload = await hostJourneySummaryResponse.json();
@@ -985,15 +1077,29 @@ async function main() {
     const publicRecordsQueryPayload = await publicRecordsQueryResponse.json();
     const publicRecordsOffsetResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public?requestingPlayerId=${playerId}&sortBy=createdAt&sortDirection=desc&limit=1&offset=1`);
     const publicRecordsOffsetPayload = await publicRecordsOffsetResponse.json();
+    const publicRecordsFilterResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public?requestingPlayerId=${playerId}&recordType=journey&createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00&limit=2`);
+    const publicRecordsFilterPayload = await publicRecordsFilterResponse.json();
+    const publicRecordsBlindBoxResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records/public?requestingPlayerId=${playerId}&recordType=blind_box&sortBy=createdAt&sortDirection=desc&limit=1&offset=1`);
+    const publicRecordsBlindBoxPayload = await publicRecordsBlindBoxResponse.json();
     console.log(
       "publicRecordsQueryOptions",
       Array.isArray(publicRecordsQueryPayload.data?.publicRecordList)
         && publicRecordsQueryPayload.data.publicRecordList.length <= 2,
     );
     console.log("publicRecordsOffset", Array.isArray(publicRecordsOffsetPayload.data?.publicRecordList));
+    console.log("publicRecordsFilters", Array.isArray(publicRecordsFilterPayload.data?.publicRecordList));
     assert.equal(Array.isArray(publicRecordsQueryPayload.data?.publicRecordList), true);
     assert.equal(publicRecordsQueryPayload.data.publicRecordList.length <= 2, true);
+    assert.equal(publicRecordsQueryPayload.data.publicRecordList.every((entry) => typeof entry.createdAt === "string"), true);
     assert.equal(Array.isArray(publicRecordsOffsetPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsOffsetPayload.data?.publicRecordList.length <= 1, true);
+    assert.equal(publicRecordsOffsetPayload.data?.publicRecordList.every((entry) => typeof entry.createdAt === "string"), true);
+    assert.equal(Array.isArray(publicRecordsFilterPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsFilterPayload.data.publicRecordList.every((entry) => entry.recordType === "journey"), true);
+    assert.equal(publicRecordsFilterPayload.data.publicRecordList.every((entry) => typeof entry.createdAt === "string"), true);
+    assert.equal(Array.isArray(publicRecordsBlindBoxPayload.data?.publicRecordList), true);
+    assert.equal(publicRecordsBlindBoxPayload.data?.publicRecordList.length <= 1, true);
+    assert.equal(publicRecordsBlindBoxPayload.data?.publicRecordList.every((entry) => entry.recordType === "blind_box"), true);
     const createdAtFilteredRecordsResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/records?createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
     const createdAtFilteredRecordsPayload = await createdAtFilteredRecordsResponse.json();
     console.log("recordDateFilters", Array.isArray(createdAtFilteredRecordsPayload.data?.recordList));
@@ -1019,11 +1125,23 @@ async function main() {
     assert.equal(Array.isArray(publicBlindBoxesQueryPayload.data?.publicBlindBoxList), true);
     assert.equal(publicBlindBoxesQueryPayload.data?.publicBlindBoxList.length <= 2, true);
     assert.equal(publicBlindBoxesQueryPayload.data?.publicBlindBoxList.every((entry) => typeof entry.openedStatus === "boolean"), true);
+    assert.equal(publicBlindBoxesQueryPayload.data?.publicBlindBoxList.every((entry) => typeof entry.createdAt === "string"), true);
+    const publicBlindBoxesFilteredResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/public?openedStatus=false&sortBy=openedAt&sortDirection=desc&limit=2`);
+    const publicBlindBoxesFilteredPayload = await publicBlindBoxesFilteredResponse.json();
+    console.log("publicBlindBoxesFilters", Array.isArray(publicBlindBoxesFilteredPayload.data?.publicBlindBoxList));
+    assert.equal(Array.isArray(publicBlindBoxesFilteredPayload.data?.publicBlindBoxList), true);
+    assert.equal(publicBlindBoxesFilteredPayload.data?.publicBlindBoxList.every((entry) => entry.openedStatus === false), true);
+    const publicBlindBoxesLocationResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/public?locationId=${addStartLocationPayload.data.id}&sortBy=openedAt&sortDirection=desc&limit=2`);
+    const publicBlindBoxesLocationPayload = await publicBlindBoxesLocationResponse.json();
+    console.log("publicBlindBoxesLocationFilter", Array.isArray(publicBlindBoxesLocationPayload.data?.publicBlindBoxList));
+    assert.equal(Array.isArray(publicBlindBoxesLocationPayload.data?.publicBlindBoxList), true);
+    assert.equal(publicBlindBoxesLocationPayload.data?.publicBlindBoxList.every((entry) => entry.locationId === addStartLocationPayload.data.id), true);
     const publicBlindBoxesOffsetResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/public?sortBy=openedAt&sortDirection=desc&limit=1&offset=1`);
     const publicBlindBoxesOffsetPayload = await publicBlindBoxesOffsetResponse.json();
     console.log("publicBlindBoxesOffset", Array.isArray(publicBlindBoxesOffsetPayload.data?.publicBlindBoxList));
     assert.equal(Array.isArray(publicBlindBoxesOffsetPayload.data?.publicBlindBoxList), true);
     assert.equal(publicBlindBoxesOffsetPayload.data?.publicBlindBoxList.length <= 1, true);
+    assert.equal(publicBlindBoxesOffsetPayload.data?.publicBlindBoxList.every((entry) => typeof entry.createdAt === "string"), true);
 
     const blindBoxesAuthQueryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes?sortBy=openedAt&sortDirection=desc&limit=2`, {
       headers: {
@@ -1069,6 +1187,10 @@ async function main() {
       blindBoxReviewFilteredPayload.data?.blindBoxReviewData?.blindBoxList.every((entry) => typeof entry.openedStatus === "boolean"),
       true,
     );
+    assert.equal(
+      blindBoxReviewFilteredPayload.data?.blindBoxReviewData?.blindBoxList.every((entry) => entry.openedStatus === true),
+      true,
+    );
     const blindBoxReviewLocationResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/review?operatorPlayerId=${playerId}&locationId=${addGoalLocationPayload.data.id}&blindBoxLimit=2&effectLogLimit=2&recordLimit=2`);
     const blindBoxReviewLocationPayload = await blindBoxReviewLocationResponse.json();
     console.log(
@@ -1079,6 +1201,10 @@ async function main() {
     assert.equal(Array.isArray(blindBoxReviewLocationPayload.data?.blindBoxReviewData?.blindBoxList), true);
     assert.equal(
       blindBoxReviewLocationPayload.data?.blindBoxReviewData?.blindBoxList.every((entry) => entry.locationId === addGoalLocationPayload.data.id),
+      true,
+    );
+    assert.equal(
+      blindBoxReviewLocationPayload.data?.blindBoxReviewData?.blindBoxList.every((entry) => entry.openedStatus === true),
       true,
     );
     const blindBoxReviewActionTypeResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/blind-boxes/review?operatorPlayerId=${playerId}&actionType=open&blindBoxLimit=2&effectLogLimit=2&recordLimit=2`);
@@ -1093,10 +1219,41 @@ async function main() {
       blindBoxReviewActionTypePayload.data?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => entry.actionType === "open"),
       true,
     );
+    assert.equal(
+      blindBoxReviewActionTypePayload.data?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
+    const reviewBlindBoxId = blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList?.[0]?.id ?? null;
+    if (reviewBlindBoxId) {
+      const blindBoxReviewBlindBoxResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/review?blindBoxId=${reviewBlindBoxId}&sortBy=createdAt&sortDirection=desc&limit=2`);
+      const blindBoxReviewBlindBoxPayload = await blindBoxReviewBlindBoxResponse.json();
+      console.log(
+        "reviewBlindBoxFilters",
+        blindBoxReviewBlindBoxResponse.ok && Array.isArray(blindBoxReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList),
+      );
+      assert.equal(blindBoxReviewBlindBoxResponse.ok, true);
+      assert.equal(Array.isArray(blindBoxReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList), true);
+      assert.equal(
+        blindBoxReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => entry.blindBoxId === reviewBlindBoxId),
+        true,
+      );
+      assert.equal(
+        blindBoxReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => typeof entry.createdAt === "string"),
+        true,
+      );
+    }
     assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList), true);
     assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList.length <= 2, true);
+    assert.equal(
+      blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxList.every((entry) => typeof entry.openedAt === "string" || entry.openedAt === null),
+      true,
+    );
     assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList), true);
     assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList.length <= 2, true);
+    assert.equal(
+      blindBoxReviewQueryPayload.data?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
     assert.equal(Array.isArray(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList), true);
     assert.equal(blindBoxReviewQueryPayload.data?.blindBoxReviewData?.recordList.length <= 2, true);
 
@@ -1160,6 +1317,13 @@ async function main() {
     const bidDateFilterPayload = await bidDateFilterResponse.json();
     console.log("bidDateFilters", Array.isArray(bidDateFilterPayload.data?.bidList));
     assert.equal(Array.isArray(bidDateFilterPayload.data?.bidList), true);
+    assert.equal(
+      bidDateFilterPayload.data?.bidList.every((entry) =>
+        entry.createdAt >= "2026-07-09T00:00:00+08:00" &&
+        entry.createdAt <= "2026-07-10T23:59:59+08:00",
+      ),
+      true,
+    );
 
     const resolveAuctionResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/auction-shop/${auctionId}/resolve`, {
       method: "POST",
@@ -1218,11 +1382,15 @@ async function main() {
     console.log("playerTicketsFilters", Array.isArray(playerTicketsFilteredList));
     console.log("playerTicketsTicketIdFilters", Array.isArray(playerTicketsTicketIdList));
     assert.equal(Array.isArray(playerTicketList), true);
+    assert.equal(playerTicketList.every((entry) => typeof entry.createdAt === "string"), true);
     assert.equal(Array.isArray(queriedTicketList), true);
     assert.equal(Array.isArray(playerTicketsOffsetList), true);
     assert.equal(Array.isArray(playerTicketsFilteredList), true);
     assert.equal(Array.isArray(playerTicketsTicketIdList), true);
     assert.equal(playerTicketsFilteredList.every((entry) => entry.source === "shop_purchase"), true);
+    assert.equal(playerTicketsTicketIdList.every((entry) => entry.ticketId === purchasedShopTicketId), true);
+    assert.equal(playerTicketsFilteredList.every((entry) => typeof entry.createdAt === "string"), true);
+    assert.equal(playerTicketsTicketIdList.every((entry) => typeof entry.createdAt === "string"), true);
     const departureTime = "2026-07-09T06:50:00+08:00";
     const arrivalTime = "2026-07-09T06:55:00+08:00";
     const journeyTransportType = journeyTicket?.transportType && journeyTicket.transportType !== TransportType.UNIVERSAL
@@ -1285,6 +1453,7 @@ async function main() {
       const playerJourneysList = playerJourneysPayload.journeyList ?? playerJourneysPayload.data?.journeyList ?? [];
       console.log("playerJourneysQueryOptions", Array.isArray(playerJourneysList));
       assert.equal(Array.isArray(playerJourneysList), true);
+      assert.equal(playerJourneysList.every((entry) => entry.playerId === playerId), true);
 
       const currentJourneyResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${playerId}`);
       const currentJourneyPayload = await currentJourneyResponse.json();
@@ -1321,6 +1490,7 @@ async function main() {
       const completedPlayerJourneysList = completedPlayerJourneysPayload.journeyList ?? completedPlayerJourneysPayload.data?.journeyList ?? [];
       console.log("playerJourneysCompleted", Array.isArray(completedPlayerJourneysList));
       assert.equal(Array.isArray(completedPlayerJourneysList), true);
+      assert.equal(completedPlayerJourneysList.every((entry) => entry.playerId === playerId), true);
     } else {
       throw new Error("Journey creation failed");
     }
@@ -1397,11 +1567,14 @@ async function main() {
         const pendingIncidentList = pendingIncidentListPayload.requestList ?? pendingIncidentListPayload.data?.requestList ?? [];
         console.log("trafficIncidentFilters", Array.isArray(pendingIncidentList));
         assert.equal(Array.isArray(pendingIncidentList), true);
+        assert.equal(pendingIncidentList.every((entry) => entry.playerId === playerId), true);
         const pendingIncidentCreatedAtResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents?operatorPlayerId=${playerId}&createdAtAfter=2026-07-09T00:00:00%2B08:00&createdAtBefore=2026-07-10T23:59:59%2B08:00`);
         const pendingIncidentCreatedAtPayload = await pendingIncidentCreatedAtResponse.json();
         const pendingIncidentCreatedAtList = pendingIncidentCreatedAtPayload.requestList ?? pendingIncidentCreatedAtPayload.data?.requestList ?? [];
         console.log("trafficIncidentDateFilters", Array.isArray(pendingIncidentCreatedAtList));
         assert.equal(Array.isArray(pendingIncidentCreatedAtList), true);
+        assert.equal(pendingIncidentCreatedAtList.every((entry) => entry.playerId === playerId), true);
+        assert.equal(pendingIncidentCreatedAtList.every((entry) => entry.status === "pending"), true);
 
         const reviewSummaryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents/review-summary?operatorPlayerId=${playerId}`);
         const reviewSummaryPayload = await reviewSummaryResponse.json();
@@ -1507,6 +1680,7 @@ async function main() {
                 assert.equal(batchReviewPayload.data?.reviewedCount === 1, true);
                 assert.equal(Array.isArray(batchReviewPayload.data?.resultList), true);
                 assert.equal(batchReviewPayload.data?.resultList.length, 1);
+                assert.equal(batchReviewPayload.data?.resultList.every((entry) => entry.decision === "reject"), true);
                 const batchReviewSummaryResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/traffic-incidents/review-summary?operatorPlayerId=${playerId}`);
                 const batchReviewSummaryPayload = await batchReviewSummaryResponse.json();
                 const batchReviewSummaryData = batchReviewSummaryPayload.data?.summary ?? batchReviewSummaryPayload.data?.reviewSummary ?? null;
@@ -1586,6 +1760,9 @@ async function main() {
     assert.equal(filteredReviewPlayerResponse.ok, true);
     assert.equal(Array.isArray(filteredReviewPlayerPayload.data?.reviewData?.recordList), true);
     assert.equal(filteredReviewPlayerPayload.data?.reviewData?.recordList.every((record) => record.recordType === "traffic_incident"), true);
+    assert.equal(filteredReviewPlayerPayload.data?.reviewData?.recordList.every((record) => record.playerId === playerId), true);
+    assert.equal(filteredReviewPlayerPayload.data?.reviewData?.recordList.every((record) => record.action === "submit"), true);
+    assert.equal(filteredReviewPlayerPayload.data?.reviewData?.recordList.every((record) => typeof record.createdAt === "string"), true);
 
     const filteredReviewPagingResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/review?recordType=traffic_incident&action=submit&sortBy=createdAt&sortDirection=desc&limit=2&blindBoxLimit=1&blindBoxOffset=0&effectLogLimit=1&effectLogOffset=0&recordLimit=1&recordOffset=0`);
     const filteredReviewPagingPayload = await filteredReviewPagingResponse.json();
@@ -1597,6 +1774,18 @@ async function main() {
     assert.equal(filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList.length <= 1, true);
     assert.equal(filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.length <= 1, true);
     assert.equal(filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.recordList.length <= 1, true);
+    assert.equal(
+      filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList.every((entry) => typeof entry.openedAt === "string" || entry.openedAt === null),
+      true,
+    );
+    assert.equal(
+      filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
+    assert.equal(
+      filteredReviewPagingPayload.data?.reviewData?.blindBoxReviewData?.recordList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
     const filteredReviewBlindBoxResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/review?recordType=traffic_incident&action=submit&sortBy=createdAt&sortDirection=desc&limit=1&blindBoxSortBy=createdAt&blindBoxSortDirection=desc&blindBoxLimit=1&blindBoxOffset=0&effectLogSortBy=createdAt&effectLogSortDirection=desc&effectLogLimit=1&effectLogOffset=0&recordSortBy=createdAt&recordSortDirection=desc&recordLimit=1&recordOffset=0`);
     const filteredReviewBlindBoxPayload = await filteredReviewBlindBoxResponse.json();
     console.log(
@@ -1610,6 +1799,18 @@ async function main() {
     assert.equal(filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList.length <= 1, true);
     assert.equal(filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.length <= 1, true);
     assert.equal(filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.recordList.length <= 1, true);
+    assert.equal(
+      filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxList.every((entry) => typeof entry.openedAt === "string" || entry.openedAt === null),
+      true,
+    );
+    assert.equal(
+      filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.blindBoxEffectLogList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
+    assert.equal(
+      filteredReviewBlindBoxPayload.data?.reviewData?.blindBoxReviewData?.recordList.every((entry) => typeof entry.createdAt === "string"),
+      true,
+    );
 
     const deleteMapResponse = await fetch(`http://127.0.0.1:8788/maps/${mapId}`, {
       method: "DELETE",

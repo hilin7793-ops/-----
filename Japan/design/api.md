@@ -334,7 +334,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "displayName": "Updated Player",
   "avatar": "avatar.png",
   "metadata": {
@@ -384,7 +383,6 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `targetPlayerId`，可選，用於判定是否可視為 self access
 
 回應包含：
@@ -450,7 +448,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "settings": {
     "someFlag": true
   }
@@ -465,8 +462,7 @@ Request body:
 
 ```json
 {
-  "startTime": "2026-07-09T06:00:00+08:00",
-  "operatorPlayerId": "PLAYER_ID"
+  "startTime": "2026-07-09T06:00:00+08:00"
 }
 ```
 
@@ -478,8 +474,7 @@ Request body:
 
 ```json
 {
-  "endedAt": "2026-07-09T09:00:00+08:00",
-  "operatorPlayerId": "PLAYER_ID"
+  "endedAt": "2026-07-09T09:00:00+08:00"
 }
 ```
 
@@ -491,8 +486,7 @@ Request body:
 
 ```json
 {
-  "currentTime": "2026-07-09T07:00:00+08:00",
-  "operatorPlayerId": "PLAYER_ID"
+  "currentTime": "2026-07-09T07:00:00+08:00"
 }
 ```
 
@@ -601,7 +595,6 @@ Query:
 Query:
 
 - `currentTime`，可選，用於判定目前是否已達旅程／拍賣處理時點
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 
 回應包含：
 
@@ -629,8 +622,7 @@ Request body:
 
 ```json
 {
-  "currentTime": "2026-07-09T07:00:00+08:00",
-  "operatorPlayerId": "PLAYER_ID"
+  "currentTime": "2026-07-09T07:00:00+08:00"
 }
 ```
 
@@ -648,7 +640,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "cancelledBy": "PLAYER_ID",
   "journeyIdList": ["JOURNEY_ID_1", "JOURNEY_ID_2"],
   "reason": "host_batch_cleanup"
@@ -666,7 +657,6 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 
 回應包含：
@@ -685,7 +675,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
@@ -703,7 +692,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
@@ -722,7 +710,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `currentTime`，可選，用於判定哪些旅程已到啟動或完成處理時點
 
 回應包含：
@@ -738,7 +725,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `playerId`，可選
 - `status`，可選
 - `transportType`，可選
@@ -755,7 +741,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "lockedBy": "PLAYER_ID",
   "journeyIdList": ["JOURNEY_ID_1", "JOURNEY_ID_2"],
   "reason": "host_review_lock"
@@ -775,7 +760,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "unlockedBy": "PLAYER_ID",
   "journeyIdList": ["JOURNEY_ID_1", "JOURNEY_ID_2"],
   "reason": "host_review_unlock"
@@ -797,8 +781,6 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
-
 ### `GET /games/:gameId/players/:playerId/records`
 
 用途：取得玩家紀錄。
@@ -806,7 +788,6 @@ Query:
 Query:
 
 - `visibilityMode`，預設 `during_game`
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -842,7 +823,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -854,7 +834,6 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1024,7 +1003,6 @@ Request body:
 {
   "gameId": "GAME_ID",
   "playerId": "PLAYER_ID",
-  "operatorPlayerId": "PLAYER_ID",
   "fromLocationId": "LOCATION_ID",
   "toLocationId": "LOCATION_ID",
   "transportType": "local_train",
@@ -1040,25 +1018,25 @@ Request body:
 
 用途：手動啟動旅程。
 
-Request body 可暫時保留 `operatorPlayerId` 作為 legacy 相容欄位。
+Request body 目前只保留正式欄位。
 
 ### `POST /journeys/:journeyId/complete`
 
 用途：手動完成旅程。
 
-Request body 可暫時保留 `operatorPlayerId` 作為 legacy 相容欄位。
+Request body 目前只保留正式欄位。
 
 ### `POST /journeys/:journeyId/cancel`
 
 用途：取消旅程。
 
-Request body 可暫時保留 `operatorPlayerId` 作為 legacy 相容欄位。
+Request body 目前只保留正式欄位。
 
 ### `PATCH /journeys/:journeyId`
 
 用途：更新旅程。
 
-Request body 可暫時保留 `operatorPlayerId` 作為 legacy 相容欄位。
+Request body 目前只保留正式欄位。
 
 ### `GET /journeys/:journeyId`
 
@@ -1070,7 +1048,6 @@ Request body 可暫時保留 `operatorPlayerId` 作為 legacy 相容欄位。
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `sortBy`，可選
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選
@@ -1082,15 +1059,11 @@ Query:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
-
 ### `GET /games/:gameId/players/:playerId/journeys/reserved`
 
 用途：取得玩家保留中的旅程。
 
 Query:
-
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 
 ## Traffic Incidents
 
@@ -1099,8 +1072,6 @@ Query:
 用途：列出指定遊戲的交通中斷申請。
 
 Query:
-
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `playerId`
 - `journeyId`
 - `status`
@@ -1125,7 +1096,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "requestIdList": ["REQUEST_ID_1", "REQUEST_ID_2"],
   "decision": "approve",
   "reviewerId": "admin",
@@ -1140,8 +1110,6 @@ Request body:
 
 Query:
 
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
-
 ### `POST /traffic-incidents/:requestId/approve`
 
 用途：核准交通中斷申請。
@@ -1150,7 +1118,6 @@ Request body 需包含：
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "reviewerId": "admin",
   "reviewNote": "approved"
 }
@@ -1164,7 +1131,6 @@ Request body 需包含：
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "reviewerId": "admin",
   "rejectReason": "not enough evidence"
 }
@@ -1220,7 +1186,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "deletedBy": "PLAYER_ID",
   "blindBoxIdList": ["BLIND_BOX_ID_1", "BLIND_BOX_ID_2"]
 }
@@ -1234,7 +1199,6 @@ Request body:
 
 ```json
 {
-  "operatorPlayerId": "PLAYER_ID",
   "updatedBy": "PLAYER_ID",
   "blindBoxUpdateList": [
     {
@@ -1318,8 +1282,6 @@ Query:
 用途：取得賽後盲盒審查資料。
 
 Query:
-
-- `operatorPlayerId`，可選，僅作 legacy 相容輸入
 - `sortBy`，可選，作為三組 review 列表的共同預設排序
 - `sortDirection`，可選，`asc` 或 `desc`
 - `limit`，可選

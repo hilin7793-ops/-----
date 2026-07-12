@@ -214,12 +214,15 @@ async function main() {
   assert.equal(disabledOperatorFallbackAccess.isAuthenticated, false);
   assert.equal(disabledOperatorFallbackAccess.usedOperatorFallback, false);
   assert.equal(disabledOperatorFallbackAccess.isJoinedGame, false);
+  assert.equal(disabledOperatorFallbackAccess.canObserveGame, false);
+  assert.equal(disabledOperatorFallbackAccess.canReviewGame, false);
   assert.equal(strictFallbackAccess.isAuthenticated, false);
   assert.equal(strictFallbackAccess.usedOperatorFallback, false);
   assert.equal(strictFallbackAccess.isJoinedGame, false);
   assert.equal(productionFallbackAccess.isAuthenticated, false);
   assert.equal(productionFallbackAccess.usedOperatorFallback, false);
   assert.equal(productionFallbackAccess.isJoinedGame, false);
+  assert.equal(productionFallbackAccess.authSource, "test");
 
   await assert.rejects(
     () => assertGameHostAccess({

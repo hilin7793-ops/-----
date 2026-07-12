@@ -57,6 +57,17 @@ async function run() {
     body: { operatorPlayerId: authPlayer.id },
   });
 
+  process.env.JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK = "1";
+  process.env.JAPAN_DISABLE_DEV_AUTH_USER_FALLBACK = "1";
+  process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
+  process.env.JAPAN_DISABLE_OPERATOR_FALLBACK = "1";
+  delete process.env.JAPAN_AUTH_STRICT;
+  const disabledFallbackContext = await resolveRequestAuthContext({
+    request: { headers: { "x-auth-user-id": "auth-unit-auth-player" } },
+    dataAccessLayer,
+    body: { operatorPlayerId: authPlayer.id },
+  });
+
   process.env.JAPAN_AUTH_STRICT = "1";
   process.env.JAPAN_ENABLE_OPERATOR_FALLBACK = "1";
   delete process.env.JAPAN_DISABLE_OPERATOR_FALLBACK;
@@ -135,6 +146,16 @@ async function run() {
   assert.equal(operatorFallbackContext.operatorFallbackEnabled, true);
   assert.equal(operatorFallbackContext.authPolicy.strict, false);
   assert.equal(operatorFallbackContext.authPolicy.operatorFallbackEnabled, true);
+
+  assert.equal(disabledFallbackContext.authVerified, false);
+  assert.equal(disabledFallbackContext.playerId, null);
+  assert.equal(disabledFallbackContext.authMode, "anonymous");
+  assert.equal(disabledFallbackContext.usedOperatorFallback, false);
+  assert.equal(disabledFallbackContext.operatorFallbackEnabled, false);
+  assert.equal(disabledFallbackContext.devAuthUserFallbackEnabled, false);
+  assert.equal(disabledFallbackContext.authPolicy.strict, false);
+  assert.equal(disabledFallbackContext.authPolicy.operatorFallbackEnabled, false);
+  assert.equal(disabledFallbackContext.authPolicy.devAuthUserFallbackEnabled, false);
 
   assert.equal(strictContext.authVerified, false);
   assert.equal(strictContext.playerId, null);

@@ -709,6 +709,13 @@
               <div class="mini-item"><span>Operator Fallback</span><span id="auth-policy-operator">未載入</span></div>
               <div class="mini-item"><span>Dev Auth Fallback</span><span id="auth-policy-dev">未載入</span></div>
             </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <input id="auth-bearer-token" type="password" placeholder="Bearer Token">
+            </div>
+            <div class="api-form" style="margin-top: 12px;">
+              <button type="button" onclick="saveBearerTokenFromConsole()">儲存 Token</button>
+              <button type="button" onclick="clearBearerTokenFromConsole()">清除 Token</button>
+            </div>
             <div class="mini-list" id="product-flow-guide" style="margin-top: 16px;">
               <div class="mini-item"><span>產品流程</span><span id="product-flow-summary">未載入</span></div>
               <div class="mini-item"><span>下一步</span><span id="product-flow-next">未載入</span></div>
@@ -999,6 +1006,7 @@
   <script>
     const state = {
       authSession: null,
+      authToken: "",
       accessProfile: null,
       managementSnapshot: null,
       currentAuctionId: null,
@@ -1015,6 +1023,64 @@
 
     function saveFullTourPreviewFormat(format) {
       localStorage.setItem("japan.fullTourPreviewFormat", format === "json" ? "json" : "markdown");
+    }
+
+    const savedBearerToken = getSavedBearerToken();
+    if (savedBearerToken) {
+      state.authToken = savedBearerToken;
+    }
+
+    function getSavedBearerToken() {
+      return localStorage.getItem("japan.bearerToken") ?? "";
+    }
+
+    function saveBearerToken(token) {
+      const normalizedToken = token.trim();
+      state.authToken = normalizedToken;
+      if (normalizedToken) {
+        localStorage.setItem("japan.bearerToken", normalizedToken);
+      } else {
+        localStorage.removeItem("japan.bearerToken");
+      }
+      const input = document.getElementById("auth-bearer-token");
+      if (input) {
+        input.value = normalizedToken;
+      }
+    }
+
+    function saveBearerTokenFromConsole() {
+      const token = document.getElementById("auth-bearer-token")?.value ?? "";
+      saveBearerToken(token);
+      updateSidebarStatus();
+    }
+
+    function clearBearerTokenFromConsole() {
+      saveBearerToken("");
+      updateSidebarStatus();
+    }
+
+    function getAuthHeaders(extraHeaders = {}) {
+      const headers = {
+        ...extraHeaders,
+      };
+      if (state.authToken) {
+        headers.Authorization = `Bearer ${state.authToken}`;
+      }
+      return headers;
+    }
+
+    function getLegacyOperatorQuery(playerId) {
+      return "";
+    }
+
+    function mergeQueryWithLegacyOperator(basePath, playerId, queryString = "") {
+      const legacyQuery = getLegacyOperatorQuery(playerId);
+      const parts = [legacyQuery, queryString].filter(Boolean);
+      return parts.length ? `${basePath}?${parts.join("&")}` : basePath;
+    }
+
+    function withLegacyOperatorBody(body, playerId) {
+      return body;
     }
 
     function setVisibilityPreviewSummary({ publicRecordsText = null, playerRecordsText = null } = {}) {
@@ -1514,7 +1580,11 @@
     }
 
     async function fetchJson(path, options = {}) {
-      const response = await fetch(`${getBaseUrl()}${path}`, options);
+      const headers = getAuthHeaders(options.headers ?? {});
+      const response = await fetch(`${getBaseUrl()}${path}`, {
+        ...options,
+        headers,
+      });
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.message ?? `Request failed: ${response.status}`);
@@ -1526,6 +1596,12 @@
       try {
         const payload = await fetchJson("/auth/session");
         state.authSession = payload.data ?? null;
+        if (!state.authToken) {
+          const savedToken = getSavedBearerToken();
+          if (savedToken) {
+            saveBearerToken(savedToken);
+          }
+        }
         updatePill("auth-status", state.authSession?.authMode ?? "unknown");
         document.getElementById("admin-entry").textContent = state.authSession?.authVerified ? "Auth OK" : "Auth";
         document.getElementById("visibility-status").textContent = state.authSession?.authVerified ? "已驗證" : "待驗證";
@@ -1537,6 +1613,7 @@
         document.getElementById("auth-policy-production-safe").textContent = state.authSession?.authPolicy?.productionSafe ? "Y" : "N";
         document.getElementById("auth-policy-operator").textContent = state.authSession?.authPolicy?.operatorFallbackEnabled ? "Y" : "N";
         document.getElementById("auth-policy-dev").textContent = state.authSession?.authPolicy?.devAuthUserFallbackEnabled ? "Y" : "N";
+        document.getElementById("auth-bearer-token").value = state.authToken || getSavedBearerToken();
         document.getElementById("visibility-summary").textContent = state.authSession?.authUserId
           ? `登入使用者：${state.authSession.authUserId}`
           : "未取得登入使用者";
@@ -1796,7 +1873,7 @@
       const playerId = getPlayerId();
       try {
         const payload = await postManagementAction("/start", "games/start", {
-          operatorPlayerId: playerId || null,
+          ...withLegacyOperatorBody({}, playerId),
         });
         if (!payload) {
           return;
@@ -1824,7 +1901,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             endedAt,
-            operatorPlayerId: playerId || null,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "games/end", payload });
@@ -1965,9 +2042,9 @@
             ticketIdList,
             departureTime,
             arrivalTime,
-            metadata,
-            currentTime: new Date().toISOString(),
-            operatorPlayerId: playerId,
+          metadata,
+          currentTime: new Date().toISOString(),
+          ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "journeys/update", payload });
@@ -2013,7 +2090,7 @@
             arrivalTime,
             metadata,
             currentTime: new Date().toISOString(),
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "journeys/create", payload });
@@ -2045,7 +2122,7 @@
             journeyId,
             reason,
             currentTime: new Date().toISOString(),
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "journeys/cancel", payload });
@@ -2074,7 +2151,7 @@
             playerId,
             journeyId,
             currentTime: new Date().toISOString(),
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "journeys/start", payload });
@@ -2103,7 +2180,7 @@
             playerId,
             journeyId,
             currentTime: new Date().toISOString(),
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         setOutput({ type: "journeys/complete", payload });
@@ -2363,7 +2440,7 @@
           body: JSON.stringify({
             reviewerId,
             reviewNote,
-            operatorPlayerId: reviewerId,
+            ...withLegacyOperatorBody({}, reviewerId),
           }),
         });
         document.getElementById("admin-status").textContent = "Traffic Approved";
@@ -2395,7 +2472,7 @@
           body: JSON.stringify({
             reviewerId,
             rejectReason,
-            operatorPlayerId: reviewerId,
+            ...withLegacyOperatorBody({}, reviewerId),
           }),
         });
         document.getElementById("admin-status").textContent = "Traffic Rejected";
@@ -2699,7 +2776,7 @@
             currentTime: new Date().toISOString(),
             playerId,
             shopItemId,
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         document.getElementById("shop-status").textContent = "Shop Purchased";
@@ -2740,7 +2817,7 @@
             playerCount,
             mapId,
             availableTransportTypes: [],
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         document.getElementById("shop-status").textContent = "Shop Refreshed";
@@ -2773,7 +2850,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mapId,
-            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+            ...withLegacyOperatorBody({}, document.getElementById("player-id")?.value.trim() || null),
           }),
         });
         document.getElementById("shop-status").textContent = "Shop Initialized";
@@ -2871,7 +2948,7 @@
           body: JSON.stringify({
             currentTime: new Date().toISOString(),
             mapId,
-            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+            ...withLegacyOperatorBody({}, document.getElementById("player-id")?.value.trim() || null),
           }),
         });
         document.getElementById("shop-status").textContent = "Auction Initialized";
@@ -2942,7 +3019,7 @@
             startTime,
             endTime,
             availableTransportTypes,
-            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+            ...withLegacyOperatorBody({}, document.getElementById("player-id")?.value.trim() || null),
           }),
         });
         document.getElementById("shop-status").textContent = "Auction Round Created";
@@ -2976,7 +3053,7 @@
           },
           body: JSON.stringify({
             currentTime: new Date().toISOString(),
-            operatorPlayerId: document.getElementById("player-id")?.value.trim() || null,
+            ...withLegacyOperatorBody({}, document.getElementById("player-id")?.value.trim() || null),
           }),
         });
         document.getElementById("shop-status").textContent = "Auction Resolved";
@@ -3018,7 +3095,7 @@
             currentTime: new Date().toISOString(),
             playerId,
             bidAmount,
-            operatorPlayerId: playerId,
+            ...withLegacyOperatorBody({}, playerId),
           }),
         });
         document.getElementById("shop-status").textContent = "Bid Sent";
@@ -3145,12 +3222,14 @@
         if (arrivalBefore) query.set("arrivalBefore", arrivalBefore);
         if (limit) query.set("limit", limit);
         if (offset) query.set("offset", offset);
+        const legacyQuery = getLegacyOperatorQuery(playerId);
+        const baseJourneyPath = mergeQueryWithLegacyOperator(`/games/${gameId}/players/${playerId}/journeys`, playerId, query.toString());
         const [journeyPayload, currentJourneyPayload, reservedJourneyPayload, ticketPayload, specialStatePayload] = await Promise.all([
-          fetchJson(`/games/${gameId}/players/${playerId}/journeys?operatorPlayerId=${encodeURIComponent(playerId)}${query.toString() ? `&${query.toString()}` : ""}`),
-          fetchJson(`/games/${gameId}/players/${playerId}/journeys/current?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
-          fetchJson(`/games/${gameId}/players/${playerId}/journeys/reserved?operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
-          fetchJson(`/games/${gameId}/players/${playerId}/tickets?operatorPlayerId=${encodeURIComponent(playerId)}&sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
-          fetchJson(`/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${encodeURIComponent(playerId)}&sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
+          fetchJson(baseJourneyPath),
+          fetchJson(`/games/${gameId}/players/${playerId}/journeys/current${legacyQuery ? `?${legacyQuery}` : ""}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/journeys/reserved${legacyQuery ? `?${legacyQuery}` : ""}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/tickets${legacyQuery ? `?${legacyQuery}&` : "?"}sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/special-states${legacyQuery ? `?${legacyQuery}&` : "?"}sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
         ]);
         const [journeyDashboardPayload, journeySummaryPayload] = await Promise.all([
           fetchJson(`/games/${gameId}/journeys/dashboard?currentTime=${encodeURIComponent(new Date().toISOString())}`).catch((error) => ({ error: error.message })),
@@ -3256,9 +3335,10 @@
         const specialStateType = document.getElementById("special-states-type")?.value.trim();
         const specialStateAfter = document.getElementById("special-states-after")?.value.trim();
         const specialStateBefore = document.getElementById("special-states-before")?.value.trim();
+        const legacyQuery = getLegacyOperatorQuery(playerId);
         const [ticketPayload, specialStatePayload] = await Promise.all([
-          fetchJson(`/games/${gameId}/players/${playerId}/tickets?operatorPlayerId=${encodeURIComponent(playerId)}${ticketSource ? `&source=${encodeURIComponent(ticketSource)}` : ""}${ticketAfter ? `&createdAtAfter=${encodeURIComponent(ticketAfter)}` : ""}${ticketBefore ? `&createdAtBefore=${encodeURIComponent(ticketBefore)}` : ""}&sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
-          fetchJson(`/games/${gameId}/players/${playerId}/special-states?operatorPlayerId=${encodeURIComponent(playerId)}${specialStateType ? `&stateType=${encodeURIComponent(specialStateType)}` : ""}${specialStateAfter ? `&createdAtAfter=${encodeURIComponent(specialStateAfter)}` : ""}${specialStateBefore ? `&createdAtBefore=${encodeURIComponent(specialStateBefore)}` : ""}&sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/tickets${legacyQuery ? `?${legacyQuery}&` : "?"}${ticketSource ? `source=${encodeURIComponent(ticketSource)}&` : ""}${ticketAfter ? `createdAtAfter=${encodeURIComponent(ticketAfter)}&` : ""}${ticketBefore ? `createdAtBefore=${encodeURIComponent(ticketBefore)}&` : ""}sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/players/${playerId}/special-states${legacyQuery ? `?${legacyQuery}&` : "?"}${specialStateType ? `stateType=${encodeURIComponent(specialStateType)}&` : ""}${specialStateAfter ? `createdAtAfter=${encodeURIComponent(specialStateAfter)}&` : ""}${specialStateBefore ? `createdAtBefore=${encodeURIComponent(specialStateBefore)}&` : ""}sortBy=createdAt&sortDirection=desc&limit=5`).catch((error) => ({ error: error.message })),
         ]);
         const ticketList = ticketPayload.data?.ticketList ?? [];
         const specialStateList = specialStatePayload.data?.specialStateList ?? [];
@@ -3303,9 +3383,10 @@
       }
 
       try {
+        const legacyQuery = getLegacyOperatorQuery(playerId);
         const [publicJourneyPayload, reviewPayload, publicBlindBoxPayload] = await Promise.all([
           fetchJson(`/games/${gameId}/players/${playerId}/public-journey?requestingPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
-          fetchJson(`/games/${gameId}/review?visibilityMode=post_game_review&operatorPlayerId=${encodeURIComponent(playerId)}`).catch((error) => ({ error: error.message })),
+          fetchJson(`/games/${gameId}/review?visibilityMode=post_game_review${legacyQuery ? `&${legacyQuery}` : ""}`).catch((error) => ({ error: error.message })),
           fetchJson(`/games/${gameId}/blind-boxes/public?requestingPlayerId=${encodeURIComponent(playerId)}&sortBy=openedAt&sortDirection=desc&limit=2&offset=0`).catch((error) => ({ error: error.message })),
         ]);
 
@@ -3409,15 +3490,15 @@
           limit,
           offset,
           recordType,
-          operatorPlayerId: playerId,
         });
+        const legacyQuery = getLegacyOperatorQuery(playerId);
         if (createdAtAfter) {
           query.set("createdAtAfter", createdAtAfter);
         }
         if (createdAtBefore) {
           query.set("createdAtBefore", createdAtBefore);
         }
-        const payload = await fetchJson(`/games/${gameId}/players/${playerId}/records?${query.toString()}`).catch((error) => ({ error: error.message }));
+        const payload = await fetchJson(`/games/${gameId}/players/${playerId}/records${legacyQuery ? `?${legacyQuery}&` : "?"}${query.toString()}`).catch((error) => ({ error: error.message }));
         const recordList = payload.data?.recordList ?? [];
         document.getElementById("overview-review-count").textContent = String(recordList.length);
         document.getElementById("player-records-preview").textContent = recordList.length
@@ -3525,7 +3606,6 @@
         const locationId = document.getElementById("blindbox-review-location-id")?.value.trim();
         const actionType = document.getElementById("blindbox-review-action-type")?.value.trim();
         const query = new URLSearchParams({
-          operatorPlayerId: playerId,
           blindBoxLimit,
           blindBoxOffset,
           effectLogLimit,
@@ -3533,13 +3613,14 @@
           recordLimit,
           recordOffset,
         });
+        const legacyQuery = getLegacyOperatorQuery(playerId);
         if (locationId) {
           query.set("locationId", locationId);
         }
         if (actionType) {
           query.set("actionType", actionType);
         }
-        const payload = await fetchJson(`/games/${gameId}/blind-boxes/review?${query.toString()}`);
+        const payload = await fetchJson(`/games/${gameId}/blind-boxes/review${legacyQuery ? `?${legacyQuery}&` : "?"}${query.toString()}`);
         const blindBoxReviewData = payload.data?.blindBoxReviewData ?? null;
         const blindBoxList = blindBoxReviewData?.blindBoxList ?? [];
         const blindBoxEffectLogList = blindBoxReviewData?.blindBoxEffectLogList ?? [];

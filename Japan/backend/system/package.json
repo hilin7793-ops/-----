@@ -12,9 +12,12 @@
     "smoke:test:rules": "node ./scripts/service-rules-smoke-test.js",
     "smoke:test:unit": "node ./scripts/unit-smoke-test.js",
     "smoke:test:frontend": "node ./scripts/frontend-smoke-test.js",
+    "smoke:test:design": "node ./scripts/design-smoke-test.js",
     "smoke:test:full": "node ./scripts/smoke-full-test.js",
+    "smoke:test:ci": "node ./scripts/smoke-full-test.js",
     "smoke:test:pocketbase": "node ./scripts/pocketbase-adapter-smoke-test.js",
     "smoke:test:pocketbase:flow": "node ./scripts/pocketbase-flow-smoke-test.js",
-    "smoke:test:pocketbase:auth": "node ./scripts/pocketbase-auth-smoke-test.js"
+    "smoke:test:pocketbase:auth": "node ./scripts/pocketbase-auth-smoke-test.js",
+    "smoke:test:pocketbase:full": "node ./scripts/pocketbase-adapter-smoke-test.js && node ./scripts/pocketbase-auth-smoke-test.js && node ./scripts/pocketbase-flow-smoke-test.js"
   }
 }
