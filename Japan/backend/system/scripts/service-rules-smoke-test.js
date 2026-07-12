@@ -122,6 +122,7 @@ import {
   submitTrafficIncidentRequest,
   approveTrafficIncidentRequest,
   calculateReturnedTicketTime,
+  validateTrafficIncidentRequest,
 } from "../src/services/trafficIncidents/trafficIncidentService.js";
 import { canViewPlayerExactLocation, canViewPlayerFullRoute, filterPlayerDataByVisibility, filterRecordDataByVisibility } from "../src/services/visibility/visibilityService.js";
 import { filterBlindBoxDataByVisibility, getPublicJourneyInfo } from "../src/services/visibility/visibilityService.js";
@@ -1551,6 +1552,10 @@ async function main() {
     managementSnapshot.managementSnapshot.journeyActionQueue.actionQueueCount,
   );
   assert.equal(
+    managementSnapshot.managementSnapshot.summary.journeyActionTypeCounts,
+    managementSnapshot.managementSnapshot.journeyActionQueue.suggestedActionCounts,
+  );
+  assert.equal(
     managementSnapshot.managementSnapshot.overview.summary.playerCount,
     managementSnapshot.managementSnapshot.summary.playerCount,
   );
@@ -1861,6 +1866,89 @@ async function main() {
     },
   });
 
+  const trafficIncidentValidationValid = await validateTrafficIncidentRequest({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: incidentJourneyData.id,
+    evidenceList: ["delay photo"],
+    actualEndLocationId: startLocation.id,
+    actualEndedAt: "2026-07-10T10:20:00+08:00",
+  });
+  const trafficIncidentValidationNoEvidence = await validateTrafficIncidentRequest({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: incidentJourneyData.id,
+    evidenceList: [],
+    actualEndLocationId: startLocation.id,
+    actualEndedAt: "2026-07-10T10:20:00+08:00",
+  });
+  const trafficIncidentValidationSameDestination = await validateTrafficIncidentRequest({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: incidentJourneyData.id,
+    evidenceList: ["delay photo"],
+    actualEndLocationId: goalLocation.id,
+    actualEndedAt: "2026-07-10T10:20:00+08:00",
+  });
+  const trafficIncidentValidationLateEnd = await validateTrafficIncidentRequest({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: incidentJourneyData.id,
+    evidenceList: ["delay photo"],
+    actualEndLocationId: startLocation.id,
+    actualEndedAt: "2026-07-10T10:30:00+08:00",
+  });
+  assert.equal(trafficIncidentValidationValid.isValid, true);
+  assert.equal(trafficIncidentValidationNoEvidence.isValid, false);
+  assert.equal(trafficIncidentValidationSameDestination.isValid, false);
+  assert.equal(trafficIncidentValidationLateEnd.isValid, false);
+  assert.equal(trafficIncidentValidationNoEvidence.reason, "At least one evidence entry is required");
+  assert.equal(trafficIncidentValidationSameDestination.reason, "Actual end location must differ from original destination");
+  assert.equal(trafficIncidentValidationLateEnd.reason, "Traffic incident request only applies to shortened journeys");
+
+  const duplicateIncidentJourneyData = await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.JOURNEYS,
+    data: {
+      gameId: gameData.id,
+      playerId: memberPlayer.id,
+      fromLocationId: startLocation.id,
+      toLocationId: goalLocation.id,
+      departureTime: "2026-07-10T10:40:00+08:00",
+      arrivalTime: "2026-07-10T10:55:00+08:00",
+      status: "started",
+      transportType: "taxi",
+      ticketIdList: [],
+    },
+  });
+  await dataAccessLayer.createRecordInCollection({
+    collectionName: CollectionName.TRAFFIC_INCIDENT_REQUESTS,
+    data: {
+      gameId: gameData.id,
+      playerId: memberPlayer.id,
+      journeyId: duplicateIncidentJourneyData.id,
+      status: "pending",
+      evidenceList: ["duplicate evidence"],
+      actualEndLocationId: startLocation.id,
+      actualEndedAt: "2026-07-10T10:45:00+08:00",
+      description: "duplicate request smoke",
+    },
+  });
+  const trafficIncidentValidationDuplicate = await validateTrafficIncidentRequest({
+    dataAccessLayer,
+    gameId: gameData.id,
+    playerId: memberPlayer.id,
+    journeyId: duplicateIncidentJourneyData.id,
+    evidenceList: ["duplicate evidence"],
+    actualEndLocationId: startLocation.id,
+    actualEndedAt: "2026-07-10T10:45:00+08:00",
+  });
+  assert.equal(trafficIncidentValidationDuplicate.isValid, false);
+  assert.equal(trafficIncidentValidationDuplicate.reason, "There is already a pending traffic incident request for this journey");
+
   const trafficIncidentRequest = await submitTrafficIncidentRequest({
     dataAccessLayer,
     gameId: gameData.id,
@@ -1908,6 +1996,18 @@ async function main() {
     actualEndTime: "2026-07-10T10:20:00+08:00",
     transportType: "taxi",
   });
+  let returnedTicketTimeInvalidMessage = null;
+  try {
+    await calculateReturnedTicketTime({
+      journeyId: incidentJourneyData.id,
+      originalJourneyData: currentJourneyData,
+      actualEndLocationId: startLocation.id,
+      actualEndTime: currentJourneyData.arrivalTime,
+      transportType: "taxi",
+    });
+  } catch (error) {
+    returnedTicketTimeInvalidMessage = error?.message ?? null;
+  }
   const hasReachedGoalCheck = await hasReachedGoal({
     dataAccessLayer,
     gameId: gameData.id,
@@ -2072,6 +2172,7 @@ async function main() {
   assert.equal(returnedTicketTimeCheck.transportType, "taxi");
   assert.equal(returnedTicketTimeCheck.returnedMinutes, 10);
   assert.equal(returnedTicketTimeCheck.actualEndLocationId, startLocation.id);
+  assert.equal(returnedTicketTimeInvalidMessage, "Returned ticket time must be greater than 0");
   const approvedTrafficIncident = await approveTrafficIncidentRequest({
     dataAccessLayer,
     requestId: trafficIncidentRequest.id,
@@ -4085,7 +4186,10 @@ async function main() {
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.submitCount >= 1, true);
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.approveCount >= 1, true);
   assert.equal(aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.rejectCount >= 1, true);
-  assert.equal(trafficIncidentReviewSummary.reviewSummary.pendingCount, aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.submitCount);
+  assert.equal(
+    trafficIncidentReviewSummary.reviewSummary.pendingCount >= aggregatedGameReviewData.reviewData.summary.trafficIncidentSummary.submitCount,
+    true,
+  );
 
   console.log("journeyTimeCheck", timeCheck.isValid);
   console.log("invalidJourneyTimeCheck", invalidTimeCheck.isValid);

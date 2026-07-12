@@ -9,6 +9,7 @@ const scriptList = [
   "service-rules-smoke-test.js",
   "unit-smoke-test.js",
   "design-smoke-test.js",
+  "pocketbase-adapter-smoke-test.js",
   "pocketbase-auth-smoke-test.js",
   "pocketbase-flow-smoke-test.js",
   "frontend-smoke-test.js",

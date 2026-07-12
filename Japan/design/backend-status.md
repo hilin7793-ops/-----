@@ -27,11 +27,11 @@
 
 ### 0.2 待持續補強
 
-- 真實 PocketBase 與權限主路徑已可運作，production 邊界、fallback 與 disable override 也已補上對應 smoke 驗證，包含關閉 fallback 後回到匿名與不可觀察的邊界，後續主要是持續擴充邊界案例
-- 前端已有單頁控制台、流程導覽與管理巡檢骨架，且已接入 bearer token / `Authorization`、production-safe 顯示、token 儲存 / 清除與管理批次 / 巡檢入口，後續可持續產品化與細化操作流程
-- 自動化 / 持續整合覆蓋已建立基礎，並已有可直接執行的 full smoke / CI 回歸入口，也已補上 production 邊界 smoke、前端 production-safe 驗證與 auth fallback disable override 單元驗證，後續可再加強細粒度 service 測試
+- 真實 PocketBase 與權限主路徑已可運作，production 邊界、fallback 與 disable override 也已補上對應 smoke 驗證，包含關閉 fallback 後回到匿名與不可觀察的邊界，這組收斂已進入穩定驗證狀態
+- 前端已有單頁控制台、流程導覽與管理巡檢骨架，且已接入 bearer token / `Authorization`、production-safe 顯示、token 儲存 / 清除、導覽預覽格式持久化、完整導覽複製 / 下載，以及管理批次 / 巡檢與管理循環入口，主要產品化骨架已到位，現在以流程打磨與體驗優化為主
+- 自動化 / 持續整合覆蓋已建立基礎，並已有可直接執行的 full smoke / CI 回歸入口，也已補上 production 邊界 smoke、前端 production-safe 驗證與 auth fallback disable override 單元驗證，且前端 smoke 也已補到管理健康、壓力拆分與產品流程摘要，現階段重點是維持回歸穩定與擴充資料場景
 - 查詢排序、分頁、進階篩選與管理端批次工具已具備基礎，包含 cancel / lock / unlock / review 與 checklist process 等入口，核心查詢回歸也已持續補強並持續收斂到可驗證狀態
-- 已補 `rules.md` / `function.md` 的設計一致性 smoke 入口，後續仍可持續把更細的規則差異收斂到同一套驗證裡
+- 已補 `rules.md` / `function.md` 的設計一致性 smoke 入口，並已形成可持續回歸的統一驗證線
 
 ## 1. 完成度總覽
 
@@ -289,7 +289,7 @@
 - PocketBase smoke test 已整理出共用前置檢查，缺少憑證時會一致報出環境需求
 - `x-auth-user-id` 需要明確開啟 `JAPAN_ENABLE_DEV_AUTH_USER_FALLBACK=1` 才會使用，`operatorPlayerId` 需要 `JAPAN_ENABLE_OPERATOR_FALLBACK=1` 才會使用，前端已可優先保存 bearer token 作為正式請求路徑
 - `GET /auth/session` 可直接看到 `authMode` / `authPolicy` / `operatorFallbackEnabled` / `devAuthUserFallbackEnabled` / `authStrictEnabled`
-- auth collection 規劃、登入流程與 production 驗證策略已可落地，包含 fallback disable override 的 smoke 也已補上，後續主要是持續收斂與補強
+- auth collection 規劃、登入流程與 production 驗證策略已可落地，包含 fallback disable override 的 smoke 也已補上，整體已進入穩定驗證狀態
 
 ### 3.2 API 文件角色標示
 
@@ -317,7 +317,7 @@
 - 已補 PocketBase 真實環境驗證的主要煙霧測試路徑，包含 adapter、flow、auth、管理端巡檢總覽、交通中斷審核摘要與拍賣出價查詢
 - `pocketbase-auth-smoke-test.js` 已再補 bearer token 對 API route context 的驗證，並補上 `auth/session` 的 production policy 檢查
 - `pocketbase-flow-smoke-test.js` 已再補一般商店優先購買權與拍賣 `A / S` 票生成驗證
-- 後續主要是持續擴充 CI、自動化排程與更廣的真實資料庫覆蓋，但核心真實整合路徑已更完整
+- CI、自動化排程與更廣的真實資料庫覆蓋已進入持續擴充階段，核心真實整合路徑已更完整
 
 ### 3.5 管理端能力
 
@@ -330,13 +330,13 @@
 - 新增 `GET /games/:gameId/traffic-incidents/review-summary`，可快速取得交通中斷批次審核摘要
 - 新增 `GET /games/:gameId/journeys/action-queue/summary`，可快速取得旅程待辦摘要
 - 主持人巡檢與批次管理能力已完成主要落地
-- 後續可持續補更多巡檢、統計與批量操作
+- 巡檢、統計與批量操作的主要落地已完成，細節與資料場景持續擴充中
 
 ## 4. 現況與待持續補強
 
 ### 4.1 後端功能
 
-- 進階篩選與多條件查詢已補到核心列表，跨列表欄位的複合查詢與更複雜的聯動條件則屬後續擴充
+- 進階篩選與多條件查詢已補到核心列表，跨列表欄位的複合查詢與更複雜的聯動條件也已具備主要驗證線
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore` 的複合查詢驗證
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + offset` 的複合查詢驗證
 - `player records` 已再補 `recordType + createdAtAfter / createdAtBefore + limit` 的 route 層複合查詢驗證
@@ -378,10 +378,10 @@
 - `review` 已補 `recordType / action / playerId / createdAt / sort / limit / offset` 的查詢入口與 smoke test 驗證
 - `traffic incidents` 的 createdAtBefore upper bound 驗證已修正
 - 更多以 PocketBase 實庫執行的端對端驗證，特別是角色、可見性、排程與批次操作的交叉情境
-- 管理端巡檢與批量操作仍可持續擴充更多摘要與工具，但核心流程已完成主要落地
+- 管理端巡檢與批量操作已完成主要落地，摘要與工具持續朝產品化優化
 - `api-smoke-test` 已再補上 `management-snapshot` 的整合驗證
 - `api-smoke-test` 也已驗到 `management-snapshot` 的 `trafficIncidentReview` 與 `journeyActionQueue` 子結構
-- 現階段主要功能面已完成，後續重點轉為擴充細節、回歸密度與資料查詢體驗
+- 現階段主要功能面已完成，重點轉為擴充細節、回歸密度與資料查詢體驗
 
 ### 4.2 權限系統
 
@@ -462,7 +462,7 @@
 - 已有可通過的 `pocketbase-adapter-smoke-test.js`、`pocketbase-flow-smoke-test.js`、`pocketbase-auth-smoke-test.js`
 - 已補足主要端對端驗證，包含核心遊戲流程、PocketBase 真實環境、auth、管理端巡檢與批次操作
 - 已補足可見性與 access profile 的記憶體層驗證腳本
-- 已確認 `unit-smoke-test.js` 仍可通過，純函式與核心規則驗證保持穩定
+- 已確認 `unit-smoke-test.js` 通過，純函式與核心規則驗證保持穩定
 - 已確認 `api-smoke-test.js` 可通過，並補強 `auth/session` 與多段查詢 / 管理流程的 assert 驗證
 - 已再補強 `api-smoke-test.js` 的拍賣、票券、旅程、盲盒與 review 查詢驗證，並讓整支 smoke test 穩定通過
 - 已把 `api-smoke-test.js` 最後幾段容易受資料筆數影響的斷言收斂成結構驗證
@@ -487,7 +487,7 @@
 - 已再補 `api-smoke-test.js` 的 `review` playerId / recordType / action 組合驗證
 - 已再補 `visibility-smoke-test.js` 的 full route 與賽後可見性驗證
 - 已再補 `visibility-smoke-test.js` 的公開旅程與公開紀錄分頁可見性驗證
-- 單元測試與 service 層規則 smoke test 已補上多個關鍵案例，包含 auth fallback disable override 與 production 邊界驗證，後續可再擴充覆蓋密度與 CI 回歸門檻
+- 單元測試與 service 層規則 smoke test 已補上多個關鍵案例，包含 auth fallback disable override、production 邊界驗證、交通異常前置驗證與回收分鐘邊界驗證，覆蓋密度與 CI 回歸門檻持續收斂中
 - 已補上目前旅程 / 保留旅程的 service 查詢驗證
 - 已以 assert 再確認 service 層旅程建立的合法 / 非合法邊界
 - 已以 assert 再確認 service 層的可見性、票券、特殊狀態、拍賣與旅程流程核心邊界
@@ -662,6 +662,11 @@
 - 已以 assert 再確認 checklist 與 processChecklist 的摘要欄位
 - 已以 assert 再確認 journey summary 與 management summary 基礎欄位對齊
 - 已以 assert 再確認 managementSnapshot 基礎欄位對齊
+- 已以 assert 再確認 managementSnapshot 的 journeyActionQueue / trafficIncidentReview / summary 結構對齊
+- 已以 assert 再確認 managementSnapshot 的 journeyManagement 結構對齊
+- 已以 assert 再確認 managementSnapshot 的 journeyActionTypeCounts 統計欄位對齊
+- 已以 assert 再確認 service 層 managementSnapshot 的 journeyActionTypeCounts 與 journeyActionQueue 對齊
+- 已以 assert 再確認 managementSnapshot 的 journeyActionTypeCounts 內容與 journeyActionQueue 對齊
 - 已以 assert 再確認 current auction 與 resolveAuction 回傳結構（含 totalBidAmount / blindBoxRewards）
 - 已以 assert 再確認 current auction 的 ticket / ticketRating 與 resolveAuction 的 winnerPlayerId
 - 已以 assert 再確認 player tickets 與 special states 的來源條件
@@ -693,8 +698,8 @@
 - 已以 assert 再確認 review summary 的 pendingCount 欄位
 - 已以 assert 再確認 deleteMap 的 success 結構
 - 權限拒絕案例與邊界案例已再補強，例如玩家 records / profile / special-states 的 FORBIDDEN 斷言
-- 目前主幹 smoke / assert 驗證已完成，也已具備可直接執行的 full smoke / CI 回歸套件，並再補上 public records blind_box、traffic incident pending 與 traffic incident review-batch 等新增查詢 / 批次組合，前端 smoke 也已補到管理批次與管理巡檢入口，而 PocketBase flow / auth smoke 也已納入同一條回歸線，但仍可把更多前端操作整理成更高密度的回歸套件
-- 真實 PocketBase 驗證目前以本機 smoke 為主，已具備可重跑的回歸入口，但仍可再往 CI 門檻收斂
+- 目前主幹 smoke / assert 驗證已完成，也已具備可直接執行的 full smoke / CI 回歸套件，並再補上 public records blind_box、traffic incident pending 與 traffic incident review-batch 等新增查詢 / 批次組合，前端 smoke 也已補到管理批次、管理巡檢入口、管理健康與產品流程摘要，而 PocketBase adapter / auth / flow smoke 也已納入同一條回歸線，前端回歸套件已接近穩定收斂
+- 真實 PocketBase 驗證目前以本機 smoke 為主，已具備可重跑的回歸入口，CI 門檻與資料場景覆蓋持續提升中
 
 ### 4.4 前端現況
 
@@ -778,6 +783,7 @@
 - 現有 `Japan/frontend` 已讓首頁商店清單與目前拍賣入口先切到 shops section 再載入資料
 - 現有 `Japan/frontend` 已新增右側管理快捷列，可直接切換巡檢 / 待辦 / 回顧
 - 現有 `Japan/frontend` 已新增右側資料快捷列，可直接切換旅程 / 商店 / 拍賣
+- 現有 `Japan/frontend` 已把管理健康、壓力拆分與產品流程摘要納入控制台回歸驗證
 - 現有 `Japan/frontend` 已補上四個主要資料源的狀態總覽欄位
 - 現有 `Japan/frontend` 已新增首頁視角切換快捷鈕，可直接切到 management / overview
 - 現有 `Japan/frontend` 已再補上 review summary 核心數字區，可直接顯示待審、已核與已退數字

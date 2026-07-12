@@ -539,6 +539,17 @@ async function main() {
     console.log("managementSnapshot", Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary));
     assert.equal(Boolean(managementSnapshotPayload.data?.managementSnapshot?.summary), true);
     assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.summary?.pendingTrafficIncidentCount === "number", true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.journeyManagement?.exceptionJourneyCount === "number", true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.journeyManagement?.actionQueueCount === "number", true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.journeyActionQueue?.actionQueueCount === "number", true);
+    assert.equal(Array.isArray(managementSnapshotPayload.data?.managementSnapshot?.journeyActionQueue?.journeyIdList), true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.pendingCount === "number", true);
+    assert.equal(Array.isArray(managementSnapshotPayload.data?.managementSnapshot?.trafficIncidentReview?.pendingRequestIdList), true);
+    assert.equal(typeof managementSnapshotPayload.data?.managementSnapshot?.summary?.journeyActionTypeCounts === "object", true);
+    assert.deepEqual(
+      managementSnapshotPayload.data?.managementSnapshot?.summary?.journeyActionTypeCounts,
+      managementSnapshotPayload.data?.managementSnapshot?.journeyActionQueue?.suggestedActionCounts,
+    );
 
     const forbiddenChecklistResponse = await fetch(`http://127.0.0.1:8788/games/${gameId}/checklist?currentTime=2026-07-09T06:35:00%2B08:00&operatorPlayerId=not-host`);
     const forbiddenChecklistPayload = await forbiddenChecklistResponse.json();
